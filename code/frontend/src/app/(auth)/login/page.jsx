@@ -1,7 +1,9 @@
+import LoginForm from "@/ui/LoginForm/LoginForm";
+
 export default function page() {
     return (    
-        <div>
-            LOGIN PAGE
+        <div className="min-h-screen flex justify-center items-center">
+            <LoginForm></LoginForm>
         </div>
     );
 }    
