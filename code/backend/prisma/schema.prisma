@@ -8,8 +8,18 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  email       String   @unique
+  batch       String
+
+  photoURL    String?
+  bio         String?  @db.Text
+  preferences String[]
+  github      String?
+  resume      String?
+  about       String?  @db.Text
+  skills      String[]
+
+  createdAt   DateTime @default(now())
 }
