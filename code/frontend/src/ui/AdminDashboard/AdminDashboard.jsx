@@ -20,6 +20,18 @@ const UsersIcon = ({
     <path d="M16 16.28A13.84 13.84 0 0 1 22 21" />
   </svg>;
 
+const AnalyticsContent = () => (
+  <div>
+    <h3 className="text-xl font-semibold mb-4">Dashboard Metrics</h3>
+  </div>
+);
+
+const UsersContent = () => (
+  <div>
+    <h3 className="text-xl font-semibold mb-4">User Management</h3>
+  </div>
+);
+
 export default function VerticalTabs({ tabs, className }) {
   const [activeTab, setActiveTab] = useState(tabs[0].id);
   
@@ -77,9 +89,7 @@ export default function VerticalTabs({ tabs, className }) {
                     {tab.title}
                   </h2>
                   <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-black">
-                    <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">
-                      {tab.content}
-                    </p>
+                    {tab.component ? <tab.component /> : <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">{tab.content}</p>}
                   </div>
                 </motion.div>
               );
@@ -92,14 +102,19 @@ export default function VerticalTabs({ tabs, className }) {
 }
 
 export function AdminDashboard() {
-  const tabs = [{
-    id: "analytics",
-    title: "Analytics",
-    icon: AnalyticsIcon,
-  }, {
-    id: "users",
-    title: "Users",
-    icon: UsersIcon,
-  }];
+  const tabs = [
+    {
+      id: "analytics",
+      title: "Analytics",
+      icon: AnalyticsIcon,
+      component: AnalyticsContent
+    }, 
+    {
+      id: "users",
+      title: "Users",
+      icon: UsersIcon,
+      component: UsersContent
+    }
+  ];
   return <VerticalTabs tabs={tabs} />;
 }
