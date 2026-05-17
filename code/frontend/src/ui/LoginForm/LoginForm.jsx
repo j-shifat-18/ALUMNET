@@ -5,6 +5,7 @@ import logo from "../../../public/logo.png";
 import GoogleSignInButton from '../GoogleSignInButton/GoogleSignInButton';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/context/AuthProvider';
 const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5 text-zinc-600 dark:text-zinc-400">
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
@@ -24,6 +25,23 @@ export default function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const {signInUser} = useAuth();
+
+  const handleLogin = async (e)=>{
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      await signInUser(email, password);
+      alert(`Welcome Back !`);
+    } catch (err) {
+      alert(`Sign in failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
   return (<div className="relative w-full flex items-center justify-center font-sans overflow-hidden">
 
       {}
@@ -58,7 +76,7 @@ export default function LoginForm() {
         </div>
 
         {}
-        <form className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900 dark:text-zinc-50">
               Email
@@ -77,7 +95,10 @@ export default function LoginForm() {
             </div>
           </div>
           <button type="submit" className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 bg-zinc-900 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 px-4 py-2 w-full">
-            Sign In
+            {isLoading ? <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
+                      Signing in...
+                    </div> : 'Sign in'}
           </button>
         </form>
 

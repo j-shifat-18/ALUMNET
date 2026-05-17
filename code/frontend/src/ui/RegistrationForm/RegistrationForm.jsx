@@ -1,14 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import logo from "../../../public/logo.png";
 import GoogleSignInButton from '../GoogleSignInButton/GoogleSignInButton';
 import Link from 'next/link';
 import Image from 'next/image';
-const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-    <circle cx="12" cy="7" r="4"></circle>
-  </svg>;
+import { useAuth } from '@/context/AuthProvider';
+
 const MailIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
     <polyline points="22,6 12,13 2,6"></polyline>
@@ -47,18 +45,28 @@ const RegistrationForm = () => {
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
+  const { registerUser, updateUserProfile } = useAuth();
+
   const handleNext = () => {
     if (step < 3) {
       setStep(step + 1);
     }
   };
-  const handleSubmit = e => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setTimeout(() => {
+    try {
+      await registerUser(email, password);
+      await updateUserProfile({ displayName: fullName });
+      alert(`Registration successful! Welcome, ${fullName}!`);
+    } catch (err) {
+      alert(`Registration failed: ${err.message}`);
+    } finally {
       setIsLoading(false);
-    }, 2000);
+    }
   };
+  
   return <div className="p-4 w-full flex justify-center">
       <div className="w-full max-w-sm">
         {}
@@ -99,7 +107,7 @@ const RegistrationForm = () => {
                     Full Name
                   </label>
                   <div className="relative">
-                    <input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Enter your full name" className="signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
+                    <input name='name' id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Enter your full name" className="signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
                     {fullName && <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
                         <CheckIcon />
                       </div>}
@@ -122,7 +130,7 @@ const RegistrationForm = () => {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
                       <MailIcon />
                     </div>
-                    <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" className="signin-input w-full pl-9 pr-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
+                    <input name='email' id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" className="signin-input w-full pl-9 pr-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
                   </div>
                 </div>
 
@@ -134,7 +142,7 @@ const RegistrationForm = () => {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
                       <LockIcon />
                     </div>
-                    <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" className="signin-input w-full pl-9 pr-10 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
+                    <input name='password' id="password" type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" className="signin-input w-full pl-9 pr-10 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
                     <button type="button" onClick={togglePasswordVisibility} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
                     </button>

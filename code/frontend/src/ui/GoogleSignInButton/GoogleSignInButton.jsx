@@ -1,12 +1,37 @@
+import { useState } from "react";
 import Button from "../../components/ui/button";
 import { GoogleIcon } from "../../components/ui/icons";
-const GoogleSignInButton = () => {
-  return <div className="w-full">
-          {}
-          <Button variant="outline" iconLeft={<GoogleIcon />} className="w-full">
-                    Continue with Google
-                </Button>
+import { useAuth } from "@/context/AuthProvider";
 
-      </div>;
+const GoogleSignInButton = () => {
+  const { signInGoogle } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setIsLoading(true);
+    try {
+      const user = await signInGoogle();
+      alert(`Signed in successfully! Welcome, ${user.displayName || user.email}!`);
+    } catch (err) {
+      alert(`Sign-in failed: ${err.message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="w-full">
+      <Button
+        variant="outline"
+        iconLeft={<GoogleIcon />}
+        className="w-full"
+        onClick={handleGoogleSignIn}
+        disabled={isLoading}
+      >
+        {isLoading ? "Signing in..." : "Continue with Google"}
+      </Button>
+    </div>
+  );
 };
+
 export default GoogleSignInButton;
