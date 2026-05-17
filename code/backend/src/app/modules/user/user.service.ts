@@ -15,7 +15,44 @@ const createUser = async (payload : any) => {
     return result ;
 }
 
+const getSingleUser = async (id: string) => {
+  const result = await prisma.user.findUnique({
+    where: {
+      id,
+    },
+  });
+
+  return result;
+};
+
+const updateSingleUser = async (
+  id: string,
+  payload: any
+) => {
+  const result = await prisma.user.update({
+    where: {
+      id,
+    },
+    data: payload,
+  });
+
+  return result;
+};
+
+const deleteUser = async (id: string) => {
+  const result = await prisma.user.delete({
+    where: {
+      id,
+    },
+  });
+
+  return result;
+};
+
 export const UserService = {
     createUser, 
     getAllUsers,
+    getSingleUser,
+    updateSingleUser,
+    deleteUser
 }
