@@ -7,6 +7,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
+import { useRouter } from 'next/navigation';
 
 const MailIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -47,6 +48,7 @@ const ValidationItem = ({ isValid, text }) => (
 );
 
 const RegistrationForm = () => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -92,6 +94,7 @@ const RegistrationForm = () => {
       });
 
       alert(`Registration successful! Welcome, ${fullName}!`);
+      router.push("/");
     } catch (err) {
       alert(`Registration failed: ${err.message}`);
     } finally {

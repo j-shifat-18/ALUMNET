@@ -3,10 +3,12 @@ import Button from "../../components/ui/button";
 import { GoogleIcon } from "../../components/ui/icons";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
+import { useRouter } from "next/navigation";
 
 const GoogleSignInButton = () => {
   const { signInGoogle } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
@@ -25,6 +27,7 @@ const GoogleSignInButton = () => {
       }
 
       alert(`Signed in successfully! Welcome, ${user.displayName || user.email}!`);
+      router.push("/");
     } catch (err) {
       alert(`Sign-in failed: ${err.message}`);
     } finally {
