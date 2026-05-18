@@ -30,14 +30,14 @@ const AnalyticsContent = () => (
   </div>
 );
 
-const UsersContent = ({ usersList }) => (
+const UsersContent = ({ usersList, setUsersList }) => (
   <div>
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-25">#</TableHead>
           <TableHead>Name</TableHead>
-          <TableHead>Email</TableHead>
+          {/* <TableHead>Email</TableHead> */}
           <TableHead>Role</TableHead>
           <TableHead>Action</TableHead>
         </TableRow>
@@ -52,14 +52,14 @@ const UsersContent = ({ usersList }) => (
           <TableCell className="font-medium">
               {user.name}   
           </TableCell>
-          <TableCell className="font-medium">
+          {/* <TableCell className="font-medium">
               {user.email}   
-          </TableCell>
+          </TableCell> */}
           <TableCell className="font-medium">
               {user.role? user.role : "N\\A"}   
           </TableCell>
           <TableCell className="font-medium">
-                 <ActionDropdown></ActionDropdown>
+                 <ActionDropdown user={user} onDelete={(id) => setUsersList && setUsersList(prev => prev.filter(u => u.id !== id))}></ActionDropdown>
           </TableCell>
         </TableRow>
         )}
@@ -138,7 +138,7 @@ export default function VerticalTabs({ tabs, className }) {
                     {tab.title}
                   </h2>
                   <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-black">
-                    {tab.component ? <tab.component usersList={usersList} /> : <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">{tab.content}</p>}
+                    {tab.component ? <tab.component usersList={usersList} setUsersList={setUsersList} /> : <p className="text-lg leading-relaxed text-slate-600 dark:text-slate-300">{tab.content}</p>}
                   </div>
                 </motion.div>
               );
