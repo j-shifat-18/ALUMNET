@@ -9,11 +9,11 @@ datasource db {
 
 model User {
   id          String   @id @default(cuid())
-  uid        String   @unique
+  uid         String   @unique
   name        String
   email       String   @unique
   batch       String?
-
+  role        Role     @default(USER)
   photoURL    String?
   bio         String?  @db.Text
   preferences String[]
@@ -21,6 +21,16 @@ model User {
   resume      String?
   about       String?  @db.Text
   skills      String[]
+  status      UserStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+}
 
-  createdAt   DateTime @default(now())
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  BANNED
+  ACTIVE
 }
