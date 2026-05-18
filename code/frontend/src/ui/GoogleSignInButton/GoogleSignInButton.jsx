@@ -15,9 +15,11 @@ const GoogleSignInButton = () => {
 
       try {
         await axiosInstance.post("/api/v1/users", {
-          id: user.uid,
-          name: user.displayName || user.email,
+          uid: user.uid,
+          name: user.displayName,
           email: user.email,
+          role: user.role,
+          photoURL: user.photoURL
         });
       } catch (err) {
       }

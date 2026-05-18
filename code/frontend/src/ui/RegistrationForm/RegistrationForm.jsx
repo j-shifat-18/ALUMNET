@@ -87,7 +87,8 @@ const RegistrationForm = () => {
       await axiosInstance.post("/api/v1/users", {
         uid: user.uid,
         name: fullName,
-        email: user.email
+        email: user.email,
+        role: user.role
       });
 
       alert(`Registration successful! Welcome, ${fullName}!`);
