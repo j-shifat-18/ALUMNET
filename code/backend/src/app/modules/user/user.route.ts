@@ -4,7 +4,7 @@ import { auth } from '../../middlewares/auth.js';
 
 const router = express.Router();
 
-router.get("/", auth, UserController.getAllUsers);
+router.get("/",  UserController.getAllUsers);
 
 router.post("/",  UserController.createUser);
 
