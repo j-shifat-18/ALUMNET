@@ -85,7 +85,7 @@ const RegistrationForm = () => {
       await updateUserProfile({ displayName: fullName });
 
       await axiosInstance.post("/api/v1/users", {
-        id: user.uid,
+        uid: user.uid,
         name: fullName,
         email: user.email
       });
