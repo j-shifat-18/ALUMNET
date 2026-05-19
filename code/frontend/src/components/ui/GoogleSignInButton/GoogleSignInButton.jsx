@@ -1,6 +1,6 @@
 import { useState } from "react";
-import Button from "../../components/ui/button";
-import { GoogleIcon } from "../../components/ui/icons";
+import Button from "../button";
+import { GoogleIcon } from "../icons";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
 import { useRouter } from "next/navigation";

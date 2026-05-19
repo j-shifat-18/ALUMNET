@@ -1,7 +1,7 @@
 'use client';
 
 import React, { use, useState } from 'react';
-import logo from "../../../public/logo.png";
+import logo from "../../../../public/logo.png";
 import GoogleSignInButton from '../GoogleSignInButton/GoogleSignInButton';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -94,7 +94,7 @@ const RegistrationForm = () => {
       });
 
       alert(`Registration successful! Welcome, ${fullName}!`);
-      router.push("/");
+      router.push("/profile-setup");
     } catch (err) {
       alert(`Registration failed: ${err.message}`);
     } finally {
