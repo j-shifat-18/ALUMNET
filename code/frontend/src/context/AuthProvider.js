@@ -9,6 +9,8 @@ import {
   signInWithPopup,
   signOut,
   updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -36,6 +38,8 @@ export const AuthProvider = ({ children }) => {
         email,
         password,
       );
+
+      await sendEmailVerification(result.user);
 
       return result.user;
     } finally {
@@ -78,6 +82,10 @@ export const AuthProvider = ({ children }) => {
     return updateProfile(auth.currentUser, profile);
   };
 
+  const resetPassword = (email) => {
+    return sendPasswordResetEmail(auth, email);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -88,6 +96,7 @@ export const AuthProvider = ({ children }) => {
         signInGoogle,
         logout,
         updateUserProfile,
+        resetPassword,
       }}
     >
       {children}

@@ -29,15 +29,61 @@ export default function LoginForm() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
-  const { signInUser } = useAuth();
+  const { signInUser, logout, resetPassword } = useAuth();
   const router = useRouter();
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) {
+      setNotification({
+        type: "warning",
+        title: "Email Required",
+        message: "Please enter your email address.",
+        duration: 5000
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await resetPassword(email);
+      setNotification({
+        type: "success",
+        title: "Password Reset Email Sent!",
+        message: `A password reset link has been sent to your email.`,
+        duration: 5000
+      });
+    } catch (err) {
+      setNotification({
+        type: "error",
+        title: "Reset Failed",
+        message: err.message || String(err),
+        duration: 5000
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      await signInUser(email, password);
+      const loggedUser = await signInUser(email, password);
+
+      if (!loggedUser.emailVerified) {
+        setNotification({
+          type: "warning",
+          title: "Email Not Verified",
+          message: "Verify your email first to continue.",
+          duration: 3000
+        });
+        setTimeout(() => {
+          router.push("/verify-email");
+        }, 3000);
+        return;
+      }
 
       setNotification({
         type: "success",
@@ -140,9 +186,9 @@ export default function LoginForm() {
             Register
           </Link>
         </p>
-        <a href="#" className="text-sm font-medium text-zinc-900 dark:text-zinc-50 underline underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+        <button type="button" onClick={handleForgotPassword} className="text-sm font-medium text-zinc-900 dark:text-zinc-50 underline underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors bg-transparent border-0 p-0 cursor-pointer">
           Forgot your password?
-        </a>
+        </button>
       </div>
 
     </div>
