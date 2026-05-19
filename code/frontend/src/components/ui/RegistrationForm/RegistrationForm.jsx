@@ -8,6 +8,7 @@ import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import { useRouter } from 'next/navigation';
+import Notification from '../toast';
 
 const MailIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
@@ -57,6 +58,7 @@ const RegistrationForm = () => {
   const [step, setStep] = useState(1);
   const [isEmailFocused, setIsEmailFocused] = useState(false);
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+  const [notification, setNotification] = useState(null);
 
   const hasInvalidEmailChars = /\s|[A-Z]/.test(email);
   const hasValidEmailDomain = email.endsWith('@iut-dhaka.edu') && email.length > '@iut-dhaka.edu'.length;
@@ -93,16 +95,41 @@ const RegistrationForm = () => {
         role: user.role
       });
 
-      alert(`Registration successful! Welcome, ${fullName}!`);
-      router.push("/profile-setup");
+      setNotification({
+        type: "success",
+        title: "Registration Successful!",
+        message: "Complete your profile to continue",
+        duration: 3000
+      });
+      
+      setTimeout(() => {
+        router.push("/profile-setup");
+      }, 3000);
     } catch (err) {
-      alert(`Registration failed: ${err.message}`);
+      setNotification({
+        type: "error",
+        title: "Registration Failed!",
+        message: err.message || String(err),
+        duration: 5000
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return <div className="p-4 w-full flex justify-center">
+    {notification && (
+      <div className="fixed top-4 right-4 z-50">
+        <Notification
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          showIcon={true}
+          duration={notification.duration}
+          onClose={() => setNotification(null)}
+        />
+      </div>
+    )}
     <div className="w-full max-w-sm">
       { }
       <div className="mb-6">
