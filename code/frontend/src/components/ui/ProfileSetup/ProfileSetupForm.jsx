@@ -1,8 +1,12 @@
 'use client';
 
 import React, { useState } from 'react';
-import logo from '../../../../public/logo.png';
+import logo from '../../../../public/icon.png';
 import Image from 'next/image';
+import Button from '../button';
+import { Check } from 'lucide-react';
+import DepartmentDropdown from '../DepartmentDropdown/DepartmentDropdown';
+import ProgrammeDropdown from '../ProgrammeDropdown/ProgrammeDropdown';
 const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
@@ -42,6 +46,10 @@ const ProfileSetupForm = () => {
     const [fullName, setFullName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
+    const [alumniActive, setAlumniActive] = useState(false);
+    const [studentActive, setStudentActive] = useState(false);
+    const [selectedDepartment, setSelectedDepartment] = useState('');
+    const [selectedProgramme, setSelectedProgramme] = useState('');
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
@@ -57,6 +65,17 @@ const ProfileSetupForm = () => {
             setIsLoading(false);
         }, 2000);
     };
+
+    const isAlumniActive = () => {
+        setAlumniActive(true);
+        setStudentActive(false);
+    }
+
+    const isStudentActive = () => {
+        setStudentActive(true);
+        setAlumniActive(false);
+    }
+
     return <div className="flex items-center justify-center p-4">
         <div className="w-full max-w-md">
             { }
@@ -77,13 +96,13 @@ const ProfileSetupForm = () => {
                 { }
                 <div className="text-center mb-6">
                     <div className="flex justify-center">
-                        <Image src={logo} alt='ALUMNET' width={60} height={60}></Image>
+                        <Image src={logo} alt='ALUMNET' width={80} height={80}></Image>
                     </div>
                     <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
                         Complete Your Profile
                     </h1>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {step === 1 && "Let's start with your basic information"}
+                        {/* {step === 1 && "Let's start with your basic information"} */}
                         {step === 2 && "Now, set up your credentials"}
                         {step === 3 && "Almost done! Review your details"}
                     </p>
@@ -93,15 +112,23 @@ const ProfileSetupForm = () => {
                     { }
                     {step === 1 && <div className="signin-step space-y-4">
                         <div className="space-y-2">
-                            <label htmlFor="fullName" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                Full Name
-                            </label>
-                            <div className="relative">
-                                <input id="fullName" type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Enter your full name" className="signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
-                                {fullName && <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500">
-                                    <CheckIcon />
-                                </div>}
+                            <h4 className='mb-5'>Select Your Role</h4>
+                            <div className="relative flex justify-center gap-20">
+                                <Button onClick={isAlumniActive} className={alumniActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{alumniActive? "ALUMNI" : "ALUMNI"}{alumniActive? <Check/> : <></>}</Button>
+                                <Button onClick={isStudentActive} className={studentActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{studentActive? "STUDENT" : "STUDENT"}{studentActive? <Check/> : <></>}</Button>
                             </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Batch</h4>
+                            
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Department</h4>
+                            <DepartmentDropdown onSelect={setSelectedDepartment}></DepartmentDropdown>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Programme</h4>
+                            <ProgrammeDropdown selectedDepartment={selectedDepartment} onSelect={setSelectedProgramme}></ProgrammeDropdown>
                         </div>
                         <button type="button" onClick={handleNext} disabled={!fullName} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
