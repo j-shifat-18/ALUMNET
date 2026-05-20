@@ -55,8 +55,7 @@ const Navbar = () => {
                 { }
                 <div className="flex items-center">
                     <Link href={"/"} className="flex items-center space-x-2 group">
-                        <Image src={logo} alt='ALUMNET' width={50} height={50}></Image>
-                        <span className="font-bold text-lg sm:text-xl lg:text-2xl text-primary dark:text-gray-100">ALUMNET</span>
+                        <Image src={logo} alt='ALUMNET' width={230} height={230}></Image>
                     </Link>
                 </div>
 

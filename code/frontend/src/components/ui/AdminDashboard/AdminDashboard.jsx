@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Logo from "../Logo/Logo";
+import logo from "../../../../public/logo.png";
 import { ShieldUser } from "lucide-react";
 import axiosInstance from "@/lib/axios";
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import ActionDropdown from "../ActionDropdown/ActionDropdown";
+import Image from "next/image";
+import Link from "next/link";
 
 const AnalyticsIcon = ({
   className = "w-5 h-5"
@@ -45,24 +47,24 @@ const UsersContent = ({ usersList, setUsersList }) => (
       <TableBody>
         {
           usersList.map((user, index) =>
-          <TableRow key={user.id}>
-          <TableCell className="font-medium">
-              {index+1}    
-          </TableCell>
-          <TableCell className="font-medium">
-              {user.name}   
-          </TableCell>
-          {/* <TableCell className="font-medium">
+            <TableRow key={user.id}>
+              <TableCell className="font-medium">
+                {index + 1}
+              </TableCell>
+              <TableCell className="font-medium">
+                {user.name}
+              </TableCell>
+              {/* <TableCell className="font-medium">
               {user.email}   
           </TableCell> */}
-          <TableCell className="font-medium">
-              {user.role? user.role : "N\\A"}   
-          </TableCell>
-          <TableCell className="font-medium">
-                 <ActionDropdown user={user} onDelete={(id) => setUsersList && setUsersList(prev => prev.filter(u => u.id !== id))}></ActionDropdown>
-          </TableCell>
-        </TableRow>
-        )}
+              <TableCell className="font-medium">
+                {user.role ? user.role : "N\\A"}
+              </TableCell>
+              <TableCell className="font-medium">
+                <ActionDropdown user={user} onDelete={(id) => setUsersList && setUsersList(prev => prev.filter(u => u.id !== id))}></ActionDropdown>
+              </TableCell>
+            </TableRow>
+          )}
       </TableBody>
     </Table>
   </div>
@@ -89,7 +91,9 @@ export default function VerticalTabs({ tabs, className }) {
   return (
     <div className={`flex flex-col h-screen w-full bg-slate-50 dark:bg-[#0a0a0a] ${className || ''}`}>
       <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6 dark:border-slate-800 dark:bg-black">
-        <Logo></Logo>
+        <Link href={"/"}>
+          <Image src={logo} alt='ALUMNET' width={200} height={200}></Image>
+        </Link>
         <div className="flex items-center">
           <p>Welcome, Admin</p>
           <ShieldUser width={50}></ShieldUser>

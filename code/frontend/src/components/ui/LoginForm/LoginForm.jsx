@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import logo from "../../../../public/logo.png";
+import logo from "../../../../public/icon.png";
 import GoogleSignInButton from '../GoogleSignInButton/GoogleSignInButton';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -126,7 +126,7 @@ export default function LoginForm() {
       { }
       <div className="text-center space-y-3">
         <div className="flex justify-center">
-          <Image src={logo} alt='ALUMNET' width={60} height={60}></Image>
+          <Image src={logo} alt='ALUMNET' width={80} height={80}></Image>
         </div>
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white">Welcome back</h1>
@@ -170,7 +170,7 @@ export default function LoginForm() {
             </button>
           </div>
         </div>
-        <button type="submit" className="bg-primary inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 text-zinc-50 shadow hover:bg-primary/70 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 px-4 py-2 w-full">
+        <button type="submit" className="bg-zinc-900 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 px-4 py-2 w-full">
           {isLoading ? <div className="flex items-center justify-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
             Signing in...
@@ -182,7 +182,7 @@ export default function LoginForm() {
       <div className="text-center space-y-2">
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Don&apos;t have an account?{' '}
-          <Link href={"/register"} className="font-medium text-primary dark:text-zinc-50 underline underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
+          <Link href={"/register"} className="font-medium text-zinc-900 dark:text-zinc-50 underline underline-offset-4 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors">
             Register
           </Link>
         </p>

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { use, useState } from 'react';
-import logo from "../../../../public/logo.png";
+import logo from "../../../../public/icon.png";
 import GoogleSignInButton from '../GoogleSignInButton/GoogleSignInButton';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -138,7 +138,7 @@ const RegistrationForm = () => {
           <span className="text-sm text-gray-500 dark:text-gray-400">{Math.round(step / 3 * 100)}%</span>
         </div>
         <div className="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2 overflow-hidden">
-          <div className="signin-progress bg-primary dark:bg-gray-100 h-2 rounded-full transition-all duration-500 ease-out" style={{
+          <div className="signin-progress bg-zinc-900 dark:bg-gray-100 h-2 rounded-full transition-all duration-500 ease-out" style={{
             width: `${step / 3 * 100}%`
           }} />
         </div>
@@ -149,7 +149,7 @@ const RegistrationForm = () => {
         { }
         <div className="text-center mb-6">
           <div className="flex justify-center">
-            <Image src={logo} alt='ALUMNET' width={60} height={60}></Image>
+            <Image src={logo} alt='ALUMNET' width={80} height={80}></Image>
           </div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
             Create account
@@ -175,7 +175,7 @@ const RegistrationForm = () => {
                 </div>}
               </div>
             </div>
-            <button type="button" onClick={handleNext} disabled={!fullName || /\d/.test(fullName)} className="signin-button w-full bg-primary dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-primary/70 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button type="button" onClick={handleNext} disabled={!fullName || /\d/.test(fullName)} className="signin-button w-full bg-zinc-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-zinc-900/90 hover:cursor-pointer dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               Next Step
               {<ArrowRightIcon />}
             </button>
@@ -225,7 +225,7 @@ const RegistrationForm = () => {
               )}
             </div>
 
-            <button type="button" onClick={handleNext} disabled={!isEmailValid || !isPasswordValid} className="signin-button w-full bg-primary dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-primary/70 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+            <button type="button" onClick={handleNext} disabled={!isEmailValid || !isPasswordValid} className="signin-button w-full bg-zinc-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-zinc-900/90 hover:cursor-pointer dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
               Next Step
               <ArrowRightIcon />
             </button>
@@ -254,7 +254,7 @@ const RegistrationForm = () => {
               </div>
             </div>
 
-            <button type="submit" disabled={isLoading} className="signin-button w-full bg-primary dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="submit" disabled={isLoading} className="signin-button w-full bg-zinc-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-zinc-900/90 hover:cursor-pointer dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
               {isLoading ? <div className="flex items-center justify-center gap-2">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
                 Creating account...
@@ -264,7 +264,7 @@ const RegistrationForm = () => {
         </form>
 
         { }
-        {step > 1 && <button onClick={() => setStep(step - 1)} className="mt-4 w-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+        {step > 1 && <button onClick={() => setStep(step - 1)} className="mt-4 w-full text-gray-600 dark:text-gray-400 hover:cursor-pointer hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
           <ArrowLeftIcon />
           Back to previous step
         </button>}
@@ -273,7 +273,7 @@ const RegistrationForm = () => {
         <div className="mt-6 text-center">
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Already have an account?{' '}
-            <Link href={"/login"} className="text-primary underline dark:text-gray-100 font-medium">
+            <Link href={"/login"} className="text-gray-900 underline dark:text-gray-100 font-medium">
               Sign in
             </Link>
           </p>
