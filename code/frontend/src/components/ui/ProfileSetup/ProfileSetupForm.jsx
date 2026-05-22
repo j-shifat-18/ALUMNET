@@ -7,6 +7,7 @@ import Button from '../button';
 import { Check } from 'lucide-react';
 import DepartmentDropdown from '../DepartmentDropdown/DepartmentDropdown';
 import ProgrammeDropdown from '../ProgrammeDropdown/ProgrammeDropdown';
+import BatchYearDropdown from '../BatchYearDropdown/BatchYearDropdown';
 const UserIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
     <circle cx="12" cy="7" r="4"></circle>
@@ -50,14 +51,96 @@ const ProfileSetupForm = () => {
     const [studentActive, setStudentActive] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [selectedProgramme, setSelectedProgramme] = useState('');
+    const [selectedBatch, setSelectedBatch] = useState('');
+
+    const validDepartments = [
+        "Mechanical and Production Engineering (MPE)",
+        "Electrical and Electronic Engineering (EEE)",
+        "Computer Science and Engineering (CSE)",
+        "Civil and Environmental Engineering (CEE)",
+        "Technical and Vocational Education (TVE)",
+        "Business and Technology Management (BTM)",
+        "Natural Sciences (NSc)"
+    ];
+
+    const getValidBatchYears = (role) => {
+        if (role === 'ALUMNI') {
+            const years = [];
+            for (let year = 2020; year >= 1986; year--) {
+                years.push(year.toString());
+            }
+            return years;
+        } else if (role === 'STUDENT') {
+            const years = [];
+            for (let year = 2024; year >= 2021; year--) {
+                years.push(year.toString());
+            }
+            return years;
+        }
+        return [];
+    };
+
+    const departmentProgrammes = {
+        "Computer Science and Engineering (CSE)": [
+            "B.Sc. in CSE",
+            "B.Sc. in SWE",
+            "M.Sc. in CSE",
+            "M.Engg. in CSE",
+            "M.Sc. in CSA",
+            "PhD in CSE"
+        ],
+        "Electrical and Electronic Engineering (EEE)": [
+            "B.Sc. in EEE",
+            "M.Sc. in EEE",
+            "M.Engg. in EEE",
+            "PhD in EEE"
+        ],
+        "Civil and Environmental Engineering (CEE)": [
+            "B.Sc. in CEE",
+            "M.Sc. in CEE",
+            "M.Engg. in CEE",
+            "PhD in CEE"
+        ],
+        "Mechanical and Production Engineering (MPE)": [
+            "B.Sc. in ME",
+            "B.Sc. in IPE",
+            "M.Sc. in ME",
+            "M.Engg. in ME",
+            "PhD in ME"
+        ],
+        "Technical and Vocational Education (TVE)": [
+            "B.Sc. in TE",
+            "M.Sc. in TE",
+            "PGD in TE",
+            "PhD in TE"
+        ],
+        "Natural Sciences (NSc)": [
+            "NSc"
+        ],
+        "Business and Technology Management (BTM)": [
+            "BBA in TM"
+        ]
+    };
+
+    const isValidSelection = () => {
+        const roleSelected = alumniActive || studentActive;
+        const batchValid = selectedBatch && getValidBatchYears(alumniActive ? 'ALUMNI' : 'STUDENT').includes(selectedBatch);
+        const departmentValid = selectedDepartment && validDepartments.includes(selectedDepartment);
+        const programmeValid = selectedProgramme && departmentProgrammes[selectedDepartment]?.includes(selectedProgramme);
+        
+        return roleSelected && batchValid && departmentValid && programmeValid;
+    };
+
     const togglePasswordVisibility = () => {
         setShowPassword(!showPassword);
     };
+
     const handleNext = () => {
         if (step < 5) {
             setStep(step + 1);
         }
     };
+
     const handleSubmit = e => {
         e.preventDefault();
         setIsLoading(true);
@@ -69,11 +152,13 @@ const ProfileSetupForm = () => {
     const isAlumniActive = () => {
         setAlumniActive(true);
         setStudentActive(false);
+        setSelectedBatch('');
     }
 
     const isStudentActive = () => {
         setStudentActive(true);
         setAlumniActive(false);
+        setSelectedBatch('');
     }
 
     return <div className="flex items-center justify-center p-4">
@@ -120,7 +205,10 @@ const ProfileSetupForm = () => {
                         </div>
                         <div className="space-y-2">
                             <h4 className='mb-5'>Your Batch</h4>
-                            
+                            <BatchYearDropdown 
+                              role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
+                              onSelect={setSelectedBatch}
+                            />
                         </div>
                         <div className="space-y-2">
                             <h4 className='mb-5'>Your Department</h4>
@@ -130,7 +218,7 @@ const ProfileSetupForm = () => {
                             <h4 className='mb-5'>Your Programme</h4>
                             <ProgrammeDropdown selectedDepartment={selectedDepartment} onSelect={setSelectedProgramme}></ProgrammeDropdown>
                         </div>
-                        <button type="button" onClick={handleNext} disabled={!fullName} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
                         </button>

@@ -49,8 +49,12 @@ const ComboBox = ({
   }, []);
 
   const handleInputChange = (e) => {
-    setInputValue(e.target.value);
+    const newValue = e.target.value;
+    setInputValue(newValue);
     setIsOpen(true);
+    if (selectedOption) {
+      onSelect?.(null);
+    }
     setSelectedOption(null);
     setHighlightedIndex(-1);
   };
