@@ -2,9 +2,10 @@
 
 import React, { useState } from 'react';
 import logo from '../../../../public/icon.png';
+import placholderUser from "../../../../public/placeholder-user.jpg";
 import Image from 'next/image';
 import Button from '../button';
-import { Check } from 'lucide-react';
+import { Check, ChevronLast, ImageUp } from 'lucide-react';
 import DepartmentDropdown from '../DepartmentDropdown/DepartmentDropdown';
 import ProgrammeDropdown from '../ProgrammeDropdown/ProgrammeDropdown';
 import BatchYearDropdown from '../BatchYearDropdown/BatchYearDropdown';
@@ -52,6 +53,7 @@ const ProfileSetupForm = () => {
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [selectedProgramme, setSelectedProgramme] = useState('');
     const [selectedBatch, setSelectedBatch] = useState('');
+    const [selectedPhotoName, setSelectedPhotoName] = useState('');
 
     const validDepartments = [
         "Mechanical and Production Engineering (MPE)",
@@ -62,23 +64,6 @@ const ProfileSetupForm = () => {
         "Business and Technology Management (BTM)",
         "Natural Sciences (NSc)"
     ];
-
-    const getValidBatchYears = (role) => {
-        if (role === 'ALUMNI') {
-            const years = [];
-            for (let year = 2020; year >= 1986; year--) {
-                years.push(year.toString());
-            }
-            return years;
-        } else if (role === 'STUDENT') {
-            const years = [];
-            for (let year = 2024; year >= 2021; year--) {
-                years.push(year.toString());
-            }
-            return years;
-        }
-        return [];
-    };
 
     const departmentProgrammes = {
         "Computer Science and Engineering (CSE)": [
@@ -124,7 +109,17 @@ const ProfileSetupForm = () => {
 
     const isValidSelection = () => {
         const roleSelected = alumniActive || studentActive;
-        const batchValid = selectedBatch && getValidBatchYears(alumniActive ? 'ALUMNI' : 'STUDENT').includes(selectedBatch);
+        
+        let batchValid = false;
+        if (selectedBatch) {
+            const year = parseInt(selectedBatch);
+            if (alumniActive && year >= 1986 && year <= 2020) {
+                batchValid = true;
+            } else if (studentActive && year >= 2021 && year <= 2024) {
+                batchValid = true;
+            }
+        }
+        
         const departmentValid = selectedDepartment && validDepartments.includes(selectedDepartment);
         const programmeValid = selectedProgramme && departmentProgrammes[selectedDepartment]?.includes(selectedProgramme);
         
@@ -161,6 +156,12 @@ const ProfileSetupForm = () => {
         setSelectedBatch('');
     }
 
+    const handlePhotoUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setSelectedPhotoName(file.name);
+    }
+
     return <div className="flex items-center justify-center p-4">
         <div className="w-full max-w-md">
             { }
@@ -187,8 +188,8 @@ const ProfileSetupForm = () => {
                         Complete Your Profile
                     </h1>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {/* {step === 1 && "Let's start with your basic information"} */}
-                        {step === 2 && "Now, set up your credentials"}
+                        {step === 1 && "Let's start with your basic information"}
+                        {step === 2 && "Now, Upload your photo or skip"}
                         {step === 3 && "Almost done! Review your details"}
                     </p>
                 </div>
@@ -225,35 +226,32 @@ const ProfileSetupForm = () => {
                     </div>}
 
                     { }
-                    {step === 2 && <div className="signin-step space-y-4">
-                        <div className="space-y-2">
-                            <label htmlFor="email" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                Email
-                            </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                                    <MailIcon />
-                                </div>
-                                <input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" className="signin-input w-full pl-9 pr-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
-                            </div>
+                    {step === 2 && <div className="signin-step space-y-4 relative">
+                        <button type="button" onClick={handleNext} className="absolute top-0 right-0 flex items-center justify-end hover:cursor-pointer text-zinc-900 hover:text-zinc-900/90">
+                            Skip
+                            <ChevronLast width={20}/>
+                        </button>
+
+                        <div className='flex justify-center pt-12'>
+                            <Image src={placholderUser} alt='user' width={200} height={200} className='rounded-full'></Image>
                         </div>
 
-                        <div className="space-y-2">
-                            <label htmlFor="password" className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                Password
+                        <div className='mt-10'>
+                            <input
+                                id="photo-upload"
+                                type="file"
+                                accept=".png,.jpg,.jpeg,.webp"
+                                className="hidden"
+                                onChange={handlePhotoUpload}
+                            />
+                            <label htmlFor="photo-upload" className='border-2 border-zinc-900 w-full rounded-md hover:cursor-pointer hover:text-zinc-900/90 hover:border-zinc-900/90 block'>
+                                <p className='flex items-center gap-2 p-2 justify-center'><ImageUp />
+                                Upload Your Photo</p>
                             </label>
-                            <div className="relative">
-                                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400 dark:text-gray-500">
-                                    <LockIcon />
-                                </div>
-                                <input id="password" type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" className="signin-input w-full pl-9 pr-10 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200" />
-                                <button type="button" onClick={togglePasswordVisibility} className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
-                                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                                </button>
-                            </div>
+                            {selectedPhotoName && <p className='text-center text-sm text-gray-600 dark:text-gray-400 mt-2'>{selectedPhotoName}</p>}
                         </div>
-
-                        <button type="button" onClick={handleNext} disabled={!email || !password} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        
+                        <button type="button" onClick={handleNext} disabled={!email || !password} className="signin-button w-full hover:cursor-pointer bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
                         </button>
@@ -292,7 +290,7 @@ const ProfileSetupForm = () => {
                 </form>
 
                 { }
-                {step > 1 && <button onClick={() => setStep(step - 1)} className="mt-4 w-full text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+                {step > 1 && <button onClick={() => setStep(step - 1)} className="mt-4 w-full text-gray-600 dark:text-gray-400 hover:text-gray-900 hover:cursor-pointer dark:hover:text-gray-100 transition-colors text-sm font-medium flex items-center justify-center gap-2">
                     <ArrowLeftIcon />
                     Back to previous step
                 </button>}

@@ -1,9 +1,12 @@
 'use client';
 
+import { useState } from 'react';
 import ComboBox from "../combo-box";
 
 const BatchYearDropdown = ({ role, onSelect }) => {
-  const getYears = () => {
+  const [selectedYear, setSelectedYear] = useState('');
+
+  const getYearRange = () => {
     if (role === 'ALUMNI') {
       const years = [];
       for (let year = 2020; year >= 1986; year--) {
@@ -20,21 +23,21 @@ const BatchYearDropdown = ({ role, onSelect }) => {
     return [];
   };
 
-  const yearOptions = getYears();
+  const yearOptions = getYearRange();
 
   const handleSelect = (option) => {
-    console.log("Selected batch year:", option);
+    setSelectedYear(option);
     if (onSelect) {
       onSelect(option);
     }
   };
 
   return (
-    <div className="">
+    <div className="w-full">
       <ComboBox 
         options={yearOptions} 
-        placeholder="Select Your Batch Year" 
-        onSelect={handleSelect} 
+        placeholder={!role ? "Select role first" : "Select Your Batch Year"} 
+        onSelect={handleSelect}
       />
     </div>
   );
