@@ -53,6 +53,8 @@ const ProfileSetupForm = () => {
     const [step, setStep] = useState(1);
     const [alumniActive, setAlumniActive] = useState(false);
     const [studentActive, setStudentActive] = useState(false);
+    const [yesActive, setYesActive] = useState(false);
+    const [noActive, setNoActive] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState('');
     const [selectedProgramme, setSelectedProgramme] = useState('');
     const [selectedGender, setSelectedGender] = useState('');
@@ -158,6 +160,16 @@ const ProfileSetupForm = () => {
         setSelectedBatch('');
     }
 
+    const isYesActive = () => {
+        setYesActive(true);
+        setNoActive(false);
+    }
+
+    const isNoActive = () => {
+        setNoActive(true);
+        setYesActive(false);
+    }
+
     const handlePhotoUpload = (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -200,7 +212,9 @@ const ProfileSetupForm = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                         {step === 1 && "Let's start with your basic information"}
                         {step === 2 && "Now, Upload your photo or skip"}
-                        {step === 3 && ""}
+                        {step === 3 && "Tell us about yourself"}
+                        {step === 4 && "Tell us about your job"}
+                        {step === 5 && "Additional Information"}
                     </p>
                 </div>
 
@@ -289,6 +303,68 @@ const ProfileSetupForm = () => {
                         <div className="space-y-2">
                             <label >Skills</label>
                             <SkillsMultiSelect></SkillsMultiSelect>
+                        </div>
+                        <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            Next Step
+                            <ArrowRightIcon />
+                        </button>
+                    </div>}
+
+                    { }
+                    {step === 4 && <div className="signin-step space-y-4">
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Are you a job holder?</h4>
+                            <div className="relative flex justify-center gap-20">
+                                <Button onClick={isYesActive} className={yesActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{yesActive? "YES" : "YES"}{yesActive? <Check/> : <></>}</Button>
+                                <Button onClick={isNoActive} className={noActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{noActive? "NO" : "NO"}{noActive? <Check/> : <></>}</Button>
+                            </div>
+                        </div>
+
+                        {
+                            yesActive ? <>
+                            <div className="space-y-2">
+                                <label>Jobplace</label>
+                                <input name="jobPlace" id="jobPlace" placeholder='Your current jobplace' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                             </div>
+
+                             <div className="space-y-2">
+                                <label>Your Position</label>
+                                <input name="position" id="position" placeholder='Your current position at job' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                            </div>
+                        </> : <></>
+                        }
+
+                        <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                            {
+                                yesActive ? "Next Step" : "Skip"
+                            }
+                            <ArrowRightIcon />
+                        </button>
+                    </div>}
+
+                    { }
+                    {step === 5 && <div className="signin-step space-y-4">
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Select Your Role</h4>
+                            <div className="relative flex justify-center gap-20">
+                                <Button onClick={isAlumniActive} className={alumniActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{alumniActive? "ALUMNI" : "ALUMNI"}{alumniActive? <Check/> : <></>}</Button>
+                                <Button onClick={isStudentActive} className={studentActive? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{studentActive? "STUDENT" : "STUDENT"}{studentActive? <Check/> : <></>}</Button>
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Batch</h4>
+                            <BatchYearDropdown 
+                              role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
+                              onSelect={setSelectedBatch}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Department</h4>
+                            <DepartmentDropdown onSelect={setSelectedDepartment}></DepartmentDropdown>
+                        </div>
+                        <div className="space-y-2">
+                            <h4 className='mb-5'>Your Programme</h4>
+                            <ProgrammeDropdown selectedDepartment={selectedDepartment} onSelect={setSelectedProgramme}></ProgrammeDropdown>
                         </div>
                         <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
