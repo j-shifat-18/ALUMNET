@@ -1,4 +1,12 @@
-```prisma id="k4m2xp"
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
 enum Role {
   USER
   STUDENT
@@ -24,7 +32,6 @@ model User {
   name                  String
   username              String?          @unique
   email                 String           @unique
-  password              String
 
   role                  Role             @default(USER)
   status                UserStatus       @default(ACTIVE)
@@ -42,17 +49,17 @@ model User {
   isMentorAvailable     Boolean          @default(false)
 
   createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  updatedAt     DateTime @default(now()) @updatedAt
 
   studentProfile        StudentProfile?
   alumniProfile         AlumniProfile?
   adminProfile          AdminProfile?
 
-  posts                 Post[]
-  comments              Comment[]
+  // posts                 Post[]
+  // comments              Comment[]
 
-  sentRequests          MentorshipRequest[] @relation("StudentRequests")
-  receivedRequests      MentorshipRequest[] @relation("AlumniRequests")
+  // sentRequests          MentorshipRequest[] @relation("StudentRequests")
+  // receivedRequests      MentorshipRequest[] @relation("AlumniRequests")
 
   @@index([email])
   @@index([role])
@@ -141,54 +148,4 @@ model AdminProfile {
   user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model Post {
-  id                    Int              @id @default(autoincrement())
 
-  authorId              Int
-
-  content               String
-  imageUrl              String?
-
-  likesCount            Int              @default(0)
-  commentsCount         Int              @default(0)
-
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  author                User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  comments              Comment[]
-}
-
-model Comment {
-  id                    Int              @id @default(autoincrement())
-
-  content               String
-
-  userId                Int
-  postId                Int
-
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post                  Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
-}
-
-model MentorshipRequest {
-  id                    Int              @id @default(autoincrement())
-
-  studentId             Int
-  alumniId              Int
-
-  message               String?
-
-  status                RequestStatus    @default(PENDING)
-
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  student               User @relation("StudentRequests", fields: [studentId], references: [id], onDelete: Cascade)
-
-  alumni                User @relation("AlumniRequests", fields: [alumniId], references: [id], onDelete: Cascade)
-}
