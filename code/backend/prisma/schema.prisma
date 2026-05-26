@@ -1,36 +1,194 @@
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
-model User {
-  id          String   @id @default(cuid())
-  uid         String   @unique
-  name        String
-  email       String   @unique
-  batch       String?
-  role        Role     @default(USER)
-  photoURL    String?
-  bio         String?  @db.Text
-  preferences String[]
-  github      String?
-  resume      String?
-  about       String?  @db.Text
-  skills      String[]
-  status      UserStatus @default(ACTIVE)
-  createdAt DateTime @default(now())
-}
-
+```prisma id="k4m2xp"
 enum Role {
   USER
+  STUDENT
+  ALUMNI
   ADMIN
 }
 
+enum RequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
 enum UserStatus {
-  BANNED
   ACTIVE
+  SUSPENDED
+  BANNED
+}
+
+model User {
+  id                    Int              @id @default(autoincrement())
+
+  name                  String
+  username              String?          @unique
+  email                 String           @unique
+  password              String
+
+  role                  Role             @default(USER)
+  status                UserStatus       @default(ACTIVE)
+
+  bio                   String?
+  location              String?
+
+  profileImage          String?
+  coverImage            String?
+
+  followersCount        Int              @default(0)
+  followingCount        Int              @default(0)
+
+  isVerified            Boolean          @default(false)
+  isMentorAvailable     Boolean          @default(false)
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  studentProfile        StudentProfile?
+  alumniProfile         AlumniProfile?
+  adminProfile          AdminProfile?
+
+  posts                 Post[]
+  comments              Comment[]
+
+  sentRequests          MentorshipRequest[] @relation("StudentRequests")
+  receivedRequests      MentorshipRequest[] @relation("AlumniRequests")
+
+  @@index([email])
+  @@index([role])
+}
+
+model StudentProfile {
+  id                    Int              @id @default(autoincrement())
+
+  userId                Int              @unique
+
+  department            String
+  program               String
+  batch                 String
+
+  careerGoal            String?
+  interestedDomains     String[]
+  skills                String[]
+
+  resumeUrl             String?
+  portfolioUrl          String?
+  githubUrl             String?
+
+  certifications        String[]
+  achievements          String[]
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([department])
+  @@index([batch])
+}
+
+model AlumniProfile {
+  id                    Int              @id @default(autoincrement())
+
+  userId                Int              @unique
+
+  department            String
+  graduationYear        Int
+
+  currentCompany        String
+  currentPosition       String
+  industry              String
+
+  experienceYears       Int
+
+  interestedDomains     String[]
+  skills                String[]
+  expertiseAreas        String[]
+
+  education             String?
+  certifications        String[]
+  achievements          String[]
+
+  githubUrl             String?
+  portfolioUrl          String?
+
+  mentorshipDomains     String[]
+  totalMentees          Int              @default(0)
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([department])
+  @@index([currentCompany])
+}
+
+model AdminProfile {
+  id                    Int              @id @default(autoincrement())
+
+  userId                Int              @unique
+
+  designation           String?
+  permissions           String[]
+
+  managedReports        Int              @default(0)
+  bannedUsersCount      Int              @default(0)
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+  id                    Int              @id @default(autoincrement())
+
+  authorId              Int
+
+  content               String
+  imageUrl              String?
+
+  likesCount            Int              @default(0)
+  commentsCount         Int              @default(0)
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  author                User             @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  comments              Comment[]
+}
+
+model Comment {
+  id                    Int              @id @default(autoincrement())
+
+  content               String
+
+  userId                Int
+  postId                Int
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post                  Post             @relation(fields: [postId], references: [id], onDelete: Cascade)
+}
+
+model MentorshipRequest {
+  id                    Int              @id @default(autoincrement())
+
+  studentId             Int
+  alumniId              Int
+
+  message               String?
+
+  status                RequestStatus    @default(PENDING)
+
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
+
+  student               User @relation("StudentRequests", fields: [studentId], references: [id], onDelete: Cascade)
+
+  alumni                User @relation("AlumniRequests", fields: [alumniId], references: [id], onDelete: Cascade)
 }
