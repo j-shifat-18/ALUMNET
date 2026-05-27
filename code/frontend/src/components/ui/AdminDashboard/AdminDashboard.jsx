@@ -77,10 +77,8 @@ export default function VerticalTabs({ tabs, className }) {
 
   const users = () => {
     axiosInstance.get("/api/v1/users").then(response => {
-      // console.log(response.data.data);
       setUsersList(response.data.data);
     }).catch(err => {
-      // console.error(err);
     })
   }
 

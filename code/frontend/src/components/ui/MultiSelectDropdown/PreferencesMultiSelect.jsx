@@ -28,9 +28,8 @@ const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="2
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
         <path d="M20 6 9 17l-5-5" />
     </svg>;
-const MultiSelect = () => {
+const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const wrapperRef = useRef(null);
@@ -117,7 +116,7 @@ const MultiSelect = () => {
             </div>
         </div>;
 };
-export default function PreferencesMultiSelect() {
+export default function PreferencesMultiSelect({ selectedOptions = [], setSelectedOptions }) {
   return <div className="font-sans">
         <style>{`
             @keyframes popover-in {
@@ -130,7 +129,7 @@ export default function PreferencesMultiSelect() {
             }
         `}</style>
         <div className="w-full">
-            <MultiSelect />
+            <MultiSelect selectedOptions={selectedOptions} setSelectedOptions={setSelectedOptions} />
         </div>
     </div>;
 }

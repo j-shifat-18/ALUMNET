@@ -6,7 +6,6 @@ const GenderDropdown = ({ onSelect, selectedGender }) => {
   const genderOptions = ["Male", "Female"];
 
   const handleSelect = (option) => {
-    // console.log("Selected gender:", option);
     if (onSelect) {
       onSelect(option);
     }

@@ -13,6 +13,9 @@ import GenderDropdown from '../GenderDropdown/GenderDropdown';
 import PreferencesMultiSelect from '../MultiSelectDropdown/PreferencesMultiSelect';
 import SkillsMultiSelect from '../MultiSelectDropdown/SkillsMultiSelect';
 import Notification from '../toast';
+import axiosInstance from '@/lib/axios';
+import { useAuth } from '@/context/AuthProvider';
+import { useRouter } from 'next/navigation';
 
 const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <polyline points="20,6 9,17 4,12"></polyline>
@@ -28,7 +31,12 @@ const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" h
 
 const ProfileSetupForm = () => {
     const [isLoading, setIsLoading] = useState(false);
+    const { user } = useAuth();
+    const router = useRouter();
     const [step, setStep] = useState(1);
+    const [selectedPreferences, setSelectedPreferences] = useState([]);
+    const [selectedSkills, setSelectedSkills] = useState([]);
+    const [notification, setNotification] = useState(null);
     const [alumniActive, setAlumniActive] = useState(false);
     const [studentActive, setStudentActive] = useState(false);
     const [yesActive, setYesActive] = useState(false);
@@ -127,12 +135,114 @@ const ProfileSetupForm = () => {
         }
     };
 
-    const handleSubmit = e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        setTimeout(() => {
+
+        try {
+            const users = await axiosInstance.get('/api/v1/users');
+            const dbUser = users.data.data.find(u => u.uid === user.uid);
+            if (!dbUser) {
+                throw new Error("User Profile not found.");
+            }
+
+            const role = alumniActive ? 'ALUMNI' : 'STUDENT';
+            const payload = {
+                role,
+                gender: selectedGender,
+                contactNo: contactNo || null,
+                bio: bio || null,
+                profileImage: profileImageUrl || null
+            };
+
+            const mappedSkills = Array.isArray(selectedSkills) ? selectedSkills.map(s => s.name) : [];
+            const mappedPreferences = Array.isArray(selectedPreferences) ? selectedPreferences.map(p => p.name) : [];
+
+            if (role === 'STUDENT') {
+                payload.studentProfile = {
+                    upsert: {
+                        create: {
+                            department: selectedDepartment,
+                            program: selectedProgramme,
+                            batch: selectedBatch,
+                            skills: mappedSkills,
+                            interestedDomains: mappedPreferences,
+                            currentCompany: jobPlace || null,
+                            currentPosition: jobPosition || null,
+                            resumeUrl: resumeUrl || null,
+                            githubUrl: githubUrl || null,
+                            portfolioUrl: portfolioUrl || null,
+                        },
+                        update: {
+                            department: selectedDepartment,
+                            program: selectedProgramme,
+                            batch: selectedBatch,
+                            skills: mappedSkills,
+                            interestedDomains: mappedPreferences,
+                            currentCompany: jobPlace || null,
+                            currentPosition: jobPosition || null,
+                            resumeUrl: resumeUrl || null,
+                            githubUrl: githubUrl || null,
+                            portfolioUrl: portfolioUrl || null,
+                        }
+                    }
+                };
+            } else if (role === 'ALUMNI') {
+                payload.alumniProfile = {
+                    upsert: {
+                        create: {
+                            department: selectedDepartment,
+                            program: selectedProgramme,
+                            batch: selectedBatch,
+                            graduationYear: 0,
+                            skills: mappedSkills,
+                            interestedDomains: mappedPreferences,
+                            currentCompany: jobPlace || null,
+                            currentPosition: jobPosition || null,
+                            resumeUrl: resumeUrl || null,
+                            githubUrl: githubUrl || null,
+                            portfolioUrl: portfolioUrl || null,
+                        },
+                        update: {
+                            department: selectedDepartment,
+                            program: selectedProgramme,
+                            batch: selectedBatch,
+                            graduationYear: 0,
+                            skills: mappedSkills,
+                            interestedDomains: mappedPreferences,
+                            currentCompany: jobPlace || null,
+                            currentPosition: jobPosition || null,
+                            resumeUrl: resumeUrl || null,
+                            githubUrl: githubUrl || null,
+                            portfolioUrl: portfolioUrl || null,
+                        }
+                    }
+                };
+            }
+
+            await axiosInstance.patch(`/api/v1/users/${dbUser.id}`, payload);
+
+            setNotification({
+                type: "success",
+                title: "Profile Setup Completed",
+                message: "Your profile has been successfully set up!",
+                duration: 3000
+            });
+
+            setTimeout(() => {
+                router.push('/');
+            }, 3000);
+
+        } catch (err) {
+            setNotification({
+                type: "error",
+                title: "Setup Failed",
+                message: err.message || String(err),
+                duration: 5000
+            });
+        } finally {
             setIsLoading(false);
-        }, 2000);
+        }
     };
 
     const isAlumniActive = () => {
@@ -183,25 +293,21 @@ const ProfileSetupForm = () => {
                 setProfileImageUrl(data.data.url);
             }
             else {
-                <Notification
-                    type="error"
-                    title="Error!"
-                    message="Photo upload failed"
-                    showIcon={true}
-                    duration={5000}
-                    onClose={() => console.log('Closed')}
-                />
+                setNotification({
+                    type: "error",
+                    title: "Error!",
+                    message: "Photo upload failed",
+                    duration: 5000
+                });
             }
         }
         catch (err) {
-            <Notification
-                type="error"
-                title="Error!"
-                message= {err}
-                showIcon={true}
-                duration={5000}
-                onClose={() => console.log('Closed')}
-            />
+            setNotification({
+                type: "error",
+                title: "Error!",
+                message: err.message || String(err),
+                duration: 5000
+            });
         }
         finally {
             setIsUploading(false);
@@ -217,6 +323,18 @@ const ProfileSetupForm = () => {
     };
 
     return <div className="flex items-center justify-center p-4">
+        {notification && (
+            <div className="fixed top-4 right-4 z-50">
+                <Notification
+                    type={notification.type}
+                    title={notification.title}
+                    message={notification.message}
+                    showIcon={true}
+                    duration={notification.duration}
+                    onClose={() => setNotification(null)}
+                />
+            </div>
+        )}
         <div className="w-full max-w-md">
             { }
             <div className="mb-6">
@@ -256,16 +374,16 @@ const ProfileSetupForm = () => {
                         <div className="space-y-2">
                             <label>Select Your Role<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
-                                <Button onClick={isAlumniActive} className={alumniActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{alumniActive ? "ALUMNI" : "ALUMNI"}{alumniActive ? <Check /> : <></>}</Button>
-                                <Button onClick={isStudentActive} className={studentActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{studentActive ? "STUDENT" : "STUDENT"}{studentActive ? <Check /> : <></>}</Button>
+                                <button type='button' onClick={isAlumniActive} className={alumniActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{alumniActive ? "ALUMNI" : "ALUMNI"}{alumniActive ? <Check /> : <></>}</button>
+                                <button type='button' onClick={isStudentActive} className={studentActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{studentActive ? "STUDENT" : "STUDENT"}{studentActive ? <Check /> : <></>}</button>
                             </div>
                         </div>
                         <div className="space-y-2">
                             <label>Your Batch<span className='text-red-500'>*</span></label>
-                            <BatchYearDropdown 
-                              role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
-                              value={selectedBatch}
-                              onSelect={setSelectedBatch}
+                            <BatchYearDropdown
+                                role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
+                                value={selectedBatch}
+                                onSelect={setSelectedBatch}
                             />
                         </div>
                         <div className="space-y-2">
@@ -329,12 +447,12 @@ const ProfileSetupForm = () => {
                         </div>
                         <div className="space-y-2">
                             <label>What Are You Interested In?</label>
-                            <PreferencesMultiSelect></PreferencesMultiSelect>
+                            <PreferencesMultiSelect selectedOptions={selectedPreferences} setSelectedOptions={setSelectedPreferences}></PreferencesMultiSelect>
 
                         </div>
                         <div className="space-y-2">
                             <label>Skills</label>
-                            <SkillsMultiSelect></SkillsMultiSelect>
+                            <SkillsMultiSelect selectedOptions={selectedSkills} setSelectedOptions={setSelectedSkills}></SkillsMultiSelect>
                         </div>
                         <button type="button" onClick={handleNext} disabled={!selectedGender} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
@@ -346,8 +464,8 @@ const ProfileSetupForm = () => {
                         <div className="space-y-2">
                             <label>Are you a job holder?<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
-                                <Button onClick={isYesActive} className={yesActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{yesActive ? "YES" : "YES"}{yesActive ? <Check /> : <></>}</Button>
-                                <Button onClick={isNoActive} className={noActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{noActive ? "NO" : "NO"}{noActive ? <Check /> : <></>}</Button>
+                                <button type='button' onClick={isYesActive} className={yesActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{yesActive ? "YES" : "YES"}{yesActive ? <Check /> : <></>}</button>
+                                <button type='button' onClick={isNoActive} className={noActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{noActive ? "NO" : "NO"}{noActive ? <Check /> : <></>}</button>
                             </div>
                         </div>
 
