@@ -36,7 +36,7 @@ const BatchYearDropdown = ({ role, onSelect }) => {
     <div className="w-full">
       <ComboBox 
         options={yearOptions} 
-        placeholder={!role ? "Select role first" : "Select Your Batch Year"} 
+        placeholder={"Select Your Batch Year"} 
         onSelect={handleSelect}
       />
     </div>
