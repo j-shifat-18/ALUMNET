@@ -43,9 +43,9 @@ const getSingleUser = async (
   res: Response
 ) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
-    const result = await UserService.getSingleUser(id as string);
+    const result = await UserService.getSingleUser(id);
 
     res.status(200).json({
       success: true,
@@ -65,10 +65,10 @@ const updateSingleUser = async (
   res: Response
 ) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
     const result = await UserService.updateSingleUser(
-      id as string,
+      id,
       req.body
     );
 
@@ -90,9 +90,9 @@ const deleteUser = async (
   res: Response
 ) => {
   try {
-    const { id } = req.params;
+    const id = Number(req.params.id);
 
-    const result = await UserService.deleteUser(id as string);
+    const result = await UserService.deleteUser(id);
 
     res.status(200).json({
       success: true,
