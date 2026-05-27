@@ -47,8 +47,6 @@ model User {
   profileImage          String?
   coverImage            String?
 
-  isJobHolder           Boolean          @default(false)
-
   followersCount        Int              @default(0)
   followingCount        Int              @default(0)
 
@@ -84,6 +82,9 @@ model StudentProfile {
   careerGoal            String?
   interestedDomains     String[]
   skills                String[]
+
+  currentCompany        String?
+  currentPosition       String?
 
   resumeUrl             String?
   portfolioUrl          String?
