@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import logo from '../../../../public/logo.png';
+import icon from '../../../../public/icon.png';
 import Notification from '@/components/ui/toast';
 import { Mail, CheckCircle, RefreshCw, LogOut } from 'lucide-react';
 import { auth } from '@/lib/firebase';
@@ -114,7 +114,7 @@ export default function VerifyEmailPage() {
       <div className="relative w-full max-w-md p-8 space-y-6 bg-white dark:bg-black rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-lg dark:shadow-zinc-900/50">
         <div className="text-center space-y-3">
           <div className="flex justify-center">
-            <Image src={logo} alt="ALUMNET" width={60} height={60} />
+            <Image src={icon} alt="ALUMNET" width={80} height={80} />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">

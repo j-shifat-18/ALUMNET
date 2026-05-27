@@ -6,6 +6,7 @@ import logo from "../../../../public/logo.png";
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
 import Link from 'next/link';
+import UserProfileDropdown from '@/components/ui/UserProfileDropdown/UserProfileDropdown';
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
@@ -70,11 +71,7 @@ const Navbar = () => {
                 { }
                 {
                     user ? <>
-                        <div className="hidden md:flex items-center space-x-2 lg:space-x-3">
-                            <button onClick={handleLogOut} className="px-4 lg:px-6 py-1.5 lg:py-2 text-xs lg:text-sm font-medium bg-gray-900 text-white dark:bg-gray-50 dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition-all shadow-sm hover:shadow-lg transform hover:scale-105">
-                                Log Out
-                            </button>
-                        </div>
+                        <UserProfileDropdown></UserProfileDropdown>
                     </> : <>
                         <div className="hidden md:flex items-center space-x-2 lg:space-x-3">
                             <Link href={"/login"} className="flex items-center space-x-1.5 lg:space-x-2 px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-md">
@@ -100,11 +97,7 @@ const Navbar = () => {
                             {link.text}
                         </a>)}
                         {user ? (
-                            <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col space-y-2">
-                                <button onClick={() => { handleLogOut(); setIsMenuOpen(false); }} className="px-3 py-2.5 text-sm font-medium bg-gray-900 text-white dark:bg-gray-50 dark:text-gray-900 rounded-md hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors">
-                                    Log Out
-                                </button>
-                            </div>
+                            <UserProfileDropdown></UserProfileDropdown>
                         ) : (
                             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col space-y-2">
                                 <Link href={"/login"} onClick={() => setIsMenuOpen(false)} className="flex items-center justify-center space-x-2 px-3 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
