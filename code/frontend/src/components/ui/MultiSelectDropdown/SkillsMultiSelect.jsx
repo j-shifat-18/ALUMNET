@@ -1,47 +1,50 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-const ALL_OPTIONS = [{
-  id: 1,
-  name: 'React',
-  value: 'react'
-}, {
-  id: 2,
-  name: 'Vue',
-  value: 'vue'
-}, {
-  id: 3,
-  name: 'Angular',
-  value: 'angular'
-}, {
-  id: 4,
-  name: 'Svelte',
-  value: 'svelte'
-}, {
-  id: 5,
-  name: 'Ember',
-  value: 'ember'
-}, {
-  id: 6,
-  name: 'Backbone',
-  value: 'backbone'
-}, {
-  id: 7,
-  name: 'Preact',
-  value: 'preact'
-}, {
-  id: 8,
-  name: 'Alpine.js',
-  value: 'alpine'
-}, {
-  id: 9,
-  name: 'Solid.js',
-  value: 'solid'
-}, {
-  id: 10,
-  name: 'Qwik',
-  value: 'qwik'
-}];
+const ALL_OPTIONS = [
+  { id: 1, name: 'Python', value: 'python' },
+  { id: 2, name: 'JavaScript', value: 'javascript' },
+  { id: 3, name: 'TypeScript', value: 'typescript' },
+  { id: 4, name: 'C++', value: 'c-plus-plus' },
+  { id: 5, name: 'C', value: 'c' },
+  { id: 6, name: 'Java', value: 'java' },
+  { id: 7, name: 'Go (Golang)', value: 'go' },
+  { id: 8, name: 'SQL', value: 'sql' },
+  { id: 9, name: 'HTML5 / CSS3', value: 'html5-css3' },
+  { id: 10, name: 'React.js', value: 'react' },
+  { id: 11, name: 'Next.js', value: 'nextjs' },
+  { id: 12, name: 'Node.js', value: 'nodejs' },
+  { id: 13, name: 'Express', value: 'express' },
+  { id: 14, name: 'Django', value: 'django' },
+  { id: 15, name: 'FastAPI', value: 'fastapi' },
+  { id: 16, name: 'Spring Boot', value: 'spring-boot' },
+  { id: 17, name: 'Flutter', value: 'flutter' },
+  { id: 18, name: 'React Native', value: 'react-native' },
+  { id: 19, name: 'REST APIs / GraphQL', value: 'apis-graphql' },
+  { id: 20, name: 'TensorFlow / PyTorch', value: 'tensorflow-pytorch' },
+  { id: 21, name: 'Pandas / NumPy', value: 'pandas-numpy' },
+  { id: 22, name: 'Data Analytics (Tableau/PowerBI)', value: 'data-analytics' },
+  { id: 23, name: 'Excel (Advanced)', value: 'excel' },
+  { id: 24, name: 'MATLAB / Simulink', value: 'matlab-simulink' },
+  { id: 25, name: 'Verilog / VHDL (VLSI)', value: 'verilog-vhdl' },
+  { id: 26, name: 'Arduino / Raspberry Pi', value: 'arduino-raspberrypi' },
+  { id: 27, name: 'PLC Programming', value: 'plc-programming' },
+  { id: 28, name: 'LabVIEW', value: 'labview' },
+  { id: 29, name: 'AutoCAD', value: 'autocad' },
+  { id: 30, name: 'SolidWorks', value: 'solidworks' },
+  { id: 31, name: 'Ansys (FEA / CFD)', value: 'ansys' },
+  { id: 32, name: 'Revit / ETABS', value: 'revit-etabs' },
+  { id: 33, name: '3D Printing / CAM', value: '3d-printing-cam' },
+  { id: 34, name: 'Git / GitHub', value: 'git-github' },
+  { id: 35, name: 'Docker / Kubernetes', value: 'docker-kubernetes' },
+  { id: 36, name: 'AWS / GCP', value: 'aws-gcp' },
+  { id: 37, name: 'Figma (UI/UX Design)', value: 'figma' },
+  { id: 38, name: 'System Architecture', value: 'system-architecture' },
+  { id: 39, name: 'Project Management (Agile/Scrum)', value: 'project-management' },
+  { id: 40, name: 'Public Speaking / Presentation', value: 'public-speaking' },
+  { id: 41, name: 'Technical Writing', value: 'technical-writing' },
+  { id: 42, name: 'Business Development & Strategy', value: 'business-development' }
+];
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
         <path d="M18 6 6 18" /><path d="m6 6 12 12" />
     </svg>;
@@ -50,7 +53,7 @@ const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
     </svg>;
 const MultiSelect = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState([ALL_OPTIONS[0], ALL_OPTIONS[2]]);
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const wrapperRef = useRef(null);

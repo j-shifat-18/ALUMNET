@@ -332,8 +332,8 @@ const ProfileSetupForm = () => {
 
                     { }
                     {step === 3 && <div className="signin-step space-y-4">
-                        <div className="space-y-2 flex flex-col">
-                            <label>Bio<span className='text-red-500'>*</span></label>
+                        <div className="flex flex-col">
+                            <label>Bio</label>
                             <textarea ref={textareaRef} rows={1} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
                         </div>
                         <div className="space-y-2">
@@ -341,19 +341,19 @@ const ProfileSetupForm = () => {
                             <GenderDropdown onSelect={setSelectedGender} selectedGender={selectedGender} />
                         </div>
                         <div className="space-y-2">
-                            <label>Contact No. (Optional)</label>
+                            <label>Contact No.</label>
                             <input name="bio" id="bio" placeholder='01XXXXXXXXX' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                         </div>
                         <div className="space-y-2">
-                            <label>Your Preferences<span className='text-red-500'>*</span></label>
+                            <label>What Are You Interested In?</label>
                             <PreferencesMultiSelect></PreferencesMultiSelect>
 
                         </div>
                         <div className="space-y-2">
-                            <label>Skills<span className='text-red-500'>*</span></label>
+                            <label>Skills</label>
                             <SkillsMultiSelect></SkillsMultiSelect>
                         </div>
-                        <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <button type="button" onClick={handleNext} disabled={!selectedGender} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
                         </button>
@@ -372,12 +372,12 @@ const ProfileSetupForm = () => {
                         {
                             yesActive ? <>
                                 <div className="space-y-2">
-                                    <label>Jobplace</label>
+                                    <label>Jobplace<span className='text-red-500'>*</span></label>
                                     <input name="jobPlace" id="jobPlace" placeholder='Your current jobplace' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <label>Your Position</label>
+                                    <label>Your Position<span className='text-red-500'>*</span></label>
                                     <input name="position" id="position" placeholder='Your current position at job' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                                 </div>
                             </> : <></>

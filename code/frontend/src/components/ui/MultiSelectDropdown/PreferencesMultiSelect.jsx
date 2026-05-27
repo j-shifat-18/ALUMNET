@@ -1,47 +1,27 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-const ALL_OPTIONS = [{
-  id: 1,
-  name: 'React',
-  value: 'react'
-}, {
-  id: 2,
-  name: 'Vue',
-  value: 'vue'
-}, {
-  id: 3,
-  name: 'Angular',
-  value: 'angular'
-}, {
-  id: 4,
-  name: 'Svelte',
-  value: 'svelte'
-}, {
-  id: 5,
-  name: 'Ember',
-  value: 'ember'
-}, {
-  id: 6,
-  name: 'Backbone',
-  value: 'backbone'
-}, {
-  id: 7,
-  name: 'Preact',
-  value: 'preact'
-}, {
-  id: 8,
-  name: 'Alpine.js',
-  value: 'alpine'
-}, {
-  id: 9,
-  name: 'Solid.js',
-  value: 'solid'
-}, {
-  id: 10,
-  name: 'Qwik',
-  value: 'qwik'
-}];
+const ALL_OPTIONS = [
+  { id: 1, name: 'Web Development', value: 'web-development' },
+  { id: 2, name: 'Mobile App Development', value: 'mobile-app-development' },
+  { id: 3, name: 'AI & Machine Learning', value: 'ai-machine-learning' },
+  { id: 4, name: 'Cloud Computing & DevOps', value: 'cloud-devops' },
+  { id: 5, name: 'Cybersecurity & Networking', value: 'cybersecurity-networking' },
+  { id: 6, name: 'Game Development & AR/VR', value: 'game-dev-ar-vr' },
+  { id: 7, name: 'Competitive Programming', value: 'competitive-programming' },
+  { id: 8, name: 'Robotics & Embedded Systems', value: 'robotics-embedded' },
+  { id: 9, name: 'VLSI & Chip Design', value: 'vlsi-chip-design' },
+  { id: 10, name: 'Power & Renewable Energy', value: 'power-renewable-energy' },
+  { id: 11, name: 'Structural & Environmental Engineering', value: 'structural-environmental' },
+  { id: 12, name: 'Automotive & Aerospace Engineering', value: 'automotive-aerospace' },
+  { id: 13, name: 'Supply Chain & Manufacturing', value: 'supply-chain-manufacturing' },
+  { id: 14, name: 'Product Management', value: 'product-management' },
+  { id: 15, name: 'Data Analytics & Business Intelligence', value: 'data-analytics-bi' },
+  { id: 16, name: 'Tech Entrepreneurship & Startups', value: 'tech-startups' },
+  { id: 17, name: 'Finance & Investment Banking', value: 'finance-investment' },
+  { id: 18, name: 'Higher Studies Abroad', value: 'higher-studies-abroad' },
+  { id: 19, name: 'Academic Research & Publications', value: 'research-publications' }
+];
 const XIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3">
         <path d="M18 6 6 18" /><path d="m6 6 12 12" />
     </svg>;
@@ -50,7 +30,7 @@ const CheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" heigh
     </svg>;
 const MultiSelect = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [selectedOptions, setSelectedOptions] = useState([ALL_OPTIONS[0], ALL_OPTIONS[2]]);
+  const [selectedOptions, setSelectedOptions] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const wrapperRef = useRef(null);
