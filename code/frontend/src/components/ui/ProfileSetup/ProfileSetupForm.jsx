@@ -46,10 +46,6 @@ const ArrowLeftIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" h
     <path d="m12 19-7-7 7-7"></path>
 </svg>;
 const ProfileSetupForm = () => {
-    const [showPassword, setShowPassword] = useState(false);
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [fullName, setFullName] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
     const [alumniActive, setAlumniActive] = useState(false);
@@ -63,6 +59,12 @@ const ProfileSetupForm = () => {
     const [selectedPhotoName, setSelectedPhotoName] = useState('');
     const [profileImageUrl, setProfileImageUrl] = useState('');
     const [isUploading, setIsUploading] = useState(false);
+    const [jobPlace, setJobPlace] = useState('');
+    const [jobPosition, setJobPosition] = useState('');
+    const [bio, setBio] = useState('');
+    const [contactNo, setContactNo] = useState('');
+    const [resumeUrl, setResumeUrl] = useState('');
+    const [githubUrl, setGithubUrl] = useState('');
     const textareaRef = useRef(null);
 
     const validDepartments = [
@@ -268,37 +270,37 @@ const ProfileSetupForm = () => {
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     { }
-                    {step === 1 && <div className="signin-step space-y-4">
+                    <div className={`${step === 1 ? '' : 'hidden'} signin-step space-y-4`}>
                         <div className="space-y-2">
-                            <label className='mb-5'>Select Your Role<span className='text-red-500'>*</span></label>
+                            <label>Select Your Role<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
                                 <Button onClick={isAlumniActive} className={alumniActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{alumniActive ? "ALUMNI" : "ALUMNI"}{alumniActive ? <Check /> : <></>}</Button>
                                 <Button onClick={isStudentActive} className={studentActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{studentActive ? "STUDENT" : "STUDENT"}{studentActive ? <Check /> : <></>}</Button>
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <label className='mb-5'>Your Batch<span className='text-red-500'>*</span></label>
-                            <BatchYearDropdown
-                                role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
-                                onSelect={setSelectedBatch}
+                            <label>Your Batch<span className='text-red-500'>*</span></label>
+                            <BatchYearDropdown 
+                              role={alumniActive ? 'ALUMNI' : studentActive ? 'STUDENT' : null}
+                              value={selectedBatch}
+                              onSelect={setSelectedBatch}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label className='mb-5'>Your Department<span className='text-red-500'>*</span></label>
-                            <DepartmentDropdown onSelect={setSelectedDepartment}></DepartmentDropdown>
+                            <label>Your Department<span className='text-red-500'>*</span></label>
+                            <DepartmentDropdown value={selectedDepartment} onSelect={setSelectedDepartment}></DepartmentDropdown>
                         </div>
                         <div className="space-y-2">
-                            <label className='mb-5'>Your Programme<span className='text-red-500'>*</span></label>
-                            <ProgrammeDropdown selectedDepartment={selectedDepartment} onSelect={setSelectedProgramme}></ProgrammeDropdown>
+                            <label>Your Programme<span className='text-red-500'>*</span></label>
+                            <ProgrammeDropdown selectedDepartment={selectedDepartment} value={selectedProgramme} onSelect={setSelectedProgramme}></ProgrammeDropdown>
                         </div>
                         <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
                         </button>
-                    </div>}
+                    </div>
 
-                    { }
-                    {step === 2 && <div className="signin-step space-y-4 relative">
+                    <div className={`${step === 2 ? '' : 'hidden'} signin-step space-y-4 relative`}>
                         <button type="button" onClick={handleNext} className="absolute top-0 right-0 flex items-center justify-end hover:cursor-pointer text-zinc-900 hover:text-zinc-900/90">
                             Skip
                             <ChevronLast width={20} />
@@ -328,13 +330,12 @@ const ProfileSetupForm = () => {
                             Next Step
                             <ArrowRightIcon />
                         </button>
-                    </div>}
+                    </div>
 
-                    { }
-                    {step === 3 && <div className="signin-step space-y-4">
+                    <div className={`${step === 3 ? '' : 'hidden'} signin-step space-y-4`}>
                         <div className="flex flex-col">
                             <label>Bio</label>
-                            <textarea ref={textareaRef} rows={1} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
+                            <textarea ref={textareaRef} rows={1} value={bio} onChange={(e) => { setBio(e.target.value); handleInput(); }} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
                         </div>
                         <div className="space-y-2">
                             <label>Gender<span className='text-red-500'>*</span></label>
@@ -342,7 +343,7 @@ const ProfileSetupForm = () => {
                         </div>
                         <div className="space-y-2">
                             <label>Contact No.</label>
-                            <input name="bio" id="bio" placeholder='01XXXXXXXXX' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                            <input name="contactNo" id="contactNo" value={contactNo} onChange={(e) => setContactNo(e.target.value)} placeholder='01XXXXXXXXX' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                         </div>
                         <div className="space-y-2">
                             <label>What Are You Interested In?</label>
@@ -357,12 +358,11 @@ const ProfileSetupForm = () => {
                             Next Step
                             <ArrowRightIcon />
                         </button>
-                    </div>}
+                    </div>
 
-                    { }
-                    {step === 4 && <div className="signin-step space-y-4">
+                    <div className={`${step === 4 ? '' : 'hidden'} signin-step space-y-4`}>
                         <div className="space-y-2">
-                            <h4 className='mb-5'>Are you a job holder?</h4>
+                            <label>Are you a job holder?<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
                                 <Button onClick={isYesActive} className={yesActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{yesActive ? "YES" : "YES"}{yesActive ? <Check /> : <></>}</Button>
                                 <Button onClick={isNoActive} className={noActive ? "bg-transparent text-zinc-900 hover:text-white border-2 border-zinc-900" : "bg-zinc-900"} variant="default" size="lg">{noActive ? "NO" : "NO"}{noActive ? <Check /> : <></>}</Button>
@@ -373,59 +373,67 @@ const ProfileSetupForm = () => {
                             yesActive ? <>
                                 <div className="space-y-2">
                                     <label>Jobplace<span className='text-red-500'>*</span></label>
-                                    <input name="jobPlace" id="jobPlace" placeholder='Your current jobplace' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                                    <input name="jobPlace" id="jobPlace" value={jobPlace} onChange={(e) => setJobPlace(e.target.value)} placeholder='Your current jobplace' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                                 </div>
 
                                 <div className="space-y-2">
                                     <label>Your Position<span className='text-red-500'>*</span></label>
-                                    <input name="position" id="position" placeholder='Your current position at job' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                                    <input name="position" id="position" value={jobPosition} onChange={(e) => setJobPosition(e.target.value)} placeholder='Your current position at job' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                                 </div>
                             </> : <></>
                         }
 
-                        <button type="button" onClick={handleNext} disabled={false} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <button type="button" onClick={handleNext} disabled={(!yesActive && !noActive) || (yesActive && (!jobPlace.trim() || !jobPosition.trim()))} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             {
                                 yesActive ? "Next Step" : "Skip"
                             }
                             <ArrowRightIcon />
                         </button>
-                    </div>}
+                    </div>
 
-                    { }
-                    {step === 5 && <div className="signin-step space-y-4">
+                    <div className={`${step === 5 ? '' : 'hidden'} signin-step space-y-4`}>
                         <div className="space-y-2">
                             <label>Resume URL</label>
-                            <input name="resume" id="resume" placeholder='https://drive.google.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                            <input name="resume" id="resume" value={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} placeholder='https://drive.google.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                         </div>
 
                         <div className="space-y-2">
                             <label>Github Link</label>
-                            <input name="github" id="github" placeholder='https://github.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                            <input name="github" id="github" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder='https://github.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                         </div>
 
                         <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
                         </button>
-                    </div>}
+                    </div>
 
-                    { }
-                    {step === 6 && <div className="signin-step space-y-4">
+                    <div className={`${step === 6 ? '' : 'hidden'} signin-step space-y-4`}>
                         <div className="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-4 rounded-md">
                             <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-3 flex items-center gap-2">
                                 <CheckIcon />
                                 Review Details
                             </h3>
-
+                            <p>Role : {alumniActive ? "ALUMNI" : "STUDENT"}</p>
+                            <p>Batch : {selectedBatch}</p>
+                            <p>Department : {selectedDepartment}</p>
+                            <p>Programme : {selectedProgramme}</p>
+                            <p>Bio: {bio ? `${bio}` : "N\\A"}</p>
+                            <p>Gender: {selectedGender}</p>
+                            <p>Contact No: {contactNo ? `${contactNo}` : "N\\A"}</p>
+                            <p>Job Place: {jobPlace ? `${jobPlace}` : "N\\A"}</p>
+                            <p>Job Position: {jobPosition ? `${jobPosition}` : "N\\A"}</p>
+                            <p>Resume URL: {resumeUrl ? <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{resumeUrl}</a> : "N\\A"}</p>
+                            <p>Github URL: {githubUrl ? <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{githubUrl}</a> : "N\\A"}</p>
                         </div>
 
-                        <button type="submit" disabled={isLoading} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <button type="submit" disabled={isLoading} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 hover:cursor-pointer disabled:cursor-not-allowed">
                             {isLoading ? <div className="flex items-center justify-center gap-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
-                                Creating account...
-                            </div> : 'Create account'}
+                                Completing your profile...
+                            </div> : 'Complete Profile'}
                         </button>
-                    </div>}
+                    </div>
                 </form>
 
                 { }

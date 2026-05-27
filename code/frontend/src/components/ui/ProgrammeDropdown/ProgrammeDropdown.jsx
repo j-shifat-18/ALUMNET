@@ -2,7 +2,7 @@
 
 import ComboBox from "../combo-box";
 
-const ProgrammeDropdown = ({ selectedDepartment, onSelect }) => {
+const ProgrammeDropdown = ({ selectedDepartment, onSelect, value }) => {
   // Mapping of departments to their available programmes
   const departmentProgrammes = {
     "Computer Science and Engineering (CSE)": [
@@ -62,6 +62,7 @@ const ProgrammeDropdown = ({ selectedDepartment, onSelect }) => {
       <ComboBox 
         options={programmesOptions} 
         placeholder={selectedDepartment ? "Select Your Programme" : "Please select a department first"} 
+        value={value}
         onSelect={handleSelect}
       />
     </div>;

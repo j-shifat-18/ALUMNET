@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import ComboBox from "../combo-box";
 
-const BatchYearDropdown = ({ role, onSelect }) => {
+const BatchYearDropdown = ({ role, value, onSelect }) => {
   const [selectedYear, setSelectedYear] = useState('');
 
   const getYearRange = () => {
@@ -37,6 +37,7 @@ const BatchYearDropdown = ({ role, onSelect }) => {
       <ComboBox 
         options={yearOptions} 
         placeholder={"Select Your Batch Year"} 
+        value={value}
         onSelect={handleSelect}
       />
     </div>

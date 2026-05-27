@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 const ComboBox = ({
   options = [],
   placeholder = "Select an option...",
+  value,
   onSelect
 }) => {
     
@@ -14,6 +15,13 @@ const ComboBox = ({
 
   const comboBoxRef = useRef(null);
   const optionRefs = useRef([]);
+
+  useEffect(() => {
+    if (value !== undefined) {
+      setSelectedOption(value);
+      setInputValue(value || "");
+    }
+  }, [value]);
 
   const filteredOptions = useMemo(() => {
     if (inputValue === "") {

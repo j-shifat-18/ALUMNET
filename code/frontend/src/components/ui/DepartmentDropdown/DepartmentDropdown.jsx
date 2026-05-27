@@ -2,7 +2,7 @@
 
 import ComboBox from "../combo-box";
 
-const DepartmentDropdown = ({ onSelect }) => {
+const DepartmentDropdown = ({ onSelect, value }) => {
   const sampleOptions = ["Mechanical and Production Engineering (MPE)", "Electrical and Electronic Engineering (EEE)", "Computer Science and Engineering (CSE)", "Civil and Environmental Engineering (CEE)", "Technical and Vocational Education (TVE)", "Business and Technology Management (BTM)", "Natural Sciences (NSc)"];
   
   const handleSelect = option => {
@@ -13,7 +13,7 @@ const DepartmentDropdown = ({ onSelect }) => {
   };
   
   return <div className="">
-      <ComboBox options={sampleOptions} placeholder="Select Your Department" onSelect={handleSelect} />
+      <ComboBox options={sampleOptions} placeholder="Select Your Department" value={value} onSelect={handleSelect} />
     </div>;
 };
 

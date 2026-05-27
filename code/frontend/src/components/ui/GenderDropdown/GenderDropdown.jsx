@@ -17,6 +17,7 @@ const GenderDropdown = ({ onSelect, selectedGender }) => {
       <ComboBox
         options={genderOptions}
         placeholder="Select Gender"
+        value={selectedGender}
         onSelect={handleSelect}
       />
     </div>
