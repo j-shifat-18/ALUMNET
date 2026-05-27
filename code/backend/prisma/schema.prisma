@@ -28,7 +28,9 @@ enum UserStatus {
 
 model User {
   id                    Int              @id @default(autoincrement())
+
   uid                   String           @unique
+
   name                  String
   username              String?          @unique
   email                 String           @unique
@@ -36,11 +38,16 @@ model User {
   role                  Role             @default(USER)
   status                UserStatus       @default(ACTIVE)
 
+  gender                String?
+  contactNo             String?
+
   bio                   String?
   location              String?
 
   profileImage          String?
   coverImage            String?
+
+  isJobHolder           Boolean          @default(false)
 
   followersCount        Int              @default(0)
   followingCount        Int              @default(0)
@@ -49,7 +56,7 @@ model User {
   isMentorAvailable     Boolean          @default(false)
 
   createdAt             DateTime         @default(now())
-  updatedAt     DateTime @default(now()) @updatedAt
+  updatedAt             DateTime         @updatedAt
 
   studentProfile        StudentProfile?
   alumniProfile         AlumniProfile?
@@ -100,13 +107,16 @@ model AlumniProfile {
   userId                Int              @unique
 
   department            String
+  program               String
+  batch                 String
+
   graduationYear        Int
 
-  currentCompany        String
-  currentPosition       String
-  industry              String
+  currentCompany        String?
+  currentPosition       String?
+  industry              String?
 
-  experienceYears       Int
+  experienceYears       Int?
 
   interestedDomains     String[]
   skills                String[]
@@ -116,8 +126,10 @@ model AlumniProfile {
   certifications        String[]
   achievements          String[]
 
+  resumeUrl             String?
   githubUrl             String?
   portfolioUrl          String?
+  personalWebsite       String?
 
   mentorshipDomains     String[]
   totalMentees          Int              @default(0)
@@ -147,5 +159,4 @@ model AdminProfile {
 
   user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
 
