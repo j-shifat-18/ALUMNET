@@ -92,7 +92,6 @@ const RegistrationForm = () => {
         uid: user.uid,
         name: fullName,
         email: user.email,
-        role: user.role
       });
 
       setNotification({

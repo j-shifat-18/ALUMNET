@@ -43,8 +43,7 @@ const GoogleSignInButton = () => {
           uid: user.uid,
           name: user.displayName,
           email: user.email,
-          role: user.role,
-          photoURL: user.photoURL,
+          profileImage: user.photoURL
         });
 
         setNotification({
