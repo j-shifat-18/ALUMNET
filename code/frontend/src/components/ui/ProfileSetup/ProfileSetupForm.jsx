@@ -65,6 +65,7 @@ const ProfileSetupForm = () => {
     const [contactNo, setContactNo] = useState('');
     const [resumeUrl, setResumeUrl] = useState('');
     const [githubUrl, setGithubUrl] = useState('');
+    const [portfolioUrl, setPortfolioUrl] = useState('');
     const textareaRef = useRef(null);
 
     const validDepartments = [
@@ -402,6 +403,11 @@ const ProfileSetupForm = () => {
                             <input name="github" id="github" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder='https://github.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
                         </div>
 
+                        <div className="space-y-2">
+                            <label>Portfolio Link</label>
+                            <input name="portfolio" id="portfolio" value={portfolioUrl} onChange={(e) => setPortfolioUrl(e.target.value)} placeholder='https://portfolio.com/...' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                        </div>
+
                         <button type="button" onClick={handleNext} disabled={!isValidSelection()} className="signin-button w-full bg-gray-900 dark:bg-gray-100 hover:cursor-pointer text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                             Next Step
                             <ArrowRightIcon />
@@ -425,6 +431,7 @@ const ProfileSetupForm = () => {
                             <p>Job Position: {jobPosition ? `${jobPosition}` : "N\\A"}</p>
                             <p>Resume URL: {resumeUrl ? <a href={resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{resumeUrl}</a> : "N\\A"}</p>
                             <p>Github URL: {githubUrl ? <a href={githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{githubUrl}</a> : "N\\A"}</p>
+                            <p>Portfolio URL: {portfolioUrl ? <a href={portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{portfolioUrl}</a> : "N\\A"}</p>
                         </div>
 
                         <button type="submit" disabled={isLoading} className="signin-button w-full bg-gray-900 dark:bg-gray-100 text-white dark:text-gray-900 py-2 px-4 rounded-md text-sm font-medium hover:bg-gray-800 dark:hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-black transition-all duration-200 disabled:opacity-50 hover:cursor-pointer disabled:cursor-not-allowed">
