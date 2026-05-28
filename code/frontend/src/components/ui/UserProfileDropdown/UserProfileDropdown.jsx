@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import axiosInstance from "@/lib/axios";
 import Image from "next/image";
 import placeholder from "../../../../public/placeholder-user.jpg";
+import Link from "next/link";
 
 const User = props => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -48,13 +49,10 @@ const DropdownMenu = ({
 const DropdownMenuItem = ({
   children,
   onClick
-}) => <a href="#" onClick={e => {
-  e.preventDefault();
-  if (onClick) onClick();
-}} className="text-zinc-700 dark:text-zinc-300 group flex items-center px-3 py-2.5 text-sm rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150" role="menuitem">
+}) => <div onClick={onClick} className="cursor-pointer text-zinc-700 dark:text-zinc-300 group flex items-center px-3 py-2.5 text-sm rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150" role="menuitem">
     {children}
-  </a>;
-const DropdownMenuSeparator = () => <div className="my-2 h-px bg-zinc-200 dark:bg-zinc-700" />;
+  </div>;
+const DropdownMenuSeparator = () => <div className="h-px bg-zinc-200 dark:bg-zinc-700" />;
 export default function UserProfileDropdown() {
   const { user, logout } = useAuth();
   const [usersList, setUsersList] = useState([]);
@@ -106,10 +104,10 @@ export default function UserProfileDropdown() {
         </div>
 
         <div className="py-1">
-          <DropdownMenuItem onClick={() => console.log("Profile")}>
+          <Link href={`/profile/${user?.uid}`} className="text-zinc-700 dark:text-zinc-300 group flex items-center px-3 py-2.5 text-sm rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors duration-150" role="menuitem">
             <User className="mr-3 h-4 w-4 text-zinc-500" />
-            Your Profile
-          </DropdownMenuItem>
+            My Profile
+          </Link>
         </div>
 
         <DropdownMenuSeparator />

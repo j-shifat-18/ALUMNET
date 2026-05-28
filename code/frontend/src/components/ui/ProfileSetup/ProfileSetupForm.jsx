@@ -374,8 +374,8 @@ const ProfileSetupForm = () => {
                         <div className="space-y-2">
                             <label>Select Your Role<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
-                                <button type='button' onClick={isAlumniActive} className={alumniActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{alumniActive ? "ALUMNI" : "ALUMNI"}{alumniActive ? <Check /> : <></>}</button>
-                                <button type='button' onClick={isStudentActive} className={studentActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{studentActive ? "STUDENT" : "STUDENT"}{studentActive ? <Check /> : <></>}</button>
+                                <button type='button' onClick={isAlumniActive} className={alumniActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{alumniActive ? "ALUMNI" : "ALUMNI"}</button>
+                                <button type='button' onClick={isStudentActive} className={studentActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{studentActive ? "STUDENT " : "STUDENT"}</button>
                             </div>
                         </div>
                         <div className="space-y-2">
@@ -464,8 +464,8 @@ const ProfileSetupForm = () => {
                         <div className="space-y-2">
                             <label>Are you a job holder?<span className='text-red-500'>*</span></label>
                             <div className="relative flex justify-center gap-20">
-                                <button type='button' onClick={isYesActive} className={yesActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{yesActive ? "YES" : "YES"}{yesActive ? <Check /> : <></>}</button>
-                                <button type='button' onClick={isNoActive} className={noActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{noActive ? "NO" : "NO"}{noActive ? <Check /> : <></>}</button>
+                                <button type='button' onClick={isYesActive} className={yesActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{yesActive ? "YES" : "YES"}</button>
+                                <button type='button' onClick={isNoActive} className={noActive ? "bg-transparent text-zinc-900 rounded-xl px-5 py-3 hover:text-white border-2 border-zinc-900" : "bg-zinc-900 text-white rounded-xl px-5 py-3 hover:bg-zinc-900/90 hover:cursor-pointer"}>{noActive ? "NO" : "NO"}</button>
                             </div>
                         </div>
 
