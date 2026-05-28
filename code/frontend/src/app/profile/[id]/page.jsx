@@ -1,7 +1,10 @@
+import ProtectedRoute from '@/components/shared/ProtectedRoute'
 import React from 'react'
 
 export default function page() {
   return (
-    <div>My Profile</div>
+    <ProtectedRoute>
+        <div>My Profile</div>
+    </ProtectedRoute>
   )
 }

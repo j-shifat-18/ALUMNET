@@ -1,9 +1,10 @@
+import ProtectedRoute from "@/components/shared/ProtectedRoute";
 import ProfileSetupForm from "@/components/ui/ProfileSetup/ProfileSetupForm";
 
 export default function page() {
   return (
-    <div>
-        <ProfileSetupForm></ProfileSetupForm>
-    </div>
+    <ProtectedRoute>
+      <ProfileSetupForm />
+    </ProtectedRoute>
   )
 }
