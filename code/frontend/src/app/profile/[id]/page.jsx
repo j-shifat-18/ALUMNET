@@ -2,34 +2,35 @@
 
 import ProtectedRoute from '@/components/shared/ProtectedRoute'
 import React, { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 import Image from 'next/image';
 import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
+import Divider from '@/components/ui/divider';
 
 export default function Profile() {
 
-    const {user} = useAuth();
-    const [usersList, setUsersList] = useState([]);
-
-    const users = () => {
-    if (!user){
-        return;
-    }
-    axiosInstance.get("/api/v1/users").then(response => {
-      const signedInUser = response.data.data.find(u => u.email === user.email);
-      setUsersList(signedInUser ? [signedInUser] : []);
-    }).catch(err => {})
-  }
+  const { user } = useAuth();
+  const { id } = useParams();
+  const [dbUser, setDbUser] = useState(null);
 
   useEffect(() => {
-    users();
-  }, [user]);
-
-  const dbUser = usersList[0];
+    if (!id) return;
+    axiosInstance.get("/api/v1/users")
+      .then(response => {
+        const visited = response.data.data.find(u => u.uid === id);
+        setDbUser(visited || null);
+      })
+      .catch(err => { });
+  }, [id]);
+    console.log(user);
   console.log(dbUser);
+
+  const isOwner = user?.uid === dbUser?.uid;
+  // console.log(isOwner);
 
   return (
     <ProtectedRoute>
@@ -72,31 +73,67 @@ export default function Profile() {
           </div>
           <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+              <h4 className='text-xl font-bold'>Basic Information</h4>
+              <Divider className='mt-2 mb-2' />
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-0.5">Role</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Role</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.role}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-0.5">Email</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Gender</p>
+                    <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.gender}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+              <h4 className='text-xl font-bold'>Contact Information</h4>
+              <Divider className='mt-2 mb-2' />
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <div>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Email</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.email}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-0.5">Contact No</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Contact No.</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.contactNo || "N\\A"}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
+              <h4 className='text-xl font-bold'>Additional Information</h4>
+              <Divider className='mt-2 mb-2' />
+              <div className="flex flex-col gap-4">
+                <div className="flex items-start gap-3">
+                  <div>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Github URL</p>
+                    <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.githubUrl ? <a href={dbUser?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.githubUrl}</a> : "N\\A"}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-0.5">Gender</p>
-                    <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.gender}</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5">Portfolio URL</p>
+                    <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.portfolioUrl ? <a href={dbUser?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.portfolioUrl}</a> : "N\\A"}</p>
                   </div>
                 </div>
+                {
+                  dbUser?.role === 'STUDENT' ? <>
+                    <div className="flex items-start gap-3">
+                      <div>
+                        <p className="text-xl font-semibold tracking-wide mb-0.5">Resume URL</p>
+                        <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.resumeUrl ? <a href={dbUser?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.resumeUrl}</a> : "N\\A"}</p>
+                      </div>
+                    </div>
+                  </> : <></>
+                }
               </div>
             </div>
           </aside>
