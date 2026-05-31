@@ -10,12 +10,18 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
+import { PencilLine } from 'lucide-react';
+import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
+import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 
 export default function Profile() {
 
   const { user } = useAuth();
   const { id } = useParams();
   const [dbUser, setDbUser] = useState(null);
+  const [basicInfoDrawerOpen, setBasicInfoDrawerOpen] = useState(false);
+  const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
+  const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -26,7 +32,7 @@ export default function Profile() {
       })
       .catch(err => { });
   }, [id]);
-    console.log(user);
+  console.log(user);
   console.log(dbUser);
 
   const isOwner = user?.uid === dbUser?.uid;
@@ -73,7 +79,12 @@ export default function Profile() {
           </div>
           <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
-              <h4 className='text-xl font-bold'>Basic Information</h4>
+              <div className='flex justify-between items-center'>
+                <h4 className='text-xl font-bold'>Basic Information</h4>
+                {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setBasicInfoDrawerOpen(true)} title="Edit">
+                  <PencilLine className='w-5 h-5 hover:cursor-pointer' />
+                </button> : <></>}
+              </div>
               <Divider className='mt-2 mb-2' />
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
@@ -91,7 +102,12 @@ export default function Profile() {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
-              <h4 className='text-xl font-bold'>Contact Information</h4>
+              <div className='flex justify-between items-center'>
+                <h4 className='text-xl font-bold'>Contact Information</h4>
+                {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setContactInfoDrawerOpen(true)} title="Edit">
+                  <PencilLine className='w-5 h-5 hover:cursor-pointer' />
+                </button> : <></>}
+              </div>
               <Divider className='mt-2 mb-2' />
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
@@ -109,7 +125,12 @@ export default function Profile() {
               </div>
             </div>
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
-              <h4 className='text-xl font-bold'>Additional Information</h4>
+              <div className='flex justify-between items-center'>
+                <h4 className='text-xl font-bold'>Additional Information</h4>
+                {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setAdditionalInfoDrawerOpen(true)} title="Edit">
+                  <PencilLine className='w-5 h-5 hover:cursor-pointer' />
+                </button> : <></>}
+              </div>
               <Divider className='mt-2 mb-2' />
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
@@ -139,6 +160,69 @@ export default function Profile() {
           </aside>
         </div>
       </main>
+
+      <EditDrawer open={basicInfoDrawerOpen} onOpenChange={setBasicInfoDrawerOpen} side="bottom">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Edit Basic Information</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-6 flex-1 overflow-visible">
+            <label>Role</label>
+            <input value={dbUser?.role} disabled className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200 readOnly'></input>
+            <label>Gender</label>
+            <GenderDropdown selectedGender={dbUser?.gender}></GenderDropdown>
+          </div>
+          <DrawerFooter>
+            <Button variant="outline" onClick={() => setBasicInfoDrawerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setBasicInfoDrawerOpen(false)}>Save</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </EditDrawer>
+
+      <EditDrawer open={contactInfoDrawerOpen} onOpenChange={setContactInfoDrawerOpen} side="bottom">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Edit Contact Information</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-6 flex-1 overflow-visible">
+            <label>Email</label>
+            <input value={dbUser?.email} disabled className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200 readOnly'></input>
+            <label>Contact No</label>
+            <input defaultValue={dbUser?.contactNo} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+          </div>
+          <DrawerFooter>
+            <Button variant="outline" onClick={() => setContactInfoDrawerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setContactInfoDrawerOpen(false)}>Save</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </EditDrawer>
+
+      <EditDrawer open={additionalInfoDrawerOpen} onOpenChange={setAdditionalInfoDrawerOpen} side="bottom">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Edit Additional Information</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-6 flex-1 overflow-visible">
+            <label>Github URL</label>
+            <input defaultValue={dbUser?.githubUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+            <label>Portfolio URL</label>
+            <input defaultValue={dbUser?.portfolioUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+            {
+              dbUser?.role === "STUDENT" ? <>
+                <label>Resume URL</label>
+                <input defaultValue={dbUser?.resumeUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+              </> : <></>
+            }
+          </div>
+          <DrawerFooter>
+            <Button variant="outline" onClick={() => setAdditionalInfoDrawerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setAdditionalInfoDrawerOpen(false)}>Save</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </EditDrawer>
     </ProtectedRoute>
   )
 }

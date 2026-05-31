@@ -1,4 +1,4 @@
-"use client";;
+"use client";
 import { useState, useRef, useEffect, useMemo } from "react";
 
 const ComboBox = ({
@@ -189,7 +189,7 @@ const ComboBox = ({
       {isOpen && (
         <div
           id="combobox-options"
-          className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-scroll"
+          className="absolute z-50 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-scroll"
           role="listbox">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((option, index) => (
