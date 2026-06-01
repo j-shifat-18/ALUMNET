@@ -1,7 +1,7 @@
 "use client";
 
 import ProtectedRoute from '@/components/shared/ProtectedRoute'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
@@ -22,6 +22,9 @@ export default function Profile() {
   const [basicInfoDrawerOpen, setBasicInfoDrawerOpen] = useState(false);
   const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
+  const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
+  const textareaRef = useRef(null);
+  const [bio, setBio] = useState('');
 
   useEffect(() => {
     if (!id) return;
@@ -37,6 +40,14 @@ export default function Profile() {
 
   const isOwner = user?.uid === dbUser?.uid;
   // console.log(isOwner);
+
+  const handleInput = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    };
 
   return (
     <ProtectedRoute>
@@ -74,6 +85,7 @@ export default function Profile() {
                 </p>
                 <p className="text-xl mt-1">{dbUser?.location || "Not Available"}</p>
                 <p className="text-xl mt-1">{dbUser?.followersCount || "0 followers"}</p>
+                { isOwner ? <button type='button' className='mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white' onClick={() => setEditInfoDrawerOpen(true)}>Edit Profile</button> : <button>Follow/Followed</button> }
               </div>
             </div>
           </div>
@@ -220,6 +232,27 @@ export default function Profile() {
           <DrawerFooter>
             <Button variant="outline" onClick={() => setAdditionalInfoDrawerOpen(false)}>Cancel</Button>
             <Button onClick={() => setAdditionalInfoDrawerOpen(false)}>Save</Button>
+          </DrawerFooter>
+        </DrawerContent>
+      </EditDrawer>
+
+      <EditDrawer open={editInfoDrawerOpen} onOpenChange={setEditInfoDrawerOpen} side="bottom">
+        <DrawerOverlay />
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Edit Profile Information</DrawerTitle>
+          </DrawerHeader>
+          <div className="p-6 flex-1 overflow-visible">
+            <label>Name</label>
+            <input defaultValue={dbUser?.name || user?.displayName} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+            <label>Bio</label>
+            <textarea ref={textareaRef} rows={1} value={bio || dbUser?.bio || ''} onChange={(e) => { setBio(e.target.value); handleInput(); }} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
+            <label>Location</label>
+            <input defaultValue={dbUser?.location || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+          </div>
+          <DrawerFooter>
+            <Button variant="outline" onClick={() => setEditInfoDrawerOpen(false)}>Cancel</Button>
+            <Button onClick={() => setEditInfoDrawerOpen(false)}>Save</Button>
           </DrawerFooter>
         </DrawerContent>
       </EditDrawer>
