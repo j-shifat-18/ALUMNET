@@ -10,7 +10,7 @@ router.post("/",  UserController.createUser);
 
 router.get("/:id", UserController.getSingleUser);
 
-router.patch("/:id", UserController.updateSingleUser);
+router.patch("/:id", UserController.updateUser);
 
 router.delete("/:id", UserController.deleteUser);
 

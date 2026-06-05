@@ -60,6 +60,8 @@ model User {
   alumniProfile  AlumniProfile?
   adminProfile   AdminProfile?
 
+  // profileCompleted Boolean @default(false)
+
   posts    Post[]
   postLikes PostLike[]
   comments Comment[]
@@ -107,6 +109,7 @@ model StudentProfile {
 
   @@index([department])
   @@index([batch])
+  @@index([program])
 }
 
 model AlumniProfile {
@@ -150,6 +153,7 @@ model AlumniProfile {
 
   @@index([department])
   @@index([currentCompany])
+  @@index([graduationYear])
 }
 
 model AdminProfile {
@@ -248,6 +252,7 @@ model MentorshipRequest {
   @@index([studentId])
   @@index([alumniId])
   @@index([status])
+  @@unique([studentId, alumniId])
 }
 
 model PostLike {
