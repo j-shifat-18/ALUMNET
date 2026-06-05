@@ -43,9 +43,9 @@ const getSingleUser = async (
   res: Response
 ) => {
   try {
-    const id = Number(req.params.id);
+    const uid = req.params.id;
 
-    const result = await UserService.getSingleUser(id);
+    const result = await UserService.getSingleUser(uid as string);
 
     res.status(200).json({
       success: true,
@@ -60,15 +60,15 @@ const getSingleUser = async (
   }
 };
 
-const updateSingleUser = async (
+const updateUser = async (
   req: Request,
   res: Response
 ) => {
   try {
-    const id = Number(req.params.id);
+    const uid = req.params.id;
 
-    const result = await UserService.updateSingleUser(
-      id,
+    const result = await UserService.updateUser(
+      uid as string,
       req.body
     );
 
@@ -90,9 +90,9 @@ const deleteUser = async (
   res: Response
 ) => {
   try {
-    const id = Number(req.params.id);
+    const uid = req.params.id;
 
-    const result = await UserService.deleteUser(id);
+    const result = await UserService.deleteUser(uid as string);
 
     res.status(200).json({
       success: true,
@@ -114,6 +114,6 @@ export const UserController = {
   createUser,
   getAllUsers,
   getSingleUser,
-  updateSingleUser,
+  updateUser,
   deleteUser
 };

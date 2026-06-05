@@ -2,10 +2,16 @@ import { get } from "node:http";
 import {prisma} from "../../config/prisma.js";
 
 const getAllUsers = async () => {
-    const result = await prisma.user.findMany();
+  const result = await prisma.user.findMany({
+    include: {
+      studentProfile: true,
+      alumniProfile: true,
+      adminProfile: true,
+    },
+  });
 
-    return result ;
-}
+  return result;
+};
 
 const createUser = async (payload : any) => {
     const result = await prisma.user.create({
@@ -15,23 +21,28 @@ const createUser = async (payload : any) => {
     return result ;
 }
 
-const getSingleUser = async (id: number) => {
+const getSingleUser = async (uid: string) => {
   const result = await prisma.user.findUnique({
     where: {
-      id,
+      uid,
+    },
+    include: {
+      studentProfile: true,
+      alumniProfile: true,
+      adminProfile: true,
     },
   });
 
   return result;
 };
 
-const updateSingleUser = async (
-  id: number,
-  payload: any
+const updateUser = async (
+  uid: string,
+  payload: Record<string, unknown>
 ) => {
   const result = await prisma.user.update({
     where: {
-      id,
+      uid,
     },
     data: payload,
   });
@@ -39,10 +50,10 @@ const updateSingleUser = async (
   return result;
 };
 
-const deleteUser = async (id: number) => {
+const deleteUser = async (uid: string) => {
   const result = await prisma.user.delete({
     where: {
-      id,
+      uid,
     },
   });
 
@@ -53,6 +64,6 @@ export const UserService = {
     createUser, 
     getAllUsers,
     getSingleUser,
-    updateSingleUser,
+    updateUser,
     deleteUser
 }
