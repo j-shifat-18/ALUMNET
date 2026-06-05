@@ -27,181 +27,241 @@ enum UserStatus {
 }
 
 model User {
-  id                    Int              @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  uid                   String           @unique
+  uid String @unique
 
-  name                  String
-  username              String?          @unique
-  email                 String           @unique
+  name     String
+  username String? @unique
+  email    String  @unique
 
-  role                  Role             @default(USER)
-  status                UserStatus       @default(ACTIVE)
+  role   Role       @default(USER)
+  status UserStatus @default(ACTIVE)
 
-  gender                String?
-  contactNo             String?
+  gender    String?
+  contactNo String?
 
-  bio                   String?
-  location              String?
+  bio      String?
+  location String?
 
-  profileImage          String?
-  coverImage            String?
+  profileImage String?
+  coverImage   String?
 
-  followersCount        Int              @default(0)
-  followingCount        Int              @default(0)
+  followersCount Int @default(0)
+  followingCount Int @default(0)
 
-  isVerified            Boolean          @default(false)
-  isMentorAvailable     Boolean          @default(false)
+  isVerified        Boolean @default(false)
+  isMentorAvailable Boolean @default(false)
 
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  studentProfile        StudentProfile?
-  alumniProfile         AlumniProfile?
-  adminProfile          AdminProfile?
+  studentProfile StudentProfile?
+  alumniProfile  AlumniProfile?
+  adminProfile   AdminProfile?
 
-  // posts                 Post[]
-  // comments              Comment[]
+  posts    Post[]
+  postLikes PostLike[]
+  comments Comment[]
 
-  // sentRequests          MentorshipRequest[] @relation("StudentRequests")
-  // receivedRequests      MentorshipRequest[] @relation("AlumniRequests")
+  // Follow System
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
+
+  // Mentorship System
+  sentMentorshipRequests     MentorshipRequest[] @relation("StudentRequests")
+  receivedMentorshipRequests MentorshipRequest[] @relation("AlumniRequests")
 
   @@index([email])
   @@index([role])
 }
 
 model StudentProfile {
-  id                    Int              @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId                Int              @unique
+  userId Int @unique
 
-  department            String
-  program               String
-  batch                 String
+  department String
+  program    String
+  batch      String
 
-  careerGoal            String?
-  interestedDomains     String[]
-  skills                String[]
+  careerGoal String?
 
-  currentCompany        String?
-  currentPosition       String?
+  interestedDomains String[]
+  skills            String[]
 
-  resumeUrl             String?
-  portfolioUrl          String?
-  githubUrl             String?
+  currentCompany  String?
+  currentPosition String?
 
-  certifications        String[]
-  achievements          String[]
+  resumeUrl    String?
+  portfolioUrl String?
+  githubUrl    String?
 
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  certifications String[]
+  achievements   String[]
 
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
 
   @@index([department])
   @@index([batch])
 }
 
 model AlumniProfile {
-  id                    Int              @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId                Int              @unique
+  userId Int @unique
 
-  department            String
-  program               String
-  batch                 String
+  department String
+  program    String
+  batch      String
 
-  graduationYear        Int
+  graduationYear Int
 
-  currentCompany        String?
-  currentPosition       String?
-  industry              String?
+  currentCompany  String?
+  currentPosition String?
+  industry        String?
 
-  experienceYears       Int?
+  experienceYears Int?
 
-  interestedDomains     String[]
-  skills                String[]
-  expertiseAreas        String[]
+  interestedDomains String[]
+  skills            String[]
+  expertiseAreas    String[]
 
-  education             String?
-  certifications        String[]
-  achievements          String[]
+  education      String?
+  certifications String[]
+  achievements   String[]
 
-  resumeUrl             String?
-  githubUrl             String?
-  portfolioUrl          String?
-  personalWebsite       String?
+  resumeUrl       String?
+  githubUrl       String?
+  portfolioUrl    String?
+  personalWebsite String?
 
-  mentorshipDomains     String[]
-  totalMentees          Int              @default(0)
+  mentorshipDomains String[]
 
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
+  totalMentees Int @default(0)
 
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
 
   @@index([department])
   @@index([currentCompany])
 }
 
 model AdminProfile {
-  id                    Int              @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  userId                Int              @unique
+  userId Int @unique
 
-  designation           String?
-  permissions           String[]
+  designation String?
 
-  managedReports        Int              @default(0)
-  bannedUsersCount      Int              @default(0)
+  permissions String[]
 
-  createdAt             DateTime         @default(now())
-  updatedAt             DateTime         @updatedAt
-
-  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-model Post {
-  id            Int       @id @default(autoincrement())
-
-  authorId      Int
-
-  content       String
-  imageUrl      String?
-
-  likesCount    Int       @default(0)
-  commentsCount Int       @default(0)
-
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-
-  author        User      @relation(
-    fields: [authorId],
-    references: [id],
-    onDelete: Cascade
-  )
-
-  comments      Comment[]
-}
-model Comment {
-  id        Int      @id @default(autoincrement())
-
-  content   String
-
-  userId    Int
-  postId    Int
+  managedReports   Int @default(0)
+  bannedUsersCount Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user       User @relation(
-    fields: [userId],
-    references: [id],
-    onDelete: Cascade
-  )
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+}
 
-  post       Post @relation(
-    fields: [postId],
-    references: [id],
-    onDelete: Cascade
-  )
+model Post {
+  id Int @id @default(autoincrement())
+
+  authorId Int
+
+  content String
+
+  imageUrl String?
+
+  likesCount    Int @default(0)
+  commentsCount Int @default(0)
+  likes PostLike[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation(fields: [authorId],references: [id],onDelete: Cascade)
+
+  comments Comment[]
+
+  @@index([authorId])
+}
+
+model Comment {
+  id Int @id @default(autoincrement())
+
+  content String
+
+  userId Int
+  postId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  post Post @relation(fields: [postId],references: [id],onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+}
+
+model Follow {
+  followerId Int
+  followingId Int
+
+  createdAt DateTime @default(now())
+
+  follower User @relation("UserFollowing",fields: [followerId],references: [id],onDelete: Cascade)
+
+  following User @relation("UserFollowers",fields: [followingId],references: [id],onDelete: Cascade)
+
+  @@id([followerId, followingId])
+
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model MentorshipRequest {
+  id Int @id @default(autoincrement())
+
+  studentId Int
+  alumniId  Int
+
+  message String?
+
+  status RequestStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student User @relation("StudentRequests", fields: [studentId],references: [id],onDelete: Cascade)
+
+  alumni User @relation("AlumniRequests",fields: [alumniId],references: [id],onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([alumniId])
+  @@index([status])
+}
+
+model PostLike {
+  userId Int
+  postId Int
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId],references: [id],onDelete: Cascade)
+
+  post Post @relation(fields: [postId],references: [id],onDelete: Cascade)
+
+  @@id([userId, postId])
+
+  @@index([userId])
+  @@index([postId])
 }
