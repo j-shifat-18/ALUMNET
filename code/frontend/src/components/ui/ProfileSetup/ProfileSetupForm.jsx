@@ -174,13 +174,6 @@ const ProfileSetupForm = () => {
     setIsLoading(true);
 
     try {
-      const { data } = await axiosInstance.get(`/api/v1/users/${user.uid}`);
-
-      const dbUser = data.data;
-      if (!dbUser) {
-        throw new Error("User Profile not found.");
-      }
-
       const role = alumniActive ? "ALUMNI" : "STUDENT";
       const payload = {
         role,
@@ -199,8 +192,6 @@ const ProfileSetupForm = () => {
 
       if (role === "STUDENT") {
         payload.studentProfile = {
-          upsert: {
-            create: {
               department: selectedDepartment,
               program: selectedProgramme,
               batch: selectedBatch,
@@ -211,25 +202,11 @@ const ProfileSetupForm = () => {
               resumeUrl: resumeUrl || null,
               githubUrl: githubUrl || null,
               portfolioUrl: portfolioUrl || null,
-            },
-            update: {
-              department: selectedDepartment,
-              program: selectedProgramme,
-              batch: selectedBatch,
-              skills: mappedSkills,
-              interestedDomains: mappedPreferences,
-              currentCompany: jobPlace || null,
-              currentPosition: jobPosition || null,
-              resumeUrl: resumeUrl || null,
-              githubUrl: githubUrl || null,
-              portfolioUrl: portfolioUrl || null,
-            },
-          },
+              certifications: [],
+              achievements: [],
         };
       } else if (role === "ALUMNI") {
         payload.alumniProfile = {
-          upsert: {
-            create: {
               department: selectedDepartment,
               program: selectedProgramme,
               batch: selectedBatch,
@@ -241,25 +218,18 @@ const ProfileSetupForm = () => {
               resumeUrl: resumeUrl || null,
               githubUrl: githubUrl || null,
               portfolioUrl: portfolioUrl || null,
-            },
-            update: {
-              department: selectedDepartment,
-              program: selectedProgramme,
-              batch: selectedBatch,
-              graduationYear: 0,
-              skills: mappedSkills,
-              interestedDomains: mappedPreferences,
-              currentCompany: jobPlace || null,
-              currentPosition: jobPosition || null,
-              resumeUrl: resumeUrl || null,
-              githubUrl: githubUrl || null,
-              portfolioUrl: portfolioUrl || null,
-            },
-          },
-        };
-      }
+              certifications: [],
+              achievements: [],
+              industry: null,
+              experienceYears: null,
+              expertiseAreas: [],
+              education: null,
+              mentorshipDomains: [],
+              personalWebsite: null,
+            };
+        }
 
-      await axiosInstance.patch(`/api/v1/users/${dbUser.id}`, payload);
+      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
 
       setNotification({
         type: "success",

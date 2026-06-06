@@ -33,16 +33,16 @@ export default function Profile() {
 
   useEffect(() => {
     if (!id) return;
-    axiosInstance.get("/api/v1/users")
+    axiosInstance.get(`/api/v1/profiles/${id}`)
       .then(response => {
-        const visited = response.data.data.find(u => u.uid === id);
-        setDbUser(visited || null);
+        setDbUser(response.data.data);
       })
       .catch(err => { });
   }, [id]);
   console.log(user);
   console.log(dbUser);
 
+  const profile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
   const isOwner = user?.uid === dbUser?.uid;
   // console.log(isOwner);
 
@@ -179,13 +179,13 @@ export default function Profile() {
             <div className="flex items-start gap-3">
               <div>
                 <p className="text-xl font-semibold tracking-wide mb-0.5">Github URL</p>
-                <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.githubUrl ? <a href={dbUser?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.githubUrl}</a> : "N\\A"}</p>
+                <p className="text-md text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.githubUrl}</a> : "N\\A"}</p>
               </div>
             </div>
             <div className="flex items-start gap-3">
               <div>
                 <p className="text-xl font-semibold tracking-wide mb-0.5">Portfolio URL</p>
-                <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.portfolioUrl ? <a href={dbUser?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.portfolioUrl}</a> : "N\\A"}</p>
+                <p className="text-md text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.portfolioUrl}</a> : "N\\A"}</p>
               </div>
             </div>
             {
@@ -193,7 +193,7 @@ export default function Profile() {
                 <div className="flex items-start gap-3">
                   <div>
                     <p className="text-xl font-semibold tracking-wide mb-0.5">Resume URL</p>
-                    <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.resumeUrl ? <a href={dbUser?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{dbUser?.resumeUrl}</a> : "N\\A"}</p>
+                    <p className="text-md text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.resumeUrl}</a> : "N\\A"}</p>
                   </div>
                 </div>
               </> : <></>
@@ -250,13 +250,13 @@ export default function Profile() {
       </DrawerHeader>
       <div className="p-6 flex-1 overflow-visible">
         <label>Github URL</label>
-        <input defaultValue={dbUser?.githubUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+        <input defaultValue={profile?.githubUrl || ""} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
         <label>Portfolio URL</label>
-        <input defaultValue={dbUser?.portfolioUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+        <input defaultValue={profile?.portfolioUrl || ""} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
         {
           dbUser?.role === "STUDENT" ? <>
             <label>Resume URL</label>
-            <input defaultValue={dbUser?.resumeUrl || "N\\A"} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+            <input defaultValue={profile?.resumeUrl || ""} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
           </> : <></>
         }
       </div>

@@ -61,9 +61,8 @@ export default function UserProfileDropdown() {
     if (!user){
         return;
     }
-    axiosInstance.get("/api/v1/users").then(response => {
-      const signedInUser = response.data.data.find(u => u.email === user.email);
-      setUsersList(signedInUser ? [signedInUser] : []);
+    axiosInstance.get(`/api/v1/profiles/${user.uid}`).then(response => {
+      setUsersList(response.data.data ? [response.data.data] : []);
     }).catch(err => {})
   }
 

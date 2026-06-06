@@ -66,10 +66,8 @@ const DropdownMenuItem = ({
   </a>;
 const DropdownMenuSeparator = () => <div className="my-1 h-px bg-zinc-200 dark:bg-zinc-700" />;
 export default function ActionDropdown({ user, onDelete }) {
-
-
   const handleDeleteUser = () => {
-    axiosInstance.delete(`/api/v1/users/${user.id}`)
+    axiosInstance.delete(`/api/v1/users/${user.uid}`)
       .then(() => {
         alert("User Deleted Successfully");
         if (onDelete) onDelete(user.id);
