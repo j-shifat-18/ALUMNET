@@ -42,6 +42,8 @@ const updateProfile = async (uid: string, payload: any) => {
   };
 
   if (role === "STUDENT" && studentProfile) {
+    updateData.role = "STUDENT";
+
     updateData.studentProfile = {
       upsert: {
         create: studentProfile,
@@ -51,6 +53,8 @@ const updateProfile = async (uid: string, payload: any) => {
   }
 
   if (role === "ALUMNI" && alumniProfile) {
+    updateData.role = "ALUMNI";
+
     updateData.alumniProfile = {
       upsert: {
         create: alumniProfile,
@@ -60,6 +64,8 @@ const updateProfile = async (uid: string, payload: any) => {
   }
 
   if (role === "ADMIN" && adminProfile) {
+    updateData.role = "ADMIN";
+    
     updateData.adminProfile = {
       update: adminProfile,
     };
