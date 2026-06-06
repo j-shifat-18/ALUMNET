@@ -91,6 +91,14 @@ const ProfileSetupForm = () => {
   const [resumeUrl, setResumeUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [location, setLocation] = useState("");
+  const [careerGoal, setCareerGoal] = useState("");
+  const [graduationYear, setGraduationYear] = useState("");
+  const [industry, setIndustry] = useState("");
+  const [experienceYears, setExperienceYears] = useState("");
+  const [education, setEducation] = useState("");
+  const [selectedExpertiseAreas, setSelectedExpertiseAreas] = useState([]);
+  const [selectedMentorshipDomains, setSelectedMentorshipDomains] = useState([]);
   const textareaRef = useRef(null);
 
   const validDepartments = [
@@ -175,14 +183,7 @@ const ProfileSetupForm = () => {
 
     try {
       const role = alumniActive ? "ALUMNI" : "STUDENT";
-      const payload = {
-        role,
-        gender: selectedGender,
-        contactNo: contactNo || null,
-        bio: bio || null,
-        profileImage: profileImageUrl || null,
-      };
-
+      
       const mappedSkills = Array.isArray(selectedSkills)
         ? selectedSkills.map((s) => s.name)
         : [];
@@ -190,46 +191,65 @@ const ProfileSetupForm = () => {
         ? selectedPreferences.map((p) => p.name)
         : [];
 
+      const payload = {
+        name: user?.displayName || "",
+        gender: selectedGender,
+        contactNo: contactNo || null,
+        bio: bio || null,
+        location: location || null,
+        profileImage: profileImageUrl || null,
+        coverImage: null,
+        role,
+      };
+
       if (role === "STUDENT") {
         payload.studentProfile = {
-              department: selectedDepartment,
-              program: selectedProgramme,
-              batch: selectedBatch,
-              skills: mappedSkills,
-              interestedDomains: mappedPreferences,
-              currentCompany: jobPlace || null,
-              currentPosition: jobPosition || null,
-              resumeUrl: resumeUrl || null,
-              githubUrl: githubUrl || null,
-              portfolioUrl: portfolioUrl || null,
-              certifications: [],
-              achievements: [],
+          department: selectedDepartment,
+          program: selectedProgramme,
+          batch: selectedBatch,
+          careerGoal: careerGoal || null,
+          interestedDomains: mappedPreferences,
+          skills: mappedSkills,
+          currentCompany: jobPlace || null,
+          currentPosition: jobPosition || null,
+          resumeUrl: resumeUrl || null,
+          portfolioUrl: portfolioUrl || null,
+          githubUrl: githubUrl || null,
+          certifications: [],
+          achievements: [],
         };
       } else if (role === "ALUMNI") {
-        payload.alumniProfile = {
-              department: selectedDepartment,
-              program: selectedProgramme,
-              batch: selectedBatch,
-              graduationYear: 0,
-              skills: mappedSkills,
-              interestedDomains: mappedPreferences,
-              currentCompany: jobPlace || null,
-              currentPosition: jobPosition || null,
-              resumeUrl: resumeUrl || null,
-              githubUrl: githubUrl || null,
-              portfolioUrl: portfolioUrl || null,
-              certifications: [],
-              achievements: [],
-              industry: null,
-              experienceYears: null,
-              expertiseAreas: [],
-              education: null,
-              mentorshipDomains: [],
-              personalWebsite: null,
-            };
-        }
+        const mappedExpertiseAreas = Array.isArray(selectedExpertiseAreas)
+          ? selectedExpertiseAreas.map((a) => a.name || a)
+          : [];
+        const mappedMentorshipDomains = Array.isArray(selectedMentorshipDomains)
+          ? selectedMentorshipDomains.map((d) => d.name || d)
+          : [];
 
-      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+        payload.alumniProfile = {
+          department: selectedDepartment,
+          program: selectedProgramme,
+          batch: selectedBatch,
+          graduationYear: graduationYear ? parseInt(graduationYear) : null,
+          currentCompany: jobPlace || null,
+          currentPosition: jobPosition || null,
+          industry: industry || null,
+          experienceYears: experienceYears ? parseInt(experienceYears) : null,
+          interestedDomains: mappedPreferences,
+          skills: mappedSkills,
+          expertiseAreas: mappedExpertiseAreas,
+          education: education || null,
+          certifications: [],
+          achievements: [],
+          resumeUrl: resumeUrl || null,
+          githubUrl: githubUrl || null,
+          portfolioUrl: portfolioUrl || null,
+          personalWebsite: null,
+          mentorshipDomains: mappedMentorshipDomains,
+        };
+      }
+
+      const response = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
 
       setNotification({
         type: "success",
@@ -245,7 +265,7 @@ const ProfileSetupForm = () => {
       setNotification({
         type: "error",
         title: "Setup Failed",
-        message: err.message || String(err),
+        message: err.response?.data?.message || err.message || String(err),
         duration: 5000,
       });
     } finally {
@@ -472,12 +492,12 @@ const ProfileSetupForm = () => {
 
               <div className="flex justify-center pt-12">
                 <Image
-                  src={profileImageUrl || placholderUser}
+                  src={profileImageUrl || placholderUser.src || placholderUser}
                   alt="user"
                   width={200}
                   height={200}
-                  className="rounded-full object-cover"
-                ></Image>
+                  className="rounded-full"
+                />
               </div>
 
               <div className="mt-10">
@@ -724,6 +744,7 @@ const ProfileSetupForm = () => {
                 <p>Programme : {selectedProgramme}</p>
                 <p>Bio: {bio ? `${bio}` : "N\\A"}</p>
                 <p>Gender: {selectedGender}</p>
+                <p>Location: {location ? `${location}` : "N\\A"}</p>
                 <p>Contact No: {contactNo ? `${contactNo}` : "N\\A"}</p>
                 <p>Job Place: {jobPlace ? `${jobPlace}` : "N\\A"}</p>
                 <p>Job Position: {jobPosition ? `${jobPosition}` : "N\\A"}</p>

@@ -35,15 +35,18 @@ export default function Profile() {
     if (!id) return;
     axiosInstance.get(`/api/v1/profiles/${id}`)
       .then(response => {
+        console.log("Profile API Response:", response);
         setDbUser(response.data.data);
       })
-      .catch(err => { });
+      .catch(err => {
+        console.error("Error fetching profile:", err.response?.data || err.message);
+      });
   }, [id]);
   console.log(user);
   console.log(dbUser);
 
   const profile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
-  const isOwner = user?.uid === dbUser?.uid;
+  const isOwner = user?.uid === id;
   // console.log(isOwner);
 
   const handleInput = () => {
@@ -98,9 +101,9 @@ export default function Profile() {
               {dbUser?.name}
             </h1>
             <p className="text-xl mt-1">
-              {dbUser?.bio}
+              {dbUser?.bio || " "}
             </p>
-            <p className="text-xl mt-1">{dbUser?.location || "Not Available"}</p>
+            <p className="text-xl mt-1">{dbUser?.location || " "}</p>
             <p className="text-xl mt-1">{dbUser?.followersCount || "0 followers"}</p>
             {isOwner ? <button type='button' className='mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2' onClick={() => setEditInfoDrawerOpen(true)}>
               <PencilLine className='w-4 h-4' /> Edit Profile

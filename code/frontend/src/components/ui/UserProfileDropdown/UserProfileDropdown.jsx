@@ -75,7 +75,7 @@ export default function UserProfileDropdown() {
 
   return <div className="flex items-center justify-center font-sans p-8">
       <DropdownMenu trigger={<button className="flex items-center space-x-3 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-            <Image src={dbUser?.profileImage || placeholder} alt="USER" width={40} height={40} className="rounded-full object-cover"></Image>
+            <Image src={dbUser?.profileImage || placeholder} alt="USER" width={40} height={40} className="rounded-full"></Image>
             <div className="text-left">
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
                 {user?.displayName}
@@ -87,7 +87,7 @@ export default function UserProfileDropdown() {
           </button>}>
         <div className="px-3 py-3 border-b border-zinc-200 dark:border-zinc-700">
           <div className="flex items-center space-x-3">
-            <Image src={dbUser?.profileImage || placeholder} alt="USER" width={40} height={40} className="rounded-full object-cover"></Image>
+            <Image src={dbUser?.profileImage || placeholder} alt="USER" width={40} height={40} className="rounded-full"></Image>
             <div>
               <div className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
                 {dbUser?.name}
