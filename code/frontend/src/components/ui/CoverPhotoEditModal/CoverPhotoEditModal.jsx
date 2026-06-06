@@ -7,7 +7,7 @@ import Button from "../button";
 import { ImageUp } from "lucide-react";
 import placeholderCover from "../../../../public/cover_placeholder.jpg";
 
-const CoverPhotoEditModal = ({ onClose, currentImage }) => {
+const CoverPhotoEditModal = ({ onClose, currentImage, onSave }) => {
   const fileInputRef = useRef(null);
   const [selectedPhotoName, setSelectedPhotoName] = useState("");
   const [coverImageUrl, setCoverImageUrl] = useState(currentImage || "");
@@ -52,7 +52,9 @@ const CoverPhotoEditModal = ({ onClose, currentImage }) => {
     if (!coverImageUrl) {
       return;
     }
-    // console.log("Saving profile image:", coverImageUrl);
+    if (onSave) {
+      onSave(coverImageUrl);
+    }
     onClose();
   };
 

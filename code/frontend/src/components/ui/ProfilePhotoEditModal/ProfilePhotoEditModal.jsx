@@ -7,7 +7,7 @@ import Button from "../button";
 import { ImageUp } from "lucide-react";
 import placeholderUser from "../../../../public/placeholder-user.jpg";
 
-const ProfilePhotoEditModal = ({ onClose, currentImage }) => {
+const ProfilePhotoEditModal = ({ onClose, currentImage, onSave }) => {
   const fileInputRef = useRef(null);
   const [selectedPhotoName, setSelectedPhotoName] = useState("");
   const [profileImageUrl, setProfileImageUrl] = useState(currentImage || "");
@@ -52,7 +52,9 @@ const ProfilePhotoEditModal = ({ onClose, currentImage }) => {
     if (!profileImageUrl) {
       return;
     }
-    // console.log("Saving profile image:", profileImageUrl);
+    if (onSave) {
+      onSave(profileImageUrl);
+    }
     onClose();
   };
 
