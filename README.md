@@ -69,7 +69,7 @@ npm run prisma:migrate
 npm run dev
 ```
 
-The API will be available at **http://localhost:4000**.
+The API will be available at **http://localhost:4000**
 
 ---
 
@@ -106,7 +106,7 @@ NEXT_PUBLIC_IMGBB_API_KEY=your_imgbb_api_key
 npm run dev
 ```
 
-The app will be available at **http://localhost:3000**.
+The app will be available at **http://localhost:3000**
 
 ---
 
