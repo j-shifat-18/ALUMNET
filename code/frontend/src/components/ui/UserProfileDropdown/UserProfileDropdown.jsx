@@ -41,7 +41,7 @@ const DropdownMenu = ({
     <div onClick={handleTriggerClick} className="cursor-pointer">
       {trigger}
     </div>
-    {isOpen && <div className="origin-top-right absolute right-0 mt-2 w-72 rounded-xl shadow-xl bg-white dark:bg-zinc-900 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 animate-in fade-in-0 zoom-in-95 p-2" role="menu" aria-orientation="vertical">
+    {isOpen && <div className="origin-top-right absolute -right-2 mt-0.5 w-72 rounded-xl shadow-xl bg-white dark:bg-zinc-900 ring-1 ring-gray-400 focus:outline-none z-50 animate-in fade-in-0 zoom-in-95 p-2" role="menu" aria-orientation="vertical">
       {children}
     </div>}
   </div>;

@@ -34,7 +34,7 @@ export default function Home() {
           dbUser?.role == "USER" ? <>
           <Link href={"/profile-setup"} className="p-4 border-2 rounded-xl border-black hover:cursor-pointer hover:bg-zinc-900 hover:text-white">Complete Your Profile to Continue</Link>
           </> : <>
-          <p className="">Welcome to ALUMNET</p>
+          <p className="">Welcome to ALUMNET FEED</p>
           </>
         }
       </div>

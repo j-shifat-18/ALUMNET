@@ -203,7 +203,8 @@ export default function Profile() {
       <Navbar />
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-6">
         <div className="flex gap-5 items-start">
-          <div className="flex-1 min-w-0">
+          <div className="flex flex-col gap-5 flex-1 min-w-0">
+          <div className="">
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
               <div className="relative h-36 sm:h-44 lg:h-52 w-full overflow-hidden">
                 <Image
@@ -264,8 +265,40 @@ export default function Profile() {
               </div>
             </div>
           </div>
-          <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
-            
+
+          <div className="">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              Post Option
+            </div>
+          </div>
+
+          <div className="">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              Education
+            </div>
+          </div>
+
+          <div className="">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              Skills
+            </div>
+          </div>
+
+          <div className="">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              Certifications & Achievements
+            </div>
+          </div>
+
+          <div className="">
+            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+              Your Activity
+            </div>
+          </div>
+
+          </div>
+
+          <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">     
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
@@ -330,14 +363,14 @@ export default function Profile() {
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
                       <div className='flex items-center gap-2'><Github /> Github</div>
-                    </a> : "N\\A"}</div>
+                    </a> : <div className='flex items-center gap-2'><Github className='w-6 h-6'/> N\A</div>}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
                       <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black'/> Portfolio</div>
-                    </a> : "N\\A"}</div>
+                    </a> : <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black'/> N\A</div>}</div>
                   </div>
                 </div>
                 {
@@ -346,7 +379,7 @@ export default function Profile() {
                       <div>
                         <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
                           <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black'/> Resume</div>
-                        </a> : "N\\A"}</div>
+                        </a> : <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black'/> N\A</div>}</div>
                       </div>
                     </div>
                   </> : <></>
