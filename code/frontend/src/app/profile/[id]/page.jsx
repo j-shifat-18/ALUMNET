@@ -10,11 +10,12 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
+import { Camera, FileUser, Globe, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/ui/CoverPhotoEditModal/CoverPhotoEditModal';
+import Github from '@/components/ImageToJSX/Github';
 
 export default function Profile() {
 
@@ -264,6 +265,8 @@ export default function Profile() {
             </div>
           </div>
           <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
+            
+            {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
                 <h4 className='text-xl font-bold'>Basic Information</h4>
@@ -287,6 +290,8 @@ export default function Profile() {
                 </div>
               </div>
             </div>
+
+            {/* Contant Info section is here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
                 <h4 className='text-xl font-bold'>Contact Information</h4>
@@ -310,6 +315,8 @@ export default function Profile() {
                 </div>
               </div>
             </div>
+
+            {/* Additional Info section containing URLs are here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
                 <h4 className='text-xl font-bold'>Additional Information</h4>
@@ -321,22 +328,25 @@ export default function Profile() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Github URL</p>
-                    <p className="text-md text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.githubUrl}</a> : "N\\A"}</p>
+                    <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
+                      <div className='flex items-center gap-2'><Github /> Github</div>
+                    </a> : "N\\A"}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Portfolio URL</p>
-                    <p className="text-md text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.portfolioUrl}</a> : "N\\A"}</p>
+                    <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
+                      <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black'/> Portfolio</div>
+                    </a> : "N\\A"}</div>
                   </div>
                 </div>
                 {
                   dbUser?.role === 'STUDENT' ? <>
                     <div className="flex items-start gap-3">
                       <div>
-                        <p className="text-xl font-semibold tracking-wide mb-0.5">Resume URL</p>
-                        <p className="text-md text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">{profile?.resumeUrl}</a> : "N\\A"}</p>
+                        <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
+                          <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black'/> Resume</div>
+                        </a> : "N\\A"}</div>
                       </div>
                     </div>
                   </> : <></>
