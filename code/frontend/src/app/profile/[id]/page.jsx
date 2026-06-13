@@ -10,12 +10,13 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, FileUser, Globe, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
+import { Camera, Divide, FileUser, Globe, ListChevronsDownUp, ListChevronsUpDown, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/ui/CoverPhotoEditModal/CoverPhotoEditModal';
 import Github from '@/components/ImageToJSX/Github';
+import IUTLogo from "../../../../public/IUT.png"
 
 export default function Profile() {
 
@@ -38,6 +39,7 @@ export default function Profile() {
   const [resumeUrl, setResumeUrl] = useState(dbUser?.resumeUrl || "");
   const [followed, setFollowed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showAllSkills, setShowAllSkills] = useState(false);
   const [selectedGender, setSelectedGender] = useState(dbUser?.gender);
   const [profileImageUrl, setProfileImageUrl] = useState(dbUser?.profileImage || "");
   const [coverImageUrl, setCoverImageUrl] = useState(dbUser?.coverImage || "");
@@ -53,7 +55,7 @@ export default function Profile() {
         setContactNo(data?.contactNo || "");
         setLocation(data?.location || "");
         setSelectedGender(data?.gender || "");
-        
+
         const userProfile = data?.role === 'STUDENT' ? data?.studentProfile : data?.alumniProfile;
         setGithubUrl(userProfile?.githubUrl || "");
         setPortfolioUrl(userProfile?.portfolioUrl || "");
@@ -204,101 +206,151 @@ export default function Profile() {
       <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-6">
         <div className="flex gap-5 items-start">
           <div className="flex flex-col gap-5 flex-1 min-w-0">
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              <div className="relative h-36 sm:h-44 lg:h-52 w-full overflow-hidden">
-                <Image
-                  src={dbUser?.coverImage || cover_placeholder}
-                  alt="Cover"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-                {isOwner && (
-                  <Camera
-                    onClick={() => setCoverPhotoModalOpen(true)}
-                    className='relative top-6 left-250 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <div className="relative h-36 sm:h-44 lg:h-52 w-full overflow-hidden">
+                  <Image
+                    src={dbUser?.coverImage || cover_placeholder}
+                    alt="Cover"
+                    fill
+                    className="object-cover"
+                    priority
                   />
-                )}
-              </div>
-              <div className="px-5 pb-5">
-                <div className="relative -mt-12 sm:-mt-24 mb-5">
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-50 lg:h-50 rounded-full border-4 border-white dark:border-gray-900 overflow-hidden shadow-md">
-                    <Image
-                      src={dbUser?.profileImage || user_placeholder}
-                      alt="User"
-                      width={128}
-                      height={128}
-                      className="object-cover w-full h-full"
-                    />
-                  </div>
                   {isOwner && (
                     <Camera
-                      onClick={() => setProfilePhotoModalOpen(true)}
-                      className='relative bottom-9 left-36 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
+                      onClick={() => setCoverPhotoModalOpen(true)}
+                      className='relative top-6 left-250 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
                     />
                   )}
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-                  {dbUser?.name}
-                </h1>
-                <p className="text-xl mt-1">
-                  {dbUser?.bio || " "}
-                </p>
-                <p className="text-xl mt-1">{dbUser?.location || " "}</p>
-                <p className="text-xl mt-1">{dbUser?.followersCount || "0 followers"}</p>
-                {isOwner ? <button type='button' className='mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2' onClick={() => setEditInfoDrawerOpen(true)}>
-                  <PencilLine className='w-4 h-4' /> Edit Profile
-                </button> : <button
-                  onClick={() => setFollowed(!followed)}
-                  className={`mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer flex items-center justify-between gap-2 transition-colors ${followed
-                    ? 'bg-white text-zinc-900'
-                    : 'bg-zinc-900 text-white'
-                    }`}
-                >
-                  {followed ? (
-                    <><UserRoundCheck className='w-4 h-4' /> Followed</>
-                  ) : (
-                    <><UserRoundPlus className='w-4 h-4' /> Follow</>
-                  )}
-                </button>}
+                <div className="px-5 pb-5">
+                  <div className="relative -mt-12 sm:-mt-24 mb-5">
+                    <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-50 lg:h-50 rounded-full border-4 border-white dark:border-gray-900 overflow-hidden shadow-md">
+                      <Image
+                        src={dbUser?.profileImage || user_placeholder}
+                        alt="User"
+                        width={128}
+                        height={128}
+                        className="object-cover w-full h-full"
+                      />
+                    </div>
+                    {isOwner && (
+                      <Camera
+                        onClick={() => setProfilePhotoModalOpen(true)}
+                        className='relative bottom-9 left-36 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
+                      />
+                    )}
+                  </div>
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                    {dbUser?.name}
+                  </h1>
+                  <p className="text-xl mt-1">
+                    {dbUser?.bio || " "}
+                  </p>
+                  <p className="text-xl mt-1">{dbUser?.location || " "}</p>
+                  <p className="text-xl mt-1">{dbUser?.followersCount || "0 followers"}</p>
+                  {isOwner ? <button type='button' className='mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2' onClick={() => setEditInfoDrawerOpen(true)}>
+                    <PencilLine className='w-4 h-4' /> Edit Profile
+                  </button> : <button
+                    onClick={() => setFollowed(!followed)}
+                    className={`mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer flex items-center justify-between gap-2 transition-colors ${followed
+                      ? 'bg-white text-zinc-900'
+                      : 'bg-zinc-900 text-white'
+                      }`}
+                  >
+                    {followed ? (
+                      <><UserRoundCheck className='w-4 h-4' /> Followed</>
+                    ) : (
+                      <><UserRoundPlus className='w-4 h-4' /> Follow</>
+                    )}
+                  </button>}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              Post Option
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <h4 className='text-2xl font-bold'>Post Option (Placeholder rn)</h4>
+                <Divider className='mt-2 mb-2' />
+              </div>
             </div>
-          </div>
 
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              Education
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <h4 className='text-2xl font-bold'>Your Activity</h4>
+                <Divider className='mt-2 mb-2' />
+              </div>
             </div>
-          </div>
 
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              Skills
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <h4 className='text-2xl font-bold'>Education</h4>
+                <Divider className='mt-2 mb-2' />
+                <div className='flex gap-3'>
+                  <Image src={IUTLogo} alt='IUT' width={60}></Image>
+                  <div>
+                    <p className='font-bold'>Islamic University of Technology</p>
+                    <p className='text-sm text-gray-600'>{profile?.program}</p>
+                    <p className='text-sm text-gray-600'>Department of {profile?.department}</p>
+                    <p className='text-md'>Batch: {profile?.batch}</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
 
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              Certifications & Achievements
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <h4 className='text-2xl font-bold'>Skills</h4>
+                <Divider className='mt-2 mb-2' />
+                {(() => {
+                  const skills = profile?.skills ?? [];
+                  if (skills.length === 0) {
+                    return <p className='text-gray-500 text-sm'>No skills added yet.</p>;
+                  }
+                  const INITIAL_COUNT = 3;
+                  const visible = showAllSkills ? skills : skills.slice(0, INITIAL_COUNT);
+                  return (
+                    <>
+                      {visible.map((skill, idx) => (
+                        <React.Fragment key={skill}>
+                          <p className='py-2 text-gray-800 dark:text-gray-200 font-medium'>{skill}</p>
+                          {idx < visible.length - 1 && <Divider className='mt-2 mb-2' />}
+                        </React.Fragment>
+                      ))}
+                      {skills.length > INITIAL_COUNT && (
+                        <button
+                          type='button'
+                          onClick={() => setShowAllSkills(prev => !prev)}
+                          className='mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-400 hover:cursor-pointer w-full transition-colors'
+                        >
+                          {showAllSkills ? <>
+                            <div className='pt-3 flex items-center justify-center gap-2'>
+                              <p>Show Less</p> <ListChevronsDownUp />
+                            </div>
+                          </> : <>
+                            <div className='pt-3 flex items-center justify-center gap-2'>
+                              <p>Show All</p> <ListChevronsUpDown />
+                            </div>
+                          </>}
+                        </button>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
-          </div>
 
-          <div className="">
-            <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-              Your Activity
+            <div className="">
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                <h4 className='text-2xl font-bold'>Certifications & Achievements</h4>
+                <Divider className='mt-2 mb-2' />
+              </div>
             </div>
-          </div>
+
 
           </div>
 
-          <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">     
+          <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
@@ -363,14 +415,14 @@ export default function Profile() {
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
                       <div className='flex items-center gap-2'><Github /> Github</div>
-                    </a> : <div className='flex items-center gap-2'><Github className='w-6 h-6'/> N\A</div>}</div>
+                    </a> : <div className='flex items-center gap-2'><Github className='w-6 h-6' /> N\A</div>}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
-                      <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black'/> Portfolio</div>
-                    </a> : <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black'/> N\A</div>}</div>
+                      <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black' /> Portfolio</div>
+                    </a> : <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black' /> N\A</div>}</div>
                   </div>
                 </div>
                 {
@@ -378,8 +430,8 @@ export default function Profile() {
                     <div className="flex items-start gap-3">
                       <div>
                         <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
-                          <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black'/> Resume</div>
-                        </a> : <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black'/> N\A</div>}</div>
+                          <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black' /> Resume</div>
+                        </a> : <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black' /> N\A</div>}</div>
                       </div>
                     </div>
                   </> : <></>
