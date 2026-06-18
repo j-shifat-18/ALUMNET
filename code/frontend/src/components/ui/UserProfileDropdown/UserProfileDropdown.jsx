@@ -80,7 +80,7 @@ export default function UserProfileDropdown() {
       </div>
       <div className="text-left">
         <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
-          {user?.displayName}
+          {dbUser?.name || user?.displayName}
         </div>
         <div className="text-xs text-zinc-500 dark:text-zinc-400">
           {user?.email}

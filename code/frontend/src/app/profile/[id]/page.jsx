@@ -10,7 +10,7 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, Divide, FileUser, Globe, ListChevronsDownUp, ListChevronsUpDown, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
+import { Camera, Divide, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, UserRoundCheck, UserRoundPlus, Video } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
@@ -270,8 +270,11 @@ export default function Profile() {
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Post Option (Placeholder rn)</h4>
-                <Divider className='mt-2 mb-2' />
+                <button className='w-full border border-gray-600 rounded-xl text-left p-5 hover:bg-gray-200 hover:cursor-pointer font-bold'>Post Something...</button>
+                <div className='mt-6 flex items-center gap-20'>
+                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><ImagePlus className='text-green-500' /> Add Photo</button>
+                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><Video className='text-red-500' /> Add Video</button>
+                </div>
               </div>
             </div>
 
