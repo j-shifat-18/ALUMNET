@@ -7,3 +7,4 @@ node_modules
 /generated/prisma
 
 firebase-service-key.json
+/docs

@@ -1,100 +1,67 @@
 import { Request, Response } from "express";
 import { PostService } from "./post.service.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { sendResponse } from "../../utils/sendResponse.js";
 
-const createPost = async (req: Request, res: Response) => {
-  try {
-    const uid = req.user.uid;
-    const result = await PostService.createPost(uid, req.body);
+const createPost = asyncHandler(async (req: Request, res: Response) => {
+  const uid = req.user.uid;
+  const result = await PostService.createPost(uid, req.body);
 
-    res.status(201).json({
-      success: true,
-      message: "Post created successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
-  }
-};
-const getAllPosts = async (req: Request, res: Response) => {
-  try {
-    const result = await PostService.getAllPosts();
+  sendResponse(res, {
+    statusCode: 201,
+    message: "Post created successfully",
+    data: result,
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Posts retrieved successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
-  }
-};
+const getAllPosts = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
 
-const getSinglePost = async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    const result = await PostService.getSinglePost(id);
+  const result = await PostService.getAllPosts({ page, limit });
 
-    if (!result) {
-      return res.status(404).json({
-        success: false,
-        message: "Post not found",
-      });
-    }
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Posts retrieved successfully",
+    data: result.data,
+    meta: result.meta,
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Post retrieved successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
-  }
-};
+const getSinglePost = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const result = await PostService.getSinglePost(id);
 
-const updatePost = async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    const result = await PostService.updatePost(id, req.body);
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Post retrieved successfully",
+    data: result,
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Post updated successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
-  }
-};
+const updatePost = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const uid = req.user.uid;
+  const result = await PostService.updatePost(id, uid, req.body);
 
-const deletePost = async (req: Request, res: Response) => {
-  try {
-    const id = Number(req.params.id);
-    const result = await PostService.deletePost(id);
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Post updated successfully",
+    data: result,
+  });
+});
 
-    res.status(200).json({
-      success: true,
-      message: "Post deleted successfully",
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      message: error.message || "Something went wrong",
-    });
-  }
-};
+const deletePost = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const uid = req.user.uid;
+  const result = await PostService.deletePost(id, uid);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Post deleted successfully",
+    data: result,
+  });
+});
 
 export const PostController = {
   createPost,
@@ -103,4 +70,3 @@ export const PostController = {
   updatePost,
   deletePost,
 };
-
