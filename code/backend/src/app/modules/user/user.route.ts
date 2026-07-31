@@ -1,17 +1,19 @@
-import express from 'express';
+import express from "express";
 import { UserController } from "./user.controller.js";
-import { auth } from '../../middlewares/auth.js';
+import { auth } from "../../middlewares/auth.js";
+import { validateRequest } from "../../middlewares/validateRequest.js";
+import { createUserSchema, updateUserSchema } from "./user.validation.js";
 
 const router = express.Router();
 
-router.get("/",  UserController.getAllUsers);
+router.get("/", auth, UserController.getAllUsers);
 
-router.post("/",  UserController.createUser);
+router.post("/", validateRequest(createUserSchema), UserController.createUser);
 
-router.get("/:id", UserController.getSingleUser);
+router.get("/:id", auth, UserController.getSingleUser);
 
-router.patch("/:id", UserController.updateUser);
+router.patch("/:id", auth, validateRequest(updateUserSchema), UserController.updateUser);
 
-router.delete("/:id", UserController.deleteUser);
+router.delete("/:id", auth, UserController.deleteUser);
 
 export const UserRoutes = router;

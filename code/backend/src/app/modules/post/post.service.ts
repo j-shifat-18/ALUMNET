@@ -1,13 +1,37 @@
 import { prisma } from "../../config/prisma.js";
+import { AppError } from "../../errors/AppError.js";
 
-const createPost = async (uid: string, payload: { content: string; imageUrl?: string }) => {
+interface CreatePostInput {
+  content: string;
+  imageUrl?: string | null;
+}
+
+interface UpdatePostInput {
+  content?: string;
+  imageUrl?: string | null;
+}
+
+interface PaginationOptions {
+  page: number;
+  limit: number;
+}
+
+const authorSelect = {
+  id: true,
+  uid: true,
+  name: true,
+  profileImage: true,
+  role: true,
+} as const;
+
+const createPost = async (uid: string, payload: CreatePostInput) => {
   const user = await prisma.user.findUnique({
     where: { uid },
-    select: { id: true }
+    select: { id: true },
   });
 
   if (!user) {
-    throw new Error("User not found");
+    throw new AppError(404, "User not found");
   }
 
   const result = await prisma.post.create({
@@ -17,76 +41,56 @@ const createPost = async (uid: string, payload: { content: string; imageUrl?: st
       authorId: user.id,
     },
     include: {
-      author: {
-        select: {
-          id: true,
-          uid: true,
-          name: true,
-          profileImage: true,
-          role: true,
-        }
-      }
-    }
+      author: { select: authorSelect },
+    },
   });
 
   return result;
 };
 
-const getAllPosts = async () => {
-  const result = await prisma.post.findMany({
-    include: {
-      author: {
-        select: {
-          id: true,
-          uid: true,
-          name: true,
-          profileImage: true,
-          role: true,
+const getAllPosts = async (options: PaginationOptions) => {
+  const { page, limit } = options;
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await Promise.all([
+    prisma.post.findMany({
+      skip,
+      take: limit,
+      include: {
+        author: { select: authorSelect },
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
         },
       },
-      _count: {
-        select: {
-          likes: true,
-          comments: true,
-        }
-      }
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.post.count(),
+  ]);
 
-  return result;
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
 };
 
 const getSinglePost = async (id: number) => {
   const result = await prisma.post.findUnique({
     where: { id },
     include: {
-      author: {
-        select: {
-          id: true,
-          uid: true,
-          name: true,
-          profileImage: true,
-          role: true,
-        },
-      },
+      author: { select: authorSelect },
       comments: {
         include: {
-          user: {
-            select: {
-              id: true,
-              uid: true,
-              name: true,
-              profileImage: true,
-              role: true,
-            }
-          }
+          user: { select: authorSelect },
         },
-        orderBy: {
-          createdAt: "asc",
-        }
+        orderBy: { createdAt: "asc" },
       },
       likes: {
         include: {
@@ -95,44 +99,75 @@ const getSinglePost = async (id: number) => {
               id: true,
               uid: true,
               name: true,
-            }
-          }
-        }
-      }
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    throw new AppError(404, "Post not found");
+  }
+
+  return result;
+};
+
+const updatePost = async (id: number, uid: string, payload: UpdatePostInput) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true, role: true },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  const post = await prisma.post.findUnique({ where: { id } });
+
+  if (!post) {
+    throw new AppError(404, "Post not found");
+  }
+
+  if (post.authorId !== user.id && user.role !== "ADMIN") {
+    throw new AppError(403, "You can only edit your own posts");
+  }
+
+  const result = await prisma.post.update({
+    where: { id },
+    data: payload,
+    include: {
+      author: { select: authorSelect },
     },
   });
 
   return result;
 };
 
-const updatePost = async (id: number, payload: { content?: string; imageUrl?: string }) => {
-  const result = await prisma.post.update({
-    where: { id },
-    data: payload,
-    include: {
-      author: {
-        select: {
-          id: true,
-          uid: true,
-          name: true,
-          profileImage: true,
-          role: true,
-        }
-      }
-    }
+const deletePost = async (id: number, uid: string) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true, role: true },
   });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  const post = await prisma.post.findUnique({ where: { id } });
+
+  if (!post) {
+    throw new AppError(404, "Post not found");
+  }
+
+  if (post.authorId !== user.id && user.role !== "ADMIN") {
+    throw new AppError(403, "You can only delete your own posts");
+  }
+
+  const result = await prisma.post.delete({ where: { id } });
 
   return result;
 };
-
-const deletePost = async (id: number) => {
-  const result = await prisma.post.delete({
-    where: { id },
-  });
-
-  return result;
-};
-
 
 export const PostService = {
   createPost,
@@ -141,4 +176,3 @@ export const PostService = {
   updatePost,
   deletePost,
 };
-
