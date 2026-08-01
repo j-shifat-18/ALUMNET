@@ -15,6 +15,8 @@ import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, Dr
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/ui/CoverPhotoEditModal/CoverPhotoEditModal';
+import CreatePostModal from '@/components/ui/CreatePostModal/CreatePostModal';
+import PostCard from '@/components/ui/PostCard/PostCard';
 import Github from '@/components/ImageToJSX/Github';
 import IUTLogo from "../../../../public/IUT.png"
 
@@ -29,6 +31,7 @@ export default function Profile() {
   const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
   const [profilePhotoModalOpen, setProfilePhotoModalOpen] = useState(false);
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
+  const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const textareaRef = useRef(null);
   const [bio, setBio] = useState(dbUser?.bio || "");
   const [name, setName] = useState(dbUser?.name || "");
@@ -43,6 +46,8 @@ export default function Profile() {
   const [selectedGender, setSelectedGender] = useState(dbUser?.gender);
   const [profileImageUrl, setProfileImageUrl] = useState(dbUser?.profileImage || "");
   const [coverImageUrl, setCoverImageUrl] = useState(dbUser?.coverImage || "");
+  const [posts, setPosts] = useState([]);
+  const [loadingPosts, setLoadingPosts] = useState(true);
 
   useEffect(() => {
     if (!id) return;
@@ -65,6 +70,35 @@ export default function Profile() {
         console.error("Error fetching profile:", err.response?.data || err.message);
       });
   }, [id]);
+
+  const fetchUserPosts = async () => {
+    if (!id) return;
+    setLoadingPosts(true);
+    try {
+      let userPosts = [];
+      try {
+        const res = await axiosInstance.get(`/api/v1/posts/user/${id}`);
+        if (res.data?.data) {
+          userPosts = res.data.data;
+        }
+      } catch (err) {
+        // Fallback to GET /api/v1/posts and filter by profile user's UID
+        const res = await axiosInstance.get(`/api/v1/posts`);
+        if (res.data?.data) {
+          userPosts = res.data.data.filter((p) => p.author?.uid === id);
+        }
+      }
+      setPosts(userPosts);
+    } catch (err) {
+      console.error("Error fetching user posts:", err);
+    } finally {
+      setLoadingPosts(false);
+    }
+  };
+
+  // useEffect(() => {
+  //   fetchUserPosts();
+  // }, [id]);
 
   // console.log(user);
   // console.log(dbUser);
@@ -270,20 +304,52 @@ export default function Profile() {
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <button className='w-full border border-gray-600 rounded-xl text-left p-5 hover:bg-gray-200 hover:cursor-pointer font-bold'>Post Something...</button>
-                <div className='mt-6 flex items-center gap-20'>
-                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><ImagePlus className='text-green-500' /> Add Photo</button>
-                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><Video className='text-red-500' /> Add Video</button>
+                <button
+                  type="button"
+                  onClick={() => setCreatePostModalOpen(true)}
+                  className='w-full border border-gray-300 dark:border-gray-700 rounded-xl text-left p-5 hover:bg-gray-100 dark:hover:bg-gray-800 hover:cursor-pointer font-bold text-gray-500 dark:text-gray-400 transition-colors'
+                >
+                  Post Something...
+                </button>
+                <div className='mt-4 flex items-center gap-4'>
+                  <button
+                    type="button"
+                    onClick={() => setCreatePostModalOpen(true)}
+                    className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-700 dark:text-gray-300'
+                  >
+                    <ImagePlus className='text-green-500' /> Add Photo
+                  </button>
                 </div>
               </div>
             </div>
 
             <div className="">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Your Posts</h4>
-                <Divider className='mt-2 mb-2' />
+              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
+                <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Your Posts</h4>
+                <Divider className='mt-2 mb-4' />
 
-                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Site Under Construction... Developer is in Delusion 😞</p>
+                {loadingPosts ? (
+                  <div className="flex justify-center py-6 text-gray-500">
+                    <p>Loading posts...</p>
+                  </div>
+                ) : posts.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <p className="text-base font-medium">No posts shared yet.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {posts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        currentUser={user}
+                        onDelete={(deletedId) =>
+                          setPosts((prev) => prev.filter((p) => p.id !== deletedId))
+                        }
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -364,7 +430,7 @@ export default function Profile() {
                   </button> : <></>}
                 </div>
                 <Divider className='mt-2 mb-2' />
-                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Site Under Construction... Developer is in Delusion 😞</p>
+                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Section Under Construction... Developer ghumacche</p>
               </div>
             </div>
 
@@ -578,6 +644,15 @@ export default function Profile() {
           onSave={handleCoverPhotoSave}
         />
       )}
+
+      <CreatePostModal
+        isOpen={createPostModalOpen}
+        onClose={() => setCreatePostModalOpen(false)}
+        dbUser={dbUser}
+        onPostCreated={() => {
+          fetchUserPosts();
+        }}
+      />
     </ProtectedRoute>
   )
 }
