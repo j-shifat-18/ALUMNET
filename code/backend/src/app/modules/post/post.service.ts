@@ -48,6 +48,49 @@ const createPost = async (uid: string, payload: CreatePostInput) => {
   return result;
 };
 
+const getUserPosts = async (uid: string, options: PaginationOptions) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  const { page, limit } = options;
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await Promise.all([
+    prisma.post.findMany({
+      where: { authorId: user.id },
+      skip,
+      take: limit,
+      include: {
+        author: { select: authorSelect },
+        _count: {
+          select: {
+            likes: true,
+            comments: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.post.count({ where: { authorId: user.id } }),
+  ]);
+
+  return {
+    data,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
+  };
+};
+
 const getAllPosts = async (options: PaginationOptions) => {
   const { page, limit } = options;
   const skip = (page - 1) * limit;
@@ -172,6 +215,7 @@ const deletePost = async (id: number, uid: string) => {
 export const PostService = {
   createPost,
   getAllPosts,
+  getUserPosts,
   getSinglePost,
   updatePost,
   deletePost,

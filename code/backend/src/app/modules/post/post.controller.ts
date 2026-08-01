@@ -14,6 +14,21 @@ const createPost = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+const getUserPosts = asyncHandler(async (req: Request, res: Response) => {
+  const uid = req.params.uid as string;
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+
+  const result = await PostService.getUserPosts(uid, { page, limit });
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "User posts retrieved successfully",
+    data: result.data,
+    meta: result.meta,
+  });
+});
+
 const getAllPosts = asyncHandler(async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
@@ -66,6 +81,7 @@ const deletePost = asyncHandler(async (req: Request, res: Response) => {
 export const PostController = {
   createPost,
   getAllPosts,
+  getUserPosts,
   getSinglePost,
   updatePost,
   deletePost,

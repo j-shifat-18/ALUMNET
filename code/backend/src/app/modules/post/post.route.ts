@@ -7,6 +7,7 @@ import { createPostSchema, updatePostSchema } from "./post.validation.js";
 const router = express.Router();
 
 router.get("/", PostController.getAllPosts);
+router.get("/user/:uid", PostController.getUserPosts);
 router.get("/:id", PostController.getSinglePost);
 
 router.post("/", auth, validateRequest(createPostSchema), PostController.createPost);
