@@ -9,8 +9,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "prisma generate && tsc",
-    "start": "node dist/server.js",
-    "deploy": "npm run build && npx prisma migrate deploy",
+    "start": "node dist/src/server.js",
+    "deploy": "npm run build && prisma migrate deploy",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
     "prisma:migrate": "prisma migrate dev"
@@ -19,10 +19,7 @@
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.7.0",
-    "@types/pg": "^8.20.0",
-    "prisma": "^7.8.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.2"
+    "@types/pg": "^8.20.0"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.1.0",
@@ -34,6 +31,9 @@
     "express": "^5.2.1",
     "firebase-admin": "^13.10.0",
     "pg": "^8.20.0",
+    "prisma": "^7.8.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.2",
     "zod": "^4.4.3"
   }
 }

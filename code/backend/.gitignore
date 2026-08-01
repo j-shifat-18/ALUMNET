@@ -3,4 +3,3 @@ node_modules
 dist
 /generated/prisma
 firebase/firebase-service-key.json
-/docs
