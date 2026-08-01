@@ -451,6 +451,45 @@ Updates base user info and role-specific sub-profile in a single request.
 
 ---
 
+#### `GET /api/v1/posts/user/:uid` — Get Posts by User
+
+Returns all posts by a specific user, used for profile pages.
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID of the user  
+**Query Params:** `?page=1&limit=10`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User posts retrieved successfully",
+  "data": [
+    {
+      "id": 3,
+      "content": "Post content...",
+      "imageUrl": null,
+      "likesCount": 2,
+      "commentsCount": 1,
+      "createdAt": "2026-06-01T10:00:00.000Z",
+      "author": {
+        "id": 1,
+        "uid": "firebase_uid",
+        "name": "John Doe",
+        "profileImage": "...",
+        "role": "STUDENT"
+      },
+      "_count": { "likes": 2, "comments": 1 }
+    }
+  ],
+  "meta": { "page": 1, "limit": 10, "total": 7, "totalPages": 1 }
+}
+```
+
+**Note:** The frontend should compare the viewer's UID with the post's `author.uid` to decide whether to show edit/delete controls.
+
+---
+
 #### `GET /api/v1/posts` — Get All Posts (Feed)
 
 **Auth Required:** No  
