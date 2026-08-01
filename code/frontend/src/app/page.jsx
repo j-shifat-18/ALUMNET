@@ -27,7 +27,6 @@ export default function Home() {
 
   const dbUser = usersList[0];
   
-  
   return (
     <div className="">
       <Navbar></Navbar>
