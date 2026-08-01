@@ -96,9 +96,9 @@ export default function Profile() {
     }
   };
 
-  // useEffect(() => {
-  //   fetchUserPosts();
-  // }, [id]);
+  useEffect(() => {
+    fetchUserPosts();
+  }, [id]);
 
   // console.log(user);
   // console.log(dbUser);
@@ -325,7 +325,9 @@ export default function Profile() {
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
-                <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Your Posts</h4>
+                <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>
+                  {isOwner ? "Your Posts" : `${dbUser?.name ? `${dbUser.name}'s Posts` : "Posts"}`}
+                </h4>
                 <Divider className='mt-2 mb-4' />
 
                 {loadingPosts ? (
