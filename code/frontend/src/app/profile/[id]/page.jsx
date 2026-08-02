@@ -56,7 +56,6 @@ export default function Profile() {
   const [posts, setPosts] = useState(() => (id ? postsCache.get(id) || [] : []));
   const [loadingPosts, setLoadingPosts] = useState(() => (id ? !postsCache.has(id) : true));
 
-  // Sync form states whenever dbUser changes
   useEffect(() => {
     if (!dbUser) return;
     setName(dbUser?.name || "");
@@ -76,12 +75,6 @@ export default function Profile() {
   useEffect(() => {
     if (!id) return;
 
-    // Check if we have cached profile data to set immediately
-    if (profileCache.has(id)) {
-      setDbUser(profileCache.get(id));
-    }
-
-    // Revalidate profile in background
     axiosInstance.get(`/api/v1/profiles/${id}`)
       .then(response => {
         const data = response.data.data;
@@ -106,7 +99,6 @@ export default function Profile() {
           userPosts = res.data.data;
         }
       } catch (err) {
-        // Fallback to GET /api/v1/posts and filter by profile user's UID
         const res = await axiosInstance.get(`/api/v1/posts`);
         if (res.data?.data) {
           userPosts = res.data.data.filter((p) => p.author?.uid === id);
@@ -122,10 +114,6 @@ export default function Profile() {
   };
 
   useEffect(() => {
-    if (postsCache.has(id)) {
-      setPosts(postsCache.get(id));
-      setLoadingPosts(false);
-    }
     fetchUserPosts();
   }, [id]);
 

@@ -192,10 +192,13 @@ export default function PostCard({ post, currentUser, onDelete }) {
       </p>
 
       {post.imageUrl && (
-        <div className="rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800 bg-black/5 max-h-96">
-          <img
+        <div className="relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800 bg-black/5 max-h-96">
+          <Image
             src={post.imageUrl}
             alt="Post Attachment"
+            width={800}
+            height={500}
+            unoptimized
             className="w-full h-auto max-h-96 object-contain rounded-lg"
           />
         </div>

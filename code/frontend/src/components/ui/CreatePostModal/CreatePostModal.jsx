@@ -139,9 +139,12 @@ const CreatePostModal = ({ isOpen, onClose, dbUser, onPostCreated }) => {
 
         {imageUrl && !isUploading && (
           <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 max-h-72 bg-black/5">
-            <img
+            <Image
               src={imageUrl}
               alt="Post Upload"
+              width={600}
+              height={400}
+              unoptimized
               className="w-full h-auto max-h-72 object-contain rounded-lg"
             />
             <button

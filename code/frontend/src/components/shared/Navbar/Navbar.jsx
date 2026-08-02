@@ -49,7 +49,7 @@ const Navbar = () => {
         icon: <House />
     }, {
         href: "#users",
-        label: "S",
+        label: "My Network",
         icon: <Users />
     }];
 
