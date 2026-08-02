@@ -18,8 +18,26 @@ export default function Home() {
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
 
-  const fetchUserData = () => {
+  const fetchPosts = () => {
+    setLoadingPosts(true);
+    axiosInstance
+      .get("/api/v1/posts")
+      .then((response) => {
+        if (response.data?.data) {
+          setPosts(response.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching feed posts:", err);
+      })
+      .finally(() => {
+        setLoadingPosts(false);
+      });
+  };
+
+  useEffect(() => {
     if (!user) return;
+
     axiosInstance
       .get("/api/v1/users")
       .then((response) => {
@@ -31,25 +49,20 @@ export default function Home() {
       .catch((err) => {
         console.error("Error fetching user:", err);
       });
-  };
 
-  const fetchPosts = async () => {
-    setLoadingPosts(true);
-    try {
-      const response = await axiosInstance.get("/api/v1/posts");
-      if (response.data?.data) {
-        setPosts(response.data.data);
-      }
-    } catch (err) {
-      console.error("Error fetching feed posts:", err);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchUserData();
-    fetchPosts();
+    axiosInstance
+      .get("/api/v1/posts")
+      .then((response) => {
+        if (response.data?.data) {
+          setPosts(response.data.data);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching feed posts:", err);
+      })
+      .finally(() => {
+        setLoadingPosts(false);
+      });
   }, [user]);
 
   const dbUser = usersList[0];
