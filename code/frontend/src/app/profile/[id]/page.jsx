@@ -20,11 +20,15 @@ import PostCard from '@/components/ui/PostCard/PostCard';
 import Github from '@/components/ImageToJSX/Github';
 import IUTLogo from "../../../../public/IUT.png"
 
+const profileCache = new Map();
+const postsCache = new Map();
+
 export default function Profile() {
 
   const { user } = useAuth();
   const { id } = useParams();
-  const [dbUser, setDbUser] = useState(null);
+  
+  const [dbUser, setDbUser] = useState(() => (id ? profileCache.get(id) || null : null));
   const [basicInfoDrawerOpen, setBasicInfoDrawerOpen] = useState(false);
   const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
@@ -33,38 +37,56 @@ export default function Profile() {
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
   const textareaRef = useRef(null);
-  const [bio, setBio] = useState(dbUser?.bio || "");
-  const [name, setName] = useState(dbUser?.name || "");
-  const [location, setLocation] = useState(dbUser?.location || "");
-  const [contactNo, setContactNo] = useState(dbUser?.contactNo || "");
-  const [githubUrl, setGithubUrl] = useState(dbUser?.githubUrl || "");
-  const [portfolioUrl, setPortfolioUrl] = useState(dbUser?.portfolioUrl || "");
-  const [resumeUrl, setResumeUrl] = useState(dbUser?.resumeUrl || "");
+  
+  const cachedUser = id ? profileCache.get(id) : null;
+  const [bio, setBio] = useState(cachedUser?.bio || "");
+  const [name, setName] = useState(cachedUser?.name || "");
+  const [location, setLocation] = useState(cachedUser?.location || "");
+  const [contactNo, setContactNo] = useState(cachedUser?.contactNo || "");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [portfolioUrl, setPortfolioUrl] = useState("");
+  const [resumeUrl, setResumeUrl] = useState("");
   const [followed, setFollowed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
-  const [selectedGender, setSelectedGender] = useState(dbUser?.gender);
-  const [profileImageUrl, setProfileImageUrl] = useState(dbUser?.profileImage || "");
-  const [coverImageUrl, setCoverImageUrl] = useState(dbUser?.coverImage || "");
-  const [posts, setPosts] = useState([]);
-  const [loadingPosts, setLoadingPosts] = useState(true);
+  const [selectedGender, setSelectedGender] = useState(cachedUser?.gender || "");
+  const [profileImageUrl, setProfileImageUrl] = useState(cachedUser?.profileImage || "");
+  const [coverImageUrl, setCoverImageUrl] = useState(cachedUser?.coverImage || "");
+  
+  const [posts, setPosts] = useState(() => (id ? postsCache.get(id) || [] : []));
+  const [loadingPosts, setLoadingPosts] = useState(() => (id ? !postsCache.has(id) : true));
+
+  // Sync form states whenever dbUser changes
+  useEffect(() => {
+    if (!dbUser) return;
+    setName(dbUser?.name || "");
+    setBio(dbUser?.bio || "");
+    setContactNo(dbUser?.contactNo || "");
+    setLocation(dbUser?.location || "");
+    setSelectedGender(dbUser?.gender || "");
+    setProfileImageUrl(dbUser?.profileImage || "");
+    setCoverImageUrl(dbUser?.coverImage || "");
+
+    const userProfile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
+    setGithubUrl(userProfile?.githubUrl || "");
+    setPortfolioUrl(userProfile?.portfolioUrl || "");
+    setResumeUrl(userProfile?.resumeUrl || "");
+  }, [dbUser]);
 
   useEffect(() => {
     if (!id) return;
+
+    // Check if we have cached profile data to set immediately
+    if (profileCache.has(id)) {
+      setDbUser(profileCache.get(id));
+    }
+
+    // Revalidate profile in background
     axiosInstance.get(`/api/v1/profiles/${id}`)
       .then(response => {
-        console.log("Profile API Response:", response);
         const data = response.data.data;
+        profileCache.set(id, data);
         setDbUser(data);
-        setName(data?.name || "");
-        setContactNo(data?.contactNo || "");
-        setLocation(data?.location || "");
-        setSelectedGender(data?.gender || "");
-
-        const userProfile = data?.role === 'STUDENT' ? data?.studentProfile : data?.alumniProfile;
-        setGithubUrl(userProfile?.githubUrl || "");
-        setPortfolioUrl(userProfile?.portfolioUrl || "");
-        setResumeUrl(userProfile?.resumeUrl || "");
       })
       .catch(err => {
         console.error("Error fetching profile:", err.response?.data || err.message);
@@ -73,7 +95,9 @@ export default function Profile() {
 
   const fetchUserPosts = async () => {
     if (!id) return;
-    setLoadingPosts(true);
+    if (!postsCache.has(id)) {
+      setLoadingPosts(true);
+    }
     try {
       let userPosts = [];
       try {
@@ -88,6 +112,7 @@ export default function Profile() {
           userPosts = res.data.data.filter((p) => p.author?.uid === id);
         }
       }
+      postsCache.set(id, userPosts);
       setPosts(userPosts);
     } catch (err) {
       console.error("Error fetching user posts:", err);
@@ -97,6 +122,10 @@ export default function Profile() {
   };
 
   useEffect(() => {
+    if (postsCache.has(id)) {
+      setPosts(postsCache.get(id));
+      setLoadingPosts(false);
+    }
     fetchUserPosts();
   }, [id]);
 

@@ -53,16 +53,24 @@ const DropdownMenuItem = ({
     {children}
   </div>;
 const DropdownMenuSeparator = () => <div className="h-px bg-zinc-200 dark:bg-zinc-700" />;
+const userProfileCache = new Map();
+
 export default function UserProfileDropdown() {
   const { user, logout } = useAuth();
-  const [usersList, setUsersList] = useState([]);
+  const [usersList, setUsersList] = useState(() => (user?.uid && userProfileCache.has(user.uid) ? [userProfileCache.get(user.uid)] : []));
 
   const users = () => {
     if (!user) {
       return;
     }
+    if (userProfileCache.has(user.uid)) {
+      setUsersList([userProfileCache.get(user.uid)]);
+    }
     axiosInstance.get(`/api/v1/profiles/${user.uid}`).then(response => {
-      setUsersList(response.data.data ? [response.data.data] : []);
+      if (response.data?.data) {
+        userProfileCache.set(user.uid, response.data.data);
+        setUsersList([response.data.data]);
+      }
     }).catch(err => { })
   }
 

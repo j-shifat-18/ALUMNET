@@ -65,6 +65,17 @@ export default function Home() {
       });
   }, [user]);
 
+  useEffect(() => {
+    const handleRefreshFeed = () => {
+      fetchPosts();
+    };
+
+    window.addEventListener("refresh-feed", handleRefreshFeed);
+    return () => {
+      window.removeEventListener("refresh-feed", handleRefreshFeed);
+    };
+  }, []);
+
   const dbUser = usersList[0];
 
   return (

@@ -6,17 +6,26 @@ import logo from "../../../../public/logo.png";
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import UserProfileDropdown from '@/components/ui/UserProfileDropdown/UserProfileDropdown';
+
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const { user, logout } = useAuth();
+    const pathname = usePathname();
 
     const handleLogOut = () => {
         logout().catch(err => {
             console.error("Log out failed:", err);
         });
     }
+
+    const handleHomeClick = (e, href) => {
+        if (href === "/" && pathname === "/") {
+            window.dispatchEvent(new CustomEvent("refresh-feed"));
+        }
+    };
 
     useEffect(() => {
         const handleScroll = () => {
@@ -35,7 +44,7 @@ const Navbar = () => {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
     const navLinks = [{
-        href: "\\",
+        href: "/",
         label: "Home",
         icon: <House />
     }, {
@@ -49,7 +58,7 @@ const Navbar = () => {
             <div className="flex h-14 sm:h-16 lg:h-20 items-center justify-between">
                 { }
                 <div className="flex items-center">
-                    <Link href={"/"} className="flex items-center space-x-2 group">
+                    <Link href={"/"} onClick={(e) => handleHomeClick(e, "/")} className="flex items-center space-x-2 group">
                         <Image src={logo} alt='ALUMNET' width={210}></Image>
                     </Link>
                 </div>
@@ -57,13 +66,13 @@ const Navbar = () => {
                 { }
                 <nav className="hidden md:flex items-center space-x-4 lg:space-x-6 xl:space-x-8">
                     {navLinks.map(link => (
-                        <a key={link.href} href={link.href} className="relative group flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
+                        <Link key={link.href} href={link.href} onClick={(e) => handleHomeClick(e, link.href)} className="relative group flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                             {link.icon}
                             <span className="pointer-events-none absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-100 px-2.5 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md">
                                 {link.label}
                             </span>
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gray-900 dark:bg-gray-100 transition-all duration-300 group-hover:w-full"></span>
-                        </a>
+                        </Link>
                     ))}
                 </nav>
 
@@ -93,10 +102,10 @@ const Navbar = () => {
                 <div className="py-4 border-t border-gray-200 dark:border-gray-800">
                     <div className="flex flex-col space-y-1">
                         {navLinks.map(link => (
-                            <a key={link.href} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm sm:text-base font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                            <Link key={link.href} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm sm:text-base font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                 {link.icon}
                                 <span>{link.label}</span>
-                            </a>
+                            </Link>
                         ))}
                         {user ? (
                             <UserProfileDropdown></UserProfileDropdown>
