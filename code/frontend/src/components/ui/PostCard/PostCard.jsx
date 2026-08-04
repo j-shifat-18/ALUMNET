@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Heart, MessageSquare, Send, Trash2, Loader2, MoreVertical, Pencil } from "lucide-react";
 import placeholderUser from "../../../../public/placeholder-user.jpg";
 import axiosInstance from "@/lib/axios";
@@ -17,6 +18,23 @@ export default function PostCard({ post, currentUser, onDelete }) {
   const [newComment, setNewComment] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const authorId = post.author?.uid || post.author?.id;
+
+  const getTruncatedContent = (text, maxLength = 260) => {
+    if (!text) return "";
+    const lines = text.split("\n");
+    if (lines.length > 3) {
+      return lines.slice(0, 3).join("\n");
+    }
+    if (text.length > maxLength) {
+      const sliced = text.slice(0, maxLength);
+      const lastSpace = sliced.lastIndexOf(" ");
+      return (lastSpace > 180 ? sliced.slice(0, lastSpace) : sliced).trimEnd();
+    }
+    return text;
+  };
 
   const isOwner = currentUser && (
     currentUser.uid === post.author?.uid || 
@@ -109,19 +127,42 @@ export default function PostCard({ post, currentUser, onDelete }) {
     <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4 overflow-hidden min-w-0">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-full overflow-hidden relative border border-gray-200 dark:border-gray-700 flex-shrink-0">
-            <Image
-              src={post.author?.profileImage || placeholderUser}
-              alt={post.author?.name || "Author"}
-              fill
-              className="object-cover"
-            />
-          </div>
+          {authorId ? (
+            <Link
+              href={`/profile/${authorId}`}
+              className="w-10 h-10 rounded-full overflow-hidden relative border border-gray-200 dark:border-gray-700 shrink-0 cursor-pointer"
+            >
+              <Image
+                src={post.author?.profileImage || placeholderUser}
+                alt={post.author?.name || "Author"}
+                fill
+                className="object-cover"
+              />
+            </Link>
+          ) : (
+            <div className="w-10 h-10 rounded-full overflow-hidden relative border border-gray-200 dark:border-gray-700 shrink-0">
+              <Image
+                src={post.author?.profileImage || placeholderUser}
+                alt={post.author?.name || "Author"}
+                fill
+                className="object-cover"
+              />
+            </div>
+          )}
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="font-semibold text-gray-900 dark:text-white leading-tight truncate">
-                {post.author?.name || "User"}
-              </h4>
+              {authorId ? (
+                <Link
+                  href={`/profile/${authorId}`}
+                  className="font-semibold text-gray-900 dark:text-white leading-tight truncate cursor-pointer"
+                >
+                  {post.author?.name || "User"}
+                </Link>
+              ) : (
+                <h4 className="font-semibold text-gray-900 dark:text-white leading-tight truncate">
+                  {post.author?.name || "User"}
+                </h4>
+              )}
               {post.author?.role && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 uppercase tracking-wider font-medium">
                   {post.author.role}
@@ -135,7 +176,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
         </div>
 
         {isOwner && (
-          <div className="relative flex-shrink-0">
+          <div className="relative shrink-0">
             <button
               type="button"
               onClick={() => setShowDropdown((prev) => !prev)}
@@ -188,7 +229,31 @@ export default function PostCard({ post, currentUser, onDelete }) {
       </div>
 
       <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] text-base leading-relaxed">
-        {post.content}
+        {!isExpanded && (post?.content?.length > 200 || post?.content?.split("\n").length > 3) ? (
+          <>
+            {getTruncatedContent(post.content)}
+            <button
+              type="button"
+              onClick={() => setIsExpanded(true)}
+              className="inline-block ml-1 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
+            >
+              ...see more
+            </button>
+          </>
+        ) : (
+          <>
+            {post.content}
+            {(post?.content?.length > 260 || post?.content?.split("\n").length > 3) && (
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="inline-block ml-2 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
+              >
+                See less
+              </button>
+            )}
+          </>
+        )}
       </p>
 
       {post.imageUrl && (

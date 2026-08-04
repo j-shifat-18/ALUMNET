@@ -50,6 +50,7 @@ export default function Profile() {
   const [followed, setFollowed] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
+  const [showAllPosts, setShowAllPosts] = useState(false);
   const [selectedGender, setSelectedGender] = useState(cachedUser?.gender || "");
   const [profileImageUrl, setProfileImageUrl] = useState(cachedUser?.profileImage || "");
   const [coverImageUrl, setCoverImageUrl] = useState(cachedUser?.coverImage || "");
@@ -365,18 +366,37 @@ export default function Profile() {
                     <p className="text-base font-medium">No posts shared yet.</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {posts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        currentUser={user}
-                        onDelete={(deletedId) =>
-                          setPosts((prev) => prev.filter((p) => p.id !== deletedId))
-                        }
-                      />
-                    ))}
-                  </div>
+                  <>
+                    <div className="space-y-4">
+                      {(showAllPosts ? posts : posts.slice(0, 1)).map((post) => (
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          currentUser={user}
+                          onDelete={(deletedId) =>
+                            setPosts((prev) => prev.filter((p) => p.id !== deletedId))
+                          }
+                        />
+                      ))}
+                    </div>
+                    {posts.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllPosts((prev) => !prev)}
+                        className="mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-800 hover:cursor-pointer w-full transition-colors"
+                      >
+                        {showAllPosts ? (
+                          <div className="pt-3 flex items-center justify-center gap-2">
+                            <p>Show Less</p> <ListChevronsDownUp />
+                          </div>
+                        ) : (
+                          <div className="pt-3 flex items-center justify-center gap-2">
+                            <p>See More</p> <ListChevronsUpDown />
+                          </div>
+                        )}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>
