@@ -1,6 +1,7 @@
 "use client";
 
 import ProtectedRoute from '@/components/shared/ProtectedRoute'
+import LoadingScreen from '@/components/shared/LoadingScreen/LoadingScreen'
 import React, { useEffect, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
@@ -250,6 +251,14 @@ export default function Profile() {
       setIsSaving(false);
     }
   };
+
+  if (!dbUser) {
+    return (
+      <ProtectedRoute>
+        <LoadingScreen />
+      </ProtectedRoute>
+    );
+  }
 
   return (
     <ProtectedRoute>

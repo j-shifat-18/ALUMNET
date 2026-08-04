@@ -13,17 +13,34 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
+import LoadingScreen from "@/components/shared/LoadingScreen/LoadingScreen";
+import axiosInstance from "@/lib/axios";
 
 const AuthContext = createContext();
 const googleProvider = new GoogleAuthProvider();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [dbUser, setDbUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
+      if (currentUser) {
+        try {
+          const response = await axiosInstance.get(
+            `/api/v1/profiles/${currentUser.uid}`
+          );
+          if (response.data?.data) {
+            setDbUser(response.data.data);
+          }
+        } catch (err) {
+          console.error("Error fetching user profile in AuthProvider:", err);
+        }
+      } else {
+        setDbUser(null);
+      }
       setLoading(false);
     });
 
@@ -36,7 +53,7 @@ export const AuthProvider = ({ children }) => {
       const result = await createUserWithEmailAndPassword(
         auth,
         email,
-        password,
+        password
       );
 
       await sendEmailVerification(result.user);
@@ -73,6 +90,7 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     try {
       await signOut(auth);
+      setDbUser(null);
     } finally {
       setLoading(false);
     }
@@ -90,6 +108,8 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        dbUser,
+        setDbUser,
         loading,
         registerUser,
         signInUser,
@@ -99,7 +119,7 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
       }}
     >
-      {children}
+      {loading ? <LoadingScreen /> : children}
     </AuthContext.Provider>
   );
 };

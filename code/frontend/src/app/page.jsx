@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
+import LoadingScreen from "@/components/shared/LoadingScreen/LoadingScreen";
 import Navbar from "@/components/shared/Navbar/Navbar";
 import PostCard from "@/components/ui/PostCard/PostCard";
 import CreatePostModal from "@/components/ui/CreatePostModal/CreatePostModal";
@@ -16,11 +17,17 @@ import placeholderUser from "../../public/placeholder-user.jpg";
 const homeProfileCache = new Map();
 
 export default function Home() {
-  const { user } = useAuth();
-  const [dbUser, setDbUser] = useState(() => (user?.uid && homeProfileCache.has(user.uid) ? homeProfileCache.get(user.uid) : null));
+  const { user, dbUser: contextDbUser } = useAuth();
+  const [dbUser, setDbUser] = useState(contextDbUser);
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (contextDbUser) {
+      setDbUser(contextDbUser);
+    }
+  }, [contextDbUser]);
 
   const fetchPosts = () => {
     setLoadingPosts(true);
@@ -41,29 +48,6 @@ export default function Home() {
 
   useEffect(() => {
     if (!user) return;
-
-    axiosInstance
-      .get(`/api/v1/profiles/${user.uid}`)
-      .then((response) => {
-        if (response.data?.data) {
-          homeProfileCache.set(user.uid, response.data.data);
-          setDbUser(response.data.data);
-        }
-      })
-      .catch(() => {
-        axiosInstance
-          .get("/api/v1/users")
-          .then((res) => {
-            const signedInUser = res.data?.data?.find(
-              (u) => u.email === user.email
-            );
-            if (signedInUser) {
-              homeProfileCache.set(user.uid, signedInUser);
-              setDbUser(signedInUser);
-            }
-          })
-          .catch((err) => console.error("Error fetching user data:", err));
-      });
 
     axiosInstance
       .get("/api/v1/posts")
@@ -91,12 +75,14 @@ export default function Home() {
     };
   }, []);
 
+  const activeDbUser = dbUser || contextDbUser;
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-black/95">
         <Navbar />
         <main className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-6">
-          {dbUser?.role === "USER" ? (
+          {activeDbUser?.role === "USER" ? (
             <div className="max-w-3xl mx-auto flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center space-y-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
                 Welcome to ALUMNET!
@@ -115,10 +101,10 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm space-y-3 p-4">
-                  <div className="relative h-20 -mx-4 -mt-4 bg-linear-to-r from-zinc-800 to-zinc-900 overflow-hidden">
-                    {dbUser?.coverImage && (
+                  <div className="relative h-20 -mx-4 -mt-4 bg-gradient-to-r from-zinc-800 to-zinc-900 overflow-hidden">
+                    {activeDbUser?.coverImage && (
                       <Image
-                        src={dbUser.coverImage}
+                        src={activeDbUser.coverImage}
                         alt="Cover"
                         fill
                         unoptimized
@@ -131,7 +117,7 @@ export default function Home() {
                     <div className="w-18 h-18 rounded-full border-4 border-white dark:border-gray-900 overflow-hidden shadow-md relative bg-white dark:bg-gray-800 shrink-0">
                       <Image
                         src={
-                          dbUser?.profileImage ||
+                          activeDbUser?.profileImage ||
                           user?.photoURL ||
                           placeholderUser
                         }
@@ -144,25 +130,25 @@ export default function Home() {
 
                   <div className="text-left space-y-0.5 pt-1">
                     <h3 className="font-bold text-base text-gray-900 dark:text-white leading-tight truncate">
-                      {dbUser?.name || user?.displayName || "User"}
+                      {activeDbUser?.name || user?.displayName || "User"}
                     </h3>
-                    {dbUser?.role && (
+                    {activeDbUser?.role && (
                       <span className="inline-block text-[10px] text-gray-500 dark:text-gray-400 font-semibold tracking-wide uppercase">
-                        {dbUser.role}
+                        {activeDbUser.role}
                       </span>
                     )}
                   </div>
 
                   <div className="space-y-1 text-sm text-gray-600 dark:text-gray-300">
-                    {dbUser?.bio && (
+                    {activeDbUser?.bio && (
                       <p className="text-xs text-black dark:text-gray-400 line-clamp-3 leading-relaxed text-left">
-                        {dbUser.bio}
+                        {activeDbUser.bio}
                       </p>
                     )}
 
-                    {dbUser?.location && (
+                    {activeDbUser?.location && (
                       <div className="flex items-center justify-start gap-1.5 text-xs text-gray-500 dark:text-gray-400 pt-0.5">
-                        <span className="truncate">{dbUser.location}</span>
+                        <span className="truncate">{activeDbUser.location}</span>
                       </div>
                     )}
                   </div>

@@ -6,6 +6,8 @@ import axiosInstance from "@/lib/axios";
 import Image from "next/image";
 import placeholder from "../../../../public/placeholder-user.jpg";
 import Link from "next/link";
+import LoadingScreen from "@/components/shared/LoadingScreen/LoadingScreen";
+import ProtectedRoute from "@/components/shared/ProtectedRoute";
 
 const User = props => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
   <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
@@ -53,32 +55,8 @@ const DropdownMenuItem = ({
     {children}
   </div>;
 const DropdownMenuSeparator = () => <div className="h-px bg-zinc-200 dark:bg-zinc-700" />;
-const userProfileCache = new Map();
-
 export default function UserProfileDropdown() {
-  const { user, logout } = useAuth();
-  const [usersList, setUsersList] = useState(() => (user?.uid && userProfileCache.has(user.uid) ? [userProfileCache.get(user.uid)] : []));
-
-  const users = () => {
-    if (!user) {
-      return;
-    }
-    if (userProfileCache.has(user.uid)) {
-      setUsersList([userProfileCache.get(user.uid)]);
-    }
-    axiosInstance.get(`/api/v1/profiles/${user.uid}`).then(response => {
-      if (response.data?.data) {
-        userProfileCache.set(user.uid, response.data.data);
-        setUsersList([response.data.data]);
-      }
-    }).catch(err => { })
-  }
-
-  useEffect(() => {
-    users();
-  }, [user]);
-
-  const dbUser = usersList[0];
+  const { user, dbUser, logout } = useAuth();
   // console.log(dbUser);
 
   return <div className="flex items-center justify-center font-sans p-8">
