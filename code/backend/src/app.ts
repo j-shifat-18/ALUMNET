@@ -3,6 +3,8 @@ import cors from "cors";
 import { UserRoutes } from "./app/modules/user/user.route.js";
 import { ProfileRoutes } from "./app/modules/profile/profile.route.js";
 import { PostRoutes } from "./app/modules/post/post.route.js";
+import { CommentRoutes, CommentStandaloneRoutes } from "./app/modules/comment/comment.route.js";
+import { LikeRoutes } from "./app/modules/like/like.route.js";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler.js";
 
 const app = express();
@@ -23,6 +25,9 @@ app.use(express.json());
 app.use("/api/v1/users", UserRoutes);
 app.use("/api/v1/profiles", ProfileRoutes);
 app.use("/api/v1/posts", PostRoutes);
+app.use("/api/v1/posts/:postId/comments", CommentRoutes);
+app.use("/api/v1/posts/:postId/likes", LikeRoutes);
+app.use("/api/v1/comments", CommentStandaloneRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");

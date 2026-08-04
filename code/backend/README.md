@@ -592,6 +592,213 @@ Returns all posts by a specific user, used for profile pages.
 
 ---
 
+### Comment Module (`/api/v1/posts/:postId/comments`, `/api/v1/comments`)
+
+#### `POST /api/v1/posts/:postId/comments` — Add Comment
+
+**Auth Required:** Yes  
+**Params:** `postId` — Post ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "This is really helpful, thanks!"
+}
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| content | string | Yes — min 1 character |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Comment added successfully",
+  "data": {
+    "id": 1,
+    "content": "This is really helpful, thanks!",
+    "userId": 2,
+    "postId": 1,
+    "createdAt": "2026-06-01T12:00:00.000Z",
+    "updatedAt": "2026-06-01T12:00:00.000Z",
+    "user": {
+      "id": 2,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "profileImage": "...",
+      "role": "STUDENT"
+    }
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/posts/:postId/comments` — Get Post Comments
+
+**Auth Required:** No  
+**Params:** `postId` — Post ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Comments retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "content": "This is really helpful!",
+      "createdAt": "2026-06-01T12:00:00.000Z",
+      "updatedAt": "2026-06-01T12:00:00.000Z",
+      "user": {
+        "id": 2,
+        "uid": "firebase_uid",
+        "name": "Jane Smith",
+        "profileImage": "...",
+        "role": "STUDENT"
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/comments/:id` — Edit Comment
+
+**Auth Required:** Yes  
+**Authorization:** Only the comment author  
+**Params:** `id` — Comment ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "Updated comment text"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Comment updated successfully",
+  "data": {
+    "id": 1,
+    "content": "Updated comment text",
+    "user": { ... }
+  }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "You can only edit your own comments" }
+```
+
+---
+
+#### `DELETE /api/v1/comments/:id` — Delete Comment
+
+**Auth Required:** Yes  
+**Authorization:** Comment author or admin  
+**Params:** `id` — Comment ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Comment deleted successfully"
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "You can only delete your own comments" }
+```
+
+---
+
+### Like Module (`/api/v1/posts/:postId/likes`)
+
+#### `POST /api/v1/posts/:postId/likes/toggle` — Toggle Like
+
+Likes the post if not already liked, unlikes if already liked.
+
+**Auth Required:** Yes  
+**Params:** `postId` — Post ID (integer)
+
+**Response (200) — after liking:**
+```json
+{
+  "success": true,
+  "message": "Post liked",
+  "data": { "liked": true }
+}
+```
+
+**Response (200) — after unliking:**
+```json
+{
+  "success": true,
+  "message": "Post unliked",
+  "data": { "liked": false }
+}
+```
+
+---
+
+#### `GET /api/v1/posts/:postId/likes/status` — Get Like Status
+
+Check if the currently authenticated user has liked a post.
+
+**Auth Required:** Yes  
+**Params:** `postId` — Post ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Like status retrieved successfully",
+  "data": {
+    "liked": true,
+    "likesCount": 12
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/posts/:postId/likes` — Get Post Likes
+
+Returns the list of users who liked a post.
+
+**Auth Required:** No  
+**Params:** `postId` — Post ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post likes retrieved successfully",
+  "data": [
+    {
+      "userId": 2,
+      "postId": 1,
+      "createdAt": "2026-06-01T11:00:00.000Z",
+      "user": {
+        "id": 2,
+        "uid": "firebase_uid",
+        "name": "Jane Smith",
+        "profileImage": "..."
+      }
+    }
+  ]
+}
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -630,12 +837,20 @@ backend/
 │           │   ├── profile.controller.ts
 │           │   ├── profile.service.ts
 │           │   └── profile.validation.ts
-│           └── post/
-│               ├── post.route.ts
-│               ├── post.controller.ts
-│               ├── post.service.ts
-│               └── post.validation.ts
-├── package.json
+│           ├── post/
+│           │   ├── post.route.ts
+│           │   ├── post.controller.ts
+│           │   ├── post.service.ts
+│           │   └── post.validation.ts
+│           ├── comment/
+│           │   ├── comment.route.ts
+│           │   ├── comment.controller.ts
+│           │   ├── comment.service.ts
+│           │   └── comment.validation.ts
+│           └── like/
+│               ├── like.route.ts
+│               ├── like.controller.ts
+│               └── like.service.ts
 ├── tsconfig.json
 └── prisma.config.ts
 ```
