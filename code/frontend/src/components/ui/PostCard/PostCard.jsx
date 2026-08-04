@@ -228,7 +228,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
         )}
       </div>
 
-      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] text-base leading-relaxed">
+      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-break-words break-all wrap-anywhere text-base leading-relaxed">
         {!isExpanded && (post?.content?.length > 200 || post?.content?.split("\n").length > 3) ? (
           <>
             {getTruncatedContent(post.content)}
@@ -326,7 +326,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {comments.map((comment) => (
                 <div key={comment.id} className="flex items-start gap-2.5 text-xs">
-                  <div className="w-7 h-7 rounded-full overflow-hidden relative flex-shrink-0 border border-gray-200 dark:border-gray-700">
+                  <div className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700">
                     <Image
                       src={comment.user?.profileImage || placeholderUser}
                       alt={comment.user?.name || "User"}
@@ -343,7 +343,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
                         {formatDate(comment.createdAt)}
                       </span>
                     </div>
-                    <p className="text-gray-700 dark:text-gray-300 text-xs break-words break-all">
+                    <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
                       {comment.content}
                     </p>
                   </div>
