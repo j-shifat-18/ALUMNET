@@ -10,7 +10,7 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, Divide, FileUser, Globe, ListChevronsDownUp, ListChevronsUpDown, PencilLine, UserRoundCheck, UserRoundPlus } from 'lucide-react';
+import { Camera, Construction, Divide, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, Video } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
@@ -270,21 +270,31 @@ export default function Profile() {
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Post Option (Placeholder rn)</h4>
-                <Divider className='mt-2 mb-2' />
+                <button className='w-full border border-gray-600 rounded-xl text-left p-5 hover:bg-gray-200 hover:cursor-pointer font-bold'>Post Something...</button>
+                <div className='mt-6 flex items-center gap-20'>
+                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><ImagePlus className='text-green-500' /> Add Photo</button>
+                  <button className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-200 rounded-xl'><Video className='text-red-500' /> Add Video</button>
+                </div>
               </div>
             </div>
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Your Activity</h4>
+                <h4 className='text-2xl font-bold'>Your Posts</h4>
                 <Divider className='mt-2 mb-2' />
+
+                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Site Under Construction... Developer is in Delusion 😞</p>
               </div>
             </div>
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Education</h4>
+                <div className='flex justify-between items-center'>
+                  <h4 className='text-2xl font-bold'>Education</h4>
+                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
+                    <Plus className='w-5 h-5 hover:cursor-pointer' />
+                  </button> : <></>}
+                </div>
                 <Divider className='mt-2 mb-2' />
                 <div className='flex gap-3'>
                   <Image src={IUTLogo} alt='IUT' width={60}></Image>
@@ -300,7 +310,12 @@ export default function Profile() {
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Skills</h4>
+                <div className='flex justify-between items-center'>
+                  <h4 className='text-2xl font-bold'>Skills</h4>
+                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
+                    <PencilLine className='w-5 h-5 hover:cursor-pointer' />
+                  </button> : <></>}
+                </div>
                 <Divider className='mt-2 mb-2' />
                 {(() => {
                   const skills = profile?.skills ?? [];
@@ -340,10 +355,16 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="">
+            <div className="mb-20">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <h4 className='text-2xl font-bold'>Certifications & Achievements</h4>
+                <div className='flex justify-between items-center'>
+                  <h4 className='text-2xl font-bold'>Certifications & Achievements</h4>
+                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
+                    <Plus className='w-5 h-5 hover:cursor-pointer' />
+                  </button> : <></>}
+                </div>
                 <Divider className='mt-2 mb-2' />
+                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Site Under Construction... Developer is in Delusion 😞</p>
               </div>
             </div>
 

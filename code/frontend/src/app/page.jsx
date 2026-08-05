@@ -3,6 +3,7 @@
 import Navbar from "@/components/shared/Navbar/Navbar";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
+import { Construction } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -26,6 +27,7 @@ export default function Home() {
 
   const dbUser = usersList[0];
   
+  
   return (
     <div className="">
       <Navbar></Navbar>
@@ -34,7 +36,7 @@ export default function Home() {
           dbUser?.role == "USER" ? <>
           <Link href={"/profile-setup"} className="p-4 border-2 rounded-xl border-black hover:cursor-pointer hover:bg-zinc-900 hover:text-white">Complete Your Profile to Continue</Link>
           </> : <>
-          <p className="">Welcome to ALUMNET FEED</p>
+          <p className='flex items-center gap-3 justify-center text-4xl font-bold'><Construction className='text-red-700'/> Site Under Construction... Developer is in Delusion 😞</p>
           </>
         }
       </div>
