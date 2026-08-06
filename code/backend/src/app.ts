@@ -7,6 +7,7 @@ import { CommentRoutes, CommentStandaloneRoutes } from "./app/modules/comment/co
 import { LikeRoutes } from "./app/modules/like/like.route.js";
 import { FollowRoutes } from "./app/modules/follow/follow.route.js";
 import { MentorshipRoutes } from "./app/modules/mentorship/mentorship.route.js";
+import { SearchRoutes } from "./app/modules/search/search.route.js";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler.js";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/v1/posts/:postId/comments", CommentRoutes);
 app.use("/api/v1/posts/:postId/likes", LikeRoutes);
 app.use("/api/v1/comments", CommentStandaloneRoutes);
 app.use("/api/v1/mentorship", MentorshipRoutes);
+app.use("/api/v1/search", SearchRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");
