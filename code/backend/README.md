@@ -799,6 +799,454 @@ Returns the list of users who liked a post.
 
 ---
 
+### Follow Module (`/api/v1/users/:uid`)
+
+#### `POST /api/v1/users/:uid/follow` — Follow a User
+
+**Auth Required:** Yes  
+**Params:** `uid` — Firebase UID of the user to follow
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User followed successfully"
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "You cannot follow yourself" }
+```
+
+**Error (409):**
+```json
+{ "success": false, "message": "You are already following this user" }
+```
+
+---
+
+#### `DELETE /api/v1/users/:uid/follow` — Unfollow a User
+
+**Auth Required:** Yes  
+**Params:** `uid` — Firebase UID of the user to unfollow
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User unfollowed successfully"
+}
+```
+
+---
+
+#### `GET /api/v1/users/:uid/follow/status` — Get Follow Status
+
+Check if the currently authenticated user follows a given user.
+
+**Auth Required:** Yes  
+**Params:** `uid` — Firebase UID of the target user
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Follow status retrieved successfully",
+  "data": { "isFollowing": true }
+}
+```
+
+---
+
+#### `GET /api/v1/users/:uid/followers` — Get Followers
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Followers retrieved successfully",
+  "data": [
+    {
+      "id": 2,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "...",
+      "role": "STUDENT",
+      "isVerified": false,
+      "followersCount": 10,
+      "followingCount": 5
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/users/:uid/following` — Get Following
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Following retrieved successfully",
+  "data": [
+    {
+      "id": 3,
+      "uid": "firebase_uid",
+      "name": "Ali Hassan",
+      "username": "alihassan",
+      "profileImage": "...",
+      "role": "ALUMNI",
+      "isVerified": true,
+      "followersCount": 120,
+      "followingCount": 30
+    }
+  ]
+}
+```
+
+---
+
+### Mentorship Module (`/api/v1/mentorship`)
+
+#### `POST /api/v1/mentorship/request` — Send Mentorship Request
+
+Only users with role `STUDENT` can send requests. Target must have role `ALUMNI`.
+
+**Auth Required:** Yes
+
+**Request Body:**
+```json
+{
+  "alumniUid": "firebase_uid_of_alumni",
+  "message": "I would love guidance on breaking into backend engineering."
+}
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| alumniUid | string | Yes |
+| message | string | No |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Mentorship request sent successfully",
+  "data": {
+    "id": 1,
+    "studentId": 2,
+    "alumniId": 5,
+    "message": "I would love guidance on breaking into backend engineering.",
+    "status": "PENDING",
+    "createdAt": "2026-07-01T10:00:00.000Z",
+    "student": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" },
+    "alumni": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+  }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only students can send mentorship requests" }
+```
+
+**Error (409):**
+```json
+{ "success": false, "message": "A mentorship request already exists with this alumni" }
+```
+
+---
+
+#### `GET /api/v1/mentorship/sent` — Get Sent Requests
+
+Returns all mentorship requests sent by the current user.
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Sent requests retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "status": "PENDING",
+      "message": "...",
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "alumni": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/mentorship/received` — Get Received Requests
+
+Returns all mentorship requests received by the current user (alumni).
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Received requests retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "status": "PENDING",
+      "message": "I would love your guidance.",
+      "createdAt": "2026-07-01T10:00:00.000Z",
+      "student": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+    }
+  ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/mentorship/:id/accept` — Accept a Request
+
+Only the alumni the request was sent to can accept it.
+
+**Auth Required:** Yes  
+**Params:** `id` — Mentorship request ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentorship request accepted",
+  "data": {
+    "id": 1,
+    "status": "ACCEPTED",
+    "student": { ... },
+    "alumni": { ... }
+  }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "You can only accept requests sent to you" }
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Request is already accepted" }
+```
+
+---
+
+#### `PATCH /api/v1/mentorship/:id/reject` — Reject a Request
+
+**Auth Required:** Yes  
+**Params:** `id` — Mentorship request ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentorship request rejected",
+  "data": { "id": 1, "status": "REJECTED", "student": { ... }, "alumni": { ... } }
+}
+```
+
+---
+
+#### `GET /api/v1/mentorship/mentors` — Get My Mentors
+
+Returns accepted mentors for the current student.
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentors retrieved successfully",
+  "data": [
+    {
+      "requestId": 1,
+      "mentor": {
+        "id": 5,
+        "uid": "...",
+        "name": "Jane Smith",
+        "profileImage": "...",
+        "role": "ALUMNI",
+        "alumniProfile": {
+          "currentCompany": "Google",
+          "currentPosition": "Senior Engineer",
+          "expertiseAreas": ["Backend", "Cloud"],
+          "mentorshipDomains": ["Career Guidance"]
+        }
+      }
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/mentorship/mentees` — Get My Mentees
+
+Returns accepted mentees for the current alumni.
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentees retrieved successfully",
+  "data": [
+    {
+      "requestId": 1,
+      "mentee": {
+        "id": 2,
+        "uid": "...",
+        "name": "John Doe",
+        "profileImage": "...",
+        "role": "STUDENT",
+        "studentProfile": {
+          "department": "CSE",
+          "batch": "2023",
+          "careerGoal": "Full Stack Developer",
+          "skills": ["React", "Node.js"]
+        }
+      }
+    }
+  ]
+}
+```
+
+---
+
+### Search Module (`/api/v1/search`)
+
+#### `GET /api/v1/search/alumni` — Search Alumni
+
+**Auth Required:** Yes
+
+**Query Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `name` | string | Partial name match (case-insensitive) |
+| `company` | string | Partial company match |
+| `department` | string | Partial department match |
+| `industry` | string | Partial industry match |
+| `skill` | string | Exact skill match (e.g. `?skill=React`) |
+| `domain` | string | Matches expertiseAreas, mentorshipDomains, or interestedDomains |
+| `batch` | string | Exact batch match (e.g. `?batch=2019`) |
+| `graduationYear` | number | Exact graduation year |
+| `mentorAvailable` | boolean | `true` or `false` |
+| `page` | number | Default: 1 |
+| `limit` | number | Default: 10 |
+
+**Example Request:**
+```
+GET /api/v1/search/alumni?company=Google&skill=React&mentorAvailable=true&page=1&limit=10
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Alumni retrieved successfully",
+  "data": [
+    {
+      "id": 5,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "...",
+      "bio": "Senior Engineer at Google",
+      "isVerified": true,
+      "isMentorAvailable": true,
+      "followersCount": 120,
+      "alumniProfile": {
+        "department": "CSE",
+        "program": "BSc in Software Engineering",
+        "batch": "2019",
+        "graduationYear": 2023,
+        "currentCompany": "Google",
+        "currentPosition": "Senior Software Engineer",
+        "industry": "Technology",
+        "experienceYears": 3,
+        "skills": ["React", "Node.js", "System Design"],
+        "expertiseAreas": ["Frontend", "Backend"],
+        "mentorshipDomains": ["Career Guidance", "Interview Prep"]
+      }
+    }
+  ],
+  "meta": { "page": 1, "limit": 10, "total": 3, "totalPages": 1 }
+}
+```
+
+---
+
+#### `GET /api/v1/search/users` — Search All Users
+
+**Auth Required:** Yes
+
+**Query Parameters:**
+
+| Param | Type | Description |
+|-------|------|-------------|
+| `name` | string | Partial name match (case-insensitive) |
+| `role` | string | `STUDENT`, `ALUMNI`, `ADMIN`, or `USER` |
+| `department` | string | Partial department match (searches both student and alumni profiles) |
+| `page` | number | Default: 1 |
+| `limit` | number | Default: 10 |
+
+**Example Request:**
+```
+GET /api/v1/search/users?name=john&role=STUDENT&page=1&limit=10
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Users retrieved successfully",
+  "data": [
+    {
+      "id": 2,
+      "uid": "firebase_uid",
+      "name": "John Doe",
+      "username": "johndoe",
+      "profileImage": "...",
+      "bio": "...",
+      "role": "STUDENT",
+      "isVerified": false,
+      "isMentorAvailable": false,
+      "followersCount": 5,
+      "studentProfile": {
+        "department": "CSE",
+        "batch": "2023",
+        "skills": ["React", "TypeScript"]
+      },
+      "alumniProfile": null
+    }
+  ],
+  "meta": { "page": 1, "limit": 10, "total": 12, "totalPages": 2 }
+}
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -847,10 +1295,19 @@ backend/
 │           │   ├── comment.controller.ts
 │           │   ├── comment.service.ts
 │           │   └── comment.validation.ts
-│           └── like/
-│               ├── like.route.ts
-│               ├── like.controller.ts
-│               └── like.service.ts
+│           ├── follow/
+│           │   ├── follow.route.ts
+│           │   ├── follow.controller.ts
+│           │   └── follow.service.ts
+│           ├── mentorship/
+│           │   ├── mentorship.route.ts
+│           │   ├── mentorship.controller.ts
+│           │   ├── mentorship.service.ts
+│           │   └── mentorship.validation.ts
+│           └── search/
+│               ├── search.route.ts
+│               ├── search.controller.ts
+│               └── search.service.ts
 ├── tsconfig.json
 └── prisma.config.ts
 ```
