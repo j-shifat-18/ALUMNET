@@ -1247,6 +1247,141 @@ GET /api/v1/search/users?name=john&role=STUDENT&page=1&limit=10
 
 ---
 
+### Admin Module (`/api/v1/admin`)
+
+All admin endpoints require auth + ADMIN role. Any non-admin request returns:
+```json
+{ "success": false, "message": "Admin access required" }
+```
+
+#### `GET /api/v1/admin/stats` — Platform Statistics
+
+**Auth Required:** Yes (Admin only)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Platform statistics retrieved successfully",
+  "data": {
+    "totalUsers": 150,
+    "totalPosts": 320,
+    "totalComments": 890,
+    "totalMentorships": 45,
+    "activeMentorships": 30,
+    "usersByRole": [
+      { "role": "STUDENT", "count": 100 },
+      { "role": "ALUMNI", "count": 45 },
+      { "role": "ADMIN", "count": 3 },
+      { "role": "USER", "count": 2 }
+    ]
+  }
+}
+```
+
+---
+
+#### `PATCH /api/v1/admin/users/:userId/verify` — Verify a User
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `userId` — database user ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User verified successfully",
+  "data": { "id": 5, "uid": "firebase_uid", "name": "Jane Smith", "role": "ALUMNI", "isVerified": true }
+}
+```
+
+---
+
+#### `PATCH /api/v1/admin/users/:userId/ban` — Ban a User
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `userId` — database user ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User banned successfully",
+  "data": { "id": 5, "status": "BANNED" }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Cannot ban another admin" }
+```
+
+---
+
+#### `PATCH /api/v1/admin/users/:userId/suspend` — Suspend a User
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `userId` — database user ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User suspended successfully",
+  "data": { "id": 5, "uid": "firebase_uid", "name": "Jane Smith", "status": "SUSPENDED" }
+}
+```
+
+---
+
+#### `PATCH /api/v1/admin/users/:userId/activate` — Reactivate a User
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `userId` — database user ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User activated successfully",
+  "data": { "id": 5, "uid": "firebase_uid", "name": "Jane Smith", "status": "ACTIVE" }
+}
+```
+
+---
+
+#### `DELETE /api/v1/admin/posts/:postId` — Remove a Post
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `postId` — Post ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Post removed successfully"
+}
+```
+
+---
+
+#### `DELETE /api/v1/admin/comments/:commentId` — Remove a Comment
+
+**Auth Required:** Yes (Admin only)  
+**Params:** `commentId` — Comment ID (integer)
+
+Also decrements the post's `commentsCount`.
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Comment removed successfully"
+}
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -1269,6 +1404,7 @@ backend/
 │       │   └── AppError.ts
 │       ├── middlewares/
 │       │   ├── auth.ts
+│       │   ├── adminGuard.ts
 │       │   ├── globalErrorHandler.ts
 │       │   └── validateRequest.ts
 │       ├── utils/
@@ -1304,6 +1440,10 @@ backend/
 │           │   ├── mentorship.controller.ts
 │           │   ├── mentorship.service.ts
 │           │   └── mentorship.validation.ts
+│           ├── admin/
+│           │   ├── admin.route.ts
+│           │   ├── admin.controller.ts
+│           │   └── admin.service.ts
 │           └── search/
 │               ├── search.route.ts
 │               ├── search.controller.ts
