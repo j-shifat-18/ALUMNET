@@ -17,17 +17,10 @@ import placeholderUser from "../../public/placeholder-user.jpg";
 const homeProfileCache = new Map();
 
 export default function Home() {
-  const { user, dbUser: contextDbUser } = useAuth();
-  const [dbUser, setDbUser] = useState(contextDbUser);
+  const { user, dbUser } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (contextDbUser) {
-      setDbUser(contextDbUser);
-    }
-  }, [contextDbUser]);
 
   const fetchPosts = () => {
     setLoadingPosts(true);
@@ -75,13 +68,13 @@ export default function Home() {
     };
   }, []);
 
-  const activeDbUser = dbUser || contextDbUser;
+  const activeDbUser = dbUser;
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-black/95">
         <Navbar />
-        <main className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-7xl py-6">
+        <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-6">
           {activeDbUser?.role === "USER" ? (
             <div className="max-w-3xl mx-auto flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-8 text-center space-y-4">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -100,15 +93,18 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               <div className="hidden lg:block lg:col-span-3">
-                <div className="sticky top-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm space-y-3 p-4">
-                  <div className="relative h-20 -mx-4 -mt-4 bg-gradient-to-r from-zinc-800 to-zinc-900 overflow-hidden">
+                <Link
+                  href={`/profile/${user?.uid}`}
+                  className="block sticky top-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm space-y-3 p-4 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md transition-all hover:cursor-pointer group"
+                >
+                  <div className="relative h-20 -mx-4 -mt-4 bg-linear-to-r from-zinc-800 to-zinc-900 overflow-hidden">
                     {activeDbUser?.coverImage && (
                       <Image
                         src={activeDbUser.coverImage}
                         alt="Cover"
                         fill
                         unoptimized
-                        className="object-cover opacity-80"
+                        className="object-cover opacity-80 transition-transform duration-300"
                       />
                     )}
                   </div>
@@ -152,7 +148,7 @@ export default function Home() {
                       </div>
                     )}
                   </div>
-                </div>
+                </Link>
               </div>
 
               <div className="lg:col-span-6 space-y-6">
