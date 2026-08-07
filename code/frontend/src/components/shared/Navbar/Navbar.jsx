@@ -48,7 +48,7 @@ const Navbar = () => {
         label: "Home",
         icon: <House />
     }, {
-        href: "#users",
+        href: "/network",
         label: "My Network",
         icon: <Users />
     }];

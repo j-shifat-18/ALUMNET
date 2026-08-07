@@ -2,7 +2,7 @@
 
 import ProtectedRoute from '@/components/shared/ProtectedRoute'
 import LoadingScreen from '@/components/shared/LoadingScreen/LoadingScreen'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
@@ -11,7 +11,7 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, Construction, Divide, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, Video } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
@@ -59,22 +59,6 @@ export default function Profile() {
   const [loadingPosts, setLoadingPosts] = useState(() => (id ? !postsCache.has(id) : true));
 
   useEffect(() => {
-    if (!dbUser) return;
-    setName(dbUser?.name || "");
-    setBio(dbUser?.bio || "");
-    setContactNo(dbUser?.contactNo || "");
-    setLocation(dbUser?.location || "");
-    setSelectedGender(dbUser?.gender || "");
-    setProfileImageUrl(dbUser?.profileImage || "");
-    setCoverImageUrl(dbUser?.coverImage || "");
-
-    const userProfile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
-    setGithubUrl(userProfile?.githubUrl || "");
-    setPortfolioUrl(userProfile?.portfolioUrl || "");
-    setResumeUrl(userProfile?.resumeUrl || "");
-  }, [dbUser]);
-
-  useEffect(() => {
     if (!id) return;
 
     axiosInstance.get(`/api/v1/profiles/${id}`)
@@ -82,42 +66,64 @@ export default function Profile() {
         const data = response.data.data;
         profileCache.set(id, data);
         setDbUser(data);
+
+        setName(data?.name || "");
+        setBio(data?.bio || "");
+        setContactNo(data?.contactNo || "");
+        setLocation(data?.location || "");
+        setSelectedGender(data?.gender || "");
+        setProfileImageUrl(data?.profileImage || "");
+        setCoverImageUrl(data?.coverImage || "");
+
+        const userProfile = data?.role === 'STUDENT' ? data?.studentProfile : data?.alumniProfile;
+        setGithubUrl(userProfile?.githubUrl || "");
+        setPortfolioUrl(userProfile?.portfolioUrl || "");
+        setResumeUrl(userProfile?.resumeUrl || "");
       })
       .catch(err => {
         console.error("Error fetching profile:", err.response?.data || err.message);
       });
   }, [id]);
 
-  const fetchUserPosts = async () => {
-    if (!id) return;
-    if (!postsCache.has(id)) {
-      setLoadingPosts(true);
-    }
-    try {
-      let userPosts = [];
-      try {
-        const res = await axiosInstance.get(`/api/v1/posts/user/${id}`);
-        if (res.data?.data) {
-          userPosts = res.data.data;
-        }
-      } catch (err) {
-        const res = await axiosInstance.get(`/api/v1/posts`);
-        if (res.data?.data) {
-          userPosts = res.data.data.filter((p) => p.author?.uid === id);
-        }
-      }
-      postsCache.set(id, userPosts);
-      setPosts(userPosts);
-    } catch (err) {
-      console.error("Error fetching user posts:", err);
-    } finally {
-      setLoadingPosts(false);
-    }
-  };
+  const [postsRefreshKey, setPostsRefreshKey] = useState(0);
 
   useEffect(() => {
-    fetchUserPosts();
-  }, [id]);
+    let isMounted = true;
+    if (!id) return;
+
+    const loadPosts = async () => {
+      try {
+        let userPosts = [];
+        try {
+          const res = await axiosInstance.get(`/api/v1/posts/user/${id}`);
+          if (res.data?.data) {
+            userPosts = res.data.data;
+          }
+        } catch (err) {
+          const res = await axiosInstance.get(`/api/v1/posts`);
+          if (res.data?.data) {
+            userPosts = res.data.data.filter((p) => p.author?.uid === id);
+          }
+        }
+        if (isMounted) {
+          postsCache.set(id, userPosts);
+          setPosts(userPosts);
+        }
+      } catch (err) {
+        console.error("Error fetching user posts:", err);
+      } finally {
+        if (isMounted) {
+          setLoadingPosts(false);
+        }
+      }
+    };
+
+    loadPosts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id, postsRefreshKey]);
 
   const profile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
   const isOwner = user?.uid === id;
@@ -328,7 +334,7 @@ export default function Profile() {
                   )}
                   {dbUser?.location && (
                     <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                      <Globe className="w-3.5 h-3.5 inline" /> {dbUser.location}
+                      {dbUser.location}
                     </p>
                   )}
                   {isOwner ? (
@@ -359,26 +365,28 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="">
-              <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setCreatePostModalOpen(true)}
-                  className='w-full border border-gray-300 dark:border-gray-700 rounded-xl text-left p-5 hover:bg-gray-100 dark:hover:bg-gray-800 hover:cursor-pointer font-bold text-gray-500 dark:text-gray-400 transition-colors'
-                >
-                  Post Something...
-                </button>
-                <div className='mt-4 flex items-center gap-4'>
+            {isOwner && (
+              <div className="">
+                <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                   <button
                     type="button"
                     onClick={() => setCreatePostModalOpen(true)}
-                    className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-700 dark:text-gray-300'
+                    className='w-full border border-gray-300 dark:border-gray-700 rounded-xl text-left p-5 hover:bg-gray-100 dark:hover:bg-gray-800 hover:cursor-pointer font-bold text-gray-500 dark:text-gray-400 transition-colors'
                   >
-                    <ImagePlus className='text-green-500' /> Add Photo
+                    Post Something...
                   </button>
+                  <div className='mt-4 flex items-center gap-4'>
+                    <button
+                      type="button"
+                      onClick={() => setCreatePostModalOpen(true)}
+                      className='flex items-center gap-2 font-bold p-3 hover:cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-gray-700 dark:text-gray-300'
+                    >
+                      <ImagePlus className='text-green-500' /> Add Photo
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4">
@@ -728,7 +736,7 @@ export default function Profile() {
         onClose={() => setCreatePostModalOpen(false)}
         dbUser={dbUser}
         onPostCreated={() => {
-          fetchUserPosts();
+          setPostsRefreshKey((prev) => prev + 1);
         }}
       />
     </ProtectedRoute>

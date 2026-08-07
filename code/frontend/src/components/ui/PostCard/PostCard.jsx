@@ -28,9 +28,11 @@ export default function PostCard({ post, currentUser, onDelete }) {
   useEffect(() => {
     if (!currentUser || !post?.id) return;
     axiosInstance
-      .get(`/api/v1/posts/${post.id}/likes/status`)
+      .get(`/api/v1/posts/${post.id}/likes/status`, {
+        validateStatus: (status) => status < 500,
+      })
       .then((res) => {
-        if (res.data?.data) {
+        if (res.status === 200 && res.data?.data) {
           setIsLiked(res.data.data.liked);
           setLikesCount(res.data.data.likesCount);
         }
