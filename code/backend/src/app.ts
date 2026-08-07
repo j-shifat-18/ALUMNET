@@ -10,6 +10,7 @@ import { MentorshipRoutes } from "./app/modules/mentorship/mentorship.route.js";
 import { SearchRoutes } from "./app/modules/search/search.route.js";
 import { AdminRoutes } from "./app/modules/admin/admin.route.js";
 import { ConnectionsRoutes } from "./app/modules/connections/connections.route.js";
+import { MentorshipRoadmapRoutes } from "./app/modules/mentorship-roadmap/mentorshipRoadmap.route.js";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler.js";
 
 const app = express();
@@ -38,6 +39,7 @@ app.use("/api/v1/mentorship", MentorshipRoutes);
 app.use("/api/v1/search", SearchRoutes);
 app.use("/api/v1/admin", AdminRoutes);
 app.use("/api/v1/connections", ConnectionsRoutes);
+app.use("/api/v1/mentorship", MentorshipRoadmapRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");
