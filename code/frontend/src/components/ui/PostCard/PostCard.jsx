@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Heart, MessageSquare, Send, Trash2, Loader2, MoreVertical, Pencil } from "lucide-react";
+import { Heart, MessageSquare, Send, Trash2, Loader2, MoreVertical, Pencil, ThumbsUp } from "lucide-react";
 import placeholderUser from "../../../../public/placeholder-user.jpg";
 import axiosInstance from "@/lib/axios";
 import Swal from "sweetalert2";
@@ -19,6 +19,26 @@ export default function PostCard({ post, currentUser, onDelete }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const [isLiking, setIsLiking] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [deletingCommentId, setDeletingCommentId] = useState(null);
+
+  useEffect(() => {
+    if (!currentUser || !post?.id) return;
+    axiosInstance
+      .get(`/api/v1/posts/${post.id}/likes/status`)
+      .then((res) => {
+        if (res.data?.data) {
+          setIsLiked(res.data.data.liked);
+          setLikesCount(res.data.data.likesCount);
+        }
+      })
+      .catch(() => {
+
+      });
+  }, [currentUser, post?.id]);
 
   const authorId = post.author?.uid || post.author?.id;
 
@@ -46,7 +66,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
       title: "Are you sure?",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonColor: "#dc2626",
+      confirmButtonColor: "#d33",
       cancelButtonColor: "#4b5563",
       confirmButtonText: "Yes, delete it!",
     });
@@ -78,37 +98,95 @@ export default function PostCard({ post, currentUser, onDelete }) {
     }
   };
 
-  const handleToggleLike = () => {
-    if (isLiked) {
-      setIsLiked(false);
-      setLikesCount((prev) => Math.max(0, prev - 1));
-    } else {
-      setIsLiked(true);
-      setLikesCount((prev) => prev + 1);
+  const handleToggleLike = async () => {
+    if (isLiking || !currentUser) return;
+
+    const prevLiked = isLiked;
+    const prevCount = likesCount;
+
+    setIsLiked(!prevLiked);
+    setLikesCount(prevLiked ? Math.max(0, prevCount - 1) : prevCount + 1);
+    setIsLiking(true);
+
+    try {
+      const res = await axiosInstance.post(`/api/v1/posts/${post.id}/likes/toggle`);
+      if (res.data?.data) {
+        setIsLiked(res.data.data.liked);
+      }
+    } catch (err) {
+      console.error("Error toggling like:", err);
+      setIsLiked(prevLiked);
+      setLikesCount(prevCount);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  const fetchComments = async () => {
+    setLoadingComments(true);
+    try {
+      const res = await axiosInstance.get(`/api/v1/posts/${post.id}/comments`);
+      if (res.data?.data) {
+        setComments(res.data.data);
+        setCommentsCount(res.data.data.length);
+      }
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+    } finally {
+      setLoadingComments(false);
     }
   };
 
   const handleToggleComments = () => {
-    setShowComments((prev) => !prev);
+    const nextShowState = !showComments;
+    setShowComments(nextShowState);
+    if (nextShowState) {
+      fetchComments();
+    }
   };
 
-  const handleAddComment = (e) => {
+  const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim()) return;
+    if (!newComment.trim() || isSubmittingComment) return;
 
-    const commentObj = {
-      id: Date.now(),
-      content: newComment.trim(),
-      createdAt: new Date().toISOString(),
-      user: {
-        name: currentUser?.displayName || currentUser?.name || "You",
-        profileImage: currentUser?.photoURL || currentUser?.profileImage,
-      },
-    };
+    setIsSubmittingComment(true);
+    try {
+      const res = await axiosInstance.post(`/api/v1/posts/${post.id}/comments`, {
+        content: newComment.trim(),
+      });
+      if (res.data?.data) {
+        setComments((prev) => [...prev, res.data.data]);
+        setCommentsCount((prev) => prev + 1);
+        setNewComment("");
+      }
+    } catch (err) {
+      console.error("Error adding comment:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to post comment.",
+        icon: "error",
+      });
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
 
-    setComments((prev) => [...prev, commentObj]);
-    setCommentsCount((prev) => prev + 1);
-    setNewComment("");
+  const handleDeleteComment = async (commentId) => {
+    try {
+      setDeletingCommentId(commentId);
+      await axiosInstance.delete(`/api/v1/comments/${commentId}`);
+      setComments((prev) => prev.filter((c) => c.id !== commentId));
+      setCommentsCount((prev) => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error("Error deleting comment:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to delete comment.",
+        icon: "error",
+      });
+    } finally {
+      setDeletingCommentId(null);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -276,13 +354,13 @@ export default function PostCard({ post, currentUser, onDelete }) {
             onClick={handleToggleLike}
             className={`flex items-center gap-2 text-sm font-medium transition-colors hover:cursor-pointer ${
               isLiked
-                ? "text-red-500 hover:text-red-600"
-                : "text-gray-600 dark:text-gray-400 hover:text-red-500 dark:hover:text-red-400"
+                ? "text-blue-500 hover:text-blue-600"
+                : "text-gray-600 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400"
             }`}
           >
-            <Heart
+            <ThumbsUp
               className={`w-5 h-5 transition-transform active:scale-125 ${
-                isLiked ? "fill-red-500 text-red-500" : ""
+                isLiked ? "fill-blue-500 text-blue-500" : ""
               }`}
             />
             <span>{likesCount} {likesCount === 1 ? "Like" : "Likes"}</span>
@@ -307,48 +385,114 @@ export default function PostCard({ post, currentUser, onDelete }) {
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder="Write a comment..."
+              disabled={isSubmittingComment}
               className="flex-1 px-3 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-gray-100"
             />
             <button
               type="submit"
-              disabled={!newComment.trim()}
-              className="p-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity hover:cursor-pointer"
+              disabled={!newComment.trim() || isSubmittingComment}
+              className="p-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity hover:cursor-pointer flex items-center justify-center min-w-[36px]"
             >
-              <Send className="w-4 h-4" />
+              {isSubmittingComment ? (
+                <Loader2 className="w-4 h-4 animate-spin text-white dark:text-gray-900" />
+              ) : (
+                <Send className="w-4 h-4" />
+              )}
             </button>
           </form>
 
-          {comments.length === 0 ? (
+          {loadingComments ? (
+            <div className="flex items-center justify-center py-4 text-xs text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              <span>Loading comments...</span>
+            </div>
+          ) : comments.length === 0 ? (
             <p className="text-xs text-gray-400 text-center py-2">
               No comments yet. Be the first to comment!
             </p>
           ) : (
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-              {comments.map((comment) => (
-                <div key={comment.id} className="flex items-start gap-2.5 text-xs">
-                  <div className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700">
-                    <Image
-                      src={comment.user?.profileImage || placeholderUser}
-                      alt={comment.user?.name || "User"}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 bg-gray-50 dark:bg-gray-800 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-semibold text-gray-900 dark:text-white">
-                        {comment.user?.name || "User"}
-                      </span>
-                      <span className="text-[10px] text-gray-400">
-                        {formatDate(comment.createdAt)}
-                      </span>
+              {comments.map((comment) => {
+                const commentUserUid = comment.user?.uid || comment.user?.id;
+                const canDeleteComment =
+                  currentUser &&
+                  (currentUser.uid === comment.user?.uid ||
+                    currentUser.email === comment.user?.email ||
+                    isOwner);
+
+                return (
+                  <div key={comment.id} className="flex items-start gap-2.5 text-xs">
+                    {commentUserUid ? (
+                      <Link
+                        href={`/profile/${commentUserUid}`}
+                        className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700 mt-0.5"
+                      >
+                        <Image
+                          src={comment.user?.profileImage || placeholderUser}
+                          alt={comment.user?.name || "User"}
+                          fill
+                          className="object-cover"
+                        />
+                      </Link>
+                    ) : (
+                      <div className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700 mt-0.5">
+                        <Image
+                          src={comment.user?.profileImage || placeholderUser}
+                          alt={comment.user?.name || "User"}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="flex-1 bg-gray-50 dark:bg-gray-800 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/50 relative group">
+                      <div className="flex items-center justify-between mb-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {commentUserUid ? (
+                            <Link
+                              href={`/profile/${commentUserUid}`}
+                              className="font-semibold text-gray-900 dark:text-white"
+                            >
+                              {comment.user?.name || "User"}
+                            </Link>
+                          ) : (
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                              {comment.user?.name || "User"}
+                            </span>
+                          )}
+                          {comment.user?.role && (
+                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium uppercase">
+                              {comment.user.role}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-gray-400">
+                            {formatDate(comment.createdAt)}
+                          </span>
+                          {canDeleteComment && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              disabled={deletingCommentId === comment.id}
+                              className="text-gray-400 hover:text-red-500 transition-colors p-0.5 hover:cursor-pointer"
+                              title="Delete comment"
+                            >
+                              {deletingCommentId === comment.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin text-red-500" />
+                              ) : (
+                                <Trash2 className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
+                        {comment.content}
+                      </p>
                     </div>
-                    <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
-                      {comment.content}
-                    </p>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
