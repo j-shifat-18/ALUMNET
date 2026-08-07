@@ -1494,6 +1494,196 @@ The `followsYouBack` field on each follower is `true` if you also follow them ba
 
 ---
 
+### Mentorship Roadmap Module (`/api/v1/mentorship`)
+
+These endpoints extend the mentorship module. Sessions and tasks are scoped to an accepted mentorship request. Only the mentor (alumni) can create/edit/delete sessions and tasks. The mentee (student) can only mark tasks complete or incomplete.
+
+#### `POST /api/v1/mentorship/:requestId/sessions` — Create Session
+
+**Auth Required:** Yes (Mentor/Alumni only)  
+**Params:** `requestId` — Mentorship request ID (integer). Must be `ACCEPTED`.
+
+**Request Body:**
+```json
+{
+  "title": "Week 1 - JavaScript Fundamentals",
+  "description": "Cover core JS concepts before moving to frameworks"
+}
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| title | string | Yes |
+| description | string | No |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Session created successfully",
+  "data": {
+    "id": 1,
+    "mentorshipRequestId": 3,
+    "title": "Week 1 - JavaScript Fundamentals",
+    "description": "Cover core JS concepts before moving to frameworks",
+    "tasks": [],
+    "createdAt": "2026-07-10T10:00:00.000Z",
+    "updatedAt": "2026-07-10T10:00:00.000Z"
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Cannot create sessions for a non-accepted mentorship" }
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the mentor can create sessions" }
+```
+
+---
+
+#### `GET /api/v1/mentorship/:requestId/sessions` — Get All Sessions
+
+Returns all sessions with their tasks for a mentorship. Only participants (student or alumni) can view.
+
+**Auth Required:** Yes  
+**Params:** `requestId` — Mentorship request ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Sessions retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "mentorshipRequestId": 3,
+      "title": "Week 1 - JavaScript Fundamentals",
+      "description": "Cover core JS concepts",
+      "createdAt": "2026-07-10T10:00:00.000Z",
+      "tasks": [
+        {
+          "id": 1,
+          "sessionId": 1,
+          "title": "Read MDN JS Guide",
+          "description": "Focus on closures and prototypes",
+          "isCompleted": false,
+          "dueDate": "2026-07-15T00:00:00.000Z",
+          "createdAt": "2026-07-10T10:05:00.000Z"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+#### `POST /api/v1/mentorship/sessions/:sessionId/tasks` — Add Task
+
+**Auth Required:** Yes (Mentor only)  
+**Params:** `sessionId` — Session ID (integer)
+
+**Request Body:**
+```json
+{
+  "title": "Read MDN JS Guide",
+  "description": "Focus on closures and prototypes",
+  "dueDate": "2026-07-15T00:00:00.000Z"
+}
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| title | string | Yes |
+| description | string | No |
+| dueDate | ISO datetime string | No |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Task created successfully",
+  "data": {
+    "id": 1,
+    "sessionId": 1,
+    "title": "Read MDN JS Guide",
+    "description": "Focus on closures and prototypes",
+    "isCompleted": false,
+    "dueDate": "2026-07-15T00:00:00.000Z",
+    "createdAt": "2026-07-10T10:05:00.000Z",
+    "updatedAt": "2026-07-10T10:05:00.000Z"
+  }
+}
+```
+
+---
+
+#### `PATCH /api/v1/mentorship/tasks/:taskId` — Update Task
+
+Mentor can update any field. Mentee can only update `isCompleted`.
+
+**Auth Required:** Yes  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body (mentor — all fields optional):**
+```json
+{
+  "title": "Updated task title",
+  "description": "Updated description",
+  "isCompleted": true,
+  "dueDate": "2026-07-20T00:00:00.000Z"
+}
+```
+
+**Request Body (mentee — only this field allowed):**
+```json
+{
+  "isCompleted": true
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Task updated successfully",
+  "data": {
+    "id": 1,
+    "sessionId": 1,
+    "title": "Read MDN JS Guide",
+    "isCompleted": true,
+    "dueDate": "2026-07-15T00:00:00.000Z",
+    "updatedAt": "2026-07-12T09:00:00.000Z"
+  }
+}
+```
+
+**Error (403) — mentee tries to edit title:**
+```json
+{ "success": false, "message": "Mentees can only mark tasks as complete or incomplete" }
+```
+
+---
+
+#### `DELETE /api/v1/mentorship/tasks/:taskId` — Delete Task
+
+**Auth Required:** Yes (Mentor only)  
+**Params:** `taskId` — Task ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Task deleted successfully"
+}
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -1552,6 +1742,11 @@ backend/
 │           │   ├── mentorship.controller.ts
 │           │   ├── mentorship.service.ts
 │           │   └── mentorship.validation.ts
+│           ├── mentorship-roadmap/
+│           │   ├── mentorshipRoadmap.route.ts
+│           │   ├── mentorshipRoadmap.controller.ts
+│           │   ├── mentorshipRoadmap.service.ts
+│           │   └── mentorshipRoadmap.validation.ts
 │           ├── connections/
 │           │   ├── connections.route.ts
 │           │   ├── connections.controller.ts
