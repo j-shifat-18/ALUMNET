@@ -391,7 +391,7 @@ export default function PostCard({ post, currentUser, onDelete }) {
             <button
               type="submit"
               disabled={!newComment.trim() || isSubmittingComment}
-              className="p-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity hover:cursor-pointer flex items-center justify-center min-w-[36px]"
+              className="p-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity hover:cursor-pointer flex items-center justify-center min-w-9"
             >
               {isSubmittingComment ? (
                 <Loader2 className="w-4 h-4 animate-spin text-white dark:text-gray-900" />

@@ -26,7 +26,7 @@ const postsCache = new Map();
 
 export default function Profile() {
 
-  const { user } = useAuth();
+  const { user, setDbUser: setAuthDbUser } = useAuth();
   const { id } = useParams();
   
   const [dbUser, setDbUser] = useState(() => (id ? profileCache.get(id) || null : null));
@@ -119,12 +119,21 @@ export default function Profile() {
     fetchUserPosts();
   }, [id]);
 
-  // console.log(user);
-  // console.log(dbUser);
-
   const profile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
   const isOwner = user?.uid === id;
-  // console.log(isOwner);
+
+  const updateUserProfileState = (updater) => {
+    setDbUser((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      if (id) {
+        profileCache.set(id, next);
+      }
+      if (isOwner && setAuthDbUser) {
+        setTimeout(() => setAuthDbUser(next), 0);
+      }
+      return next;
+    });
+  };
 
   const handleInput = () => {
     const textarea = textareaRef.current;
@@ -140,7 +149,7 @@ export default function Profile() {
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
         gender: selectedGender,
       });
-      setDbUser(prev => ({ ...prev, gender: selectedGender }));
+      updateUserProfileState(prev => ({ ...prev, gender: selectedGender }));
       setBasicInfoDrawerOpen(false);
     }
     catch (err) {
@@ -157,7 +166,7 @@ export default function Profile() {
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
         contactNo: contactNo,
       });
-      setDbUser(prev => ({ ...prev, contactNo: contactNo }));
+      updateUserProfileState(prev => ({ ...prev, contactNo: contactNo }));
       setContactInfoDrawerOpen(false);
     }
     catch (err) {
@@ -186,7 +195,7 @@ export default function Profile() {
       };
 
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      setDbUser(prev => ({
+      updateUserProfileState(prev => ({
         ...prev, [dbUser?.role === "STUDENT" ? "studentProfile" : "alumniProfile"]: {
           ...profile,
           githubUrl,
@@ -210,7 +219,7 @@ export default function Profile() {
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
         name, bio, location,
       });
-      setDbUser(prev => ({ ...prev, name, bio, location }));
+      updateUserProfileState(prev => ({ ...prev, name, bio, location }));
       setEditInfoDrawerOpen(false);
     }
     catch (err) {
@@ -227,7 +236,7 @@ export default function Profile() {
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
         profileImage: imageUrl,
       });
-      setDbUser(prev => ({ ...prev, profileImage: imageUrl }));
+      updateUserProfileState(prev => ({ ...prev, profileImage: imageUrl }));
       setProfileImageUrl(imageUrl);
       setProfilePhotoModalOpen(false);
     } catch (error) {
@@ -243,7 +252,7 @@ export default function Profile() {
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
         coverImage: imageUrl,
       });
-      setDbUser(prev => ({ ...prev, coverImage: imageUrl }));
+      updateUserProfileState(prev => ({ ...prev, coverImage: imageUrl }));
       setCoverImageUrl(imageUrl);
       setCoverPhotoModalOpen(false);
     } catch (error) {
@@ -638,7 +647,7 @@ export default function Profile() {
             {
               dbUser?.role === "STUDENT" ? <>
                 <label>Resume URL</label>
-                <input defaultValue={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+                <input value={resumeUrl} onChange={(e) => setResumeUrl(e.target.value)} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
               </> : <></>
             }
           </div>
@@ -662,9 +671,9 @@ export default function Profile() {
             <label>Name</label>
             <input value={name} onChange={(e) => setName(e.target.value)} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
             <label>Bio</label>
-            <textarea ref={textareaRef} rows={1} value={bio || dbUser?.bio || ''} onChange={(e) => { setBio(e.target.value); handleInput(); }} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
+            <textarea ref={textareaRef} rows={1} value={bio} onChange={(e) => { setBio(e.target.value); handleInput(); }} onInput={handleInput} name="bio" id="bio" placeholder='Write about yourself' className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></textarea>
             <label>Location</label>
-            <input defaultValue={location} onChange={(e) => setLocation(e.target.value)} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
+            <input value={location} onChange={(e) => setLocation(e.target.value)} className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200'></input>
           </div>
           <DrawerFooter>
             <Button variant="outline" onClick={() => setEditInfoDrawerOpen(false)}>Cancel</Button>
