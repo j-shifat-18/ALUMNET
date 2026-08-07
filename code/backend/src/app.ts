@@ -34,7 +34,7 @@ app.use("/api/v1/posts/:postId/likes", LikeRoutes);
 app.use("/api/v1/comments", CommentStandaloneRoutes);
 app.use("/api/v1/mentorship", MentorshipRoutes);
 app.use("/api/v1/search", SearchRoutes);
-
+app.use("/api/v1/admin", AdminRoutes);
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");
 });
