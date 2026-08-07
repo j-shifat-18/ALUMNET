@@ -1382,6 +1382,118 @@ Also decrements the post's `commentsCount`.
 
 ---
 
+### Connections Module (`/api/v1/connections`)
+
+#### `GET /api/v1/connections/suggestions` — People You May Know
+
+Returns recommended profiles based on skill and domain matching. Excludes users the current user already follows, and excludes `USER` role accounts (only shows STUDENT, ALUMNI, ADMIN).
+
+Scoring logic:
+- +3 points per matching skill
+- +2 points per matching domain/interest
+- +2 points for same department
+- +1 if verified, +1 if mentor available
+
+Results are sorted by score descending.
+
+**Auth Required:** Yes  
+**Query Params:** `?limit=20` (default: 20)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Suggested people retrieved successfully",
+  "data": [
+    {
+      "id": 5,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "...",
+      "bio": "Senior Engineer at Google",
+      "role": "ALUMNI",
+      "isVerified": true,
+      "isMentorAvailable": true,
+      "followersCount": 120,
+      "followingCount": 30,
+      "currentPosition": "Senior Software Engineer",
+      "currentCompany": "Google",
+      "department": "CSE",
+      "matchScore": 11
+    },
+    {
+      "id": 8,
+      "uid": "firebase_uid_2",
+      "name": "Ali Hassan",
+      "username": "alihassan",
+      "profileImage": "...",
+      "bio": "Fullstack dev",
+      "role": "STUDENT",
+      "isVerified": false,
+      "isMentorAvailable": false,
+      "followersCount": 12,
+      "followingCount": 8,
+      "currentPosition": null,
+      "currentCompany": null,
+      "department": "CSE",
+      "matchScore": 7
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/connections` — Followers & Following
+
+Returns all followers and following for the current user in a single call. Also includes a `followsYouBack` flag on each follower so the frontend can show mutual connection state.
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Connections retrieved successfully",
+  "data": {
+    "followingCount": 3,
+    "followersCount": 5,
+    "following": [
+      {
+        "id": 5,
+        "uid": "firebase_uid",
+        "name": "Jane Smith",
+        "username": "janesmith",
+        "profileImage": "...",
+        "role": "ALUMNI",
+        "isVerified": true,
+        "followersCount": 120,
+        "followingCount": 30
+      }
+    ],
+    "followers": [
+      {
+        "id": 8,
+        "uid": "firebase_uid_2",
+        "name": "Ali Hassan",
+        "username": "alihassan",
+        "profileImage": "...",
+        "role": "STUDENT",
+        "isVerified": false,
+        "followersCount": 12,
+        "followingCount": 8,
+        "followsYouBack": true
+      }
+    ]
+  }
+}
+```
+
+The `followsYouBack` field on each follower is `true` if you also follow them back (mutual connection).
+
+---
+
 ## Project Structure
 
 ```
@@ -1440,6 +1552,10 @@ backend/
 │           │   ├── mentorship.controller.ts
 │           │   ├── mentorship.service.ts
 │           │   └── mentorship.validation.ts
+│           ├── connections/
+│           │   ├── connections.route.ts
+│           │   ├── connections.controller.ts
+│           │   └── connections.service.ts
 │           ├── admin/
 │           │   ├── admin.route.ts
 │           │   ├── admin.controller.ts
