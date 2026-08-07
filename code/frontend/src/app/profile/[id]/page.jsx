@@ -273,12 +273,12 @@ export default function Profile() {
   return (
     <ProtectedRoute>
       <Navbar />
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-6">
-        <div className="flex gap-5 items-start">
-          <div className="flex flex-col gap-5 flex-1 min-w-0">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-4 sm:mt-6">
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
+          <div className="flex flex-col gap-5 flex-1 min-w-0 w-full">
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
-                <div className="relative h-36 sm:h-44 lg:h-52 w-full overflow-hidden">
+                <div className="relative h-36 sm:h-44 lg:h-56 w-full overflow-hidden">
                   <Image
                     src={dbUser?.coverImage || cover_placeholder}
                     alt="Cover"
@@ -287,53 +287,74 @@ export default function Profile() {
                     priority
                   />
                   {isOwner && (
-                    <Camera
+                    <button
+                      type="button"
                       onClick={() => setCoverPhotoModalOpen(true)}
-                      className='relative top-6 left-250 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
-                    />
+                      className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10 p-2 bg-gray-900/70 hover:bg-gray-900 text-white rounded-full transition-colors cursor-pointer border border-white/40 backdrop-blur-sm"
+                      title="Edit cover photo"
+                    >
+                      <Camera className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </button>
                   )}
                 </div>
-                <div className="px-5 pb-5">
-                  <div className="relative -mt-12 sm:-mt-24 mb-5">
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-50 lg:h-50 rounded-full border-4 border-white dark:border-gray-900 overflow-hidden shadow-md">
+                <div className="px-4 sm:px-6 pb-5">
+                  <div className="relative inline-block -mt-12 sm:-mt-20 lg:-mt-24 mb-4">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 lg:w-40 lg:h-40 rounded-full border-4 border-white dark:border-gray-900 overflow-hidden shadow-md relative bg-white dark:bg-gray-800">
                       <Image
                         src={dbUser?.profileImage || user_placeholder}
                         alt="User"
-                        width={128}
-                        height={128}
-                        className="object-cover w-full h-full"
+                        fill
+                        className="object-cover"
                       />
                     </div>
                     {isOwner && (
-                      <Camera
+                      <button
+                        type="button"
                         onClick={() => setProfilePhotoModalOpen(true)}
-                        className='relative bottom-9 left-36 w-7 h-7 text-black bg-gray-400 hover:cursor-pointer p-1 border-2 border-white rounded-full hover:bg-gray-500 transition-colors'
-                      />
+                        className="absolute bottom-1 right-1 sm:bottom-2 sm:right-2 z-10 p-1.5 sm:p-2 bg-gray-900/80 hover:bg-gray-900 text-white rounded-full transition-colors cursor-pointer border-2 border-white dark:border-gray-900 shadow-sm"
+                        title="Edit profile photo"
+                      >
+                        <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
                     )}
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
                     {dbUser?.name}
                   </h1>
-                  <p className="text-xl mt-1">
-                    {dbUser?.bio || " "}
-                  </p>
-                  <p className="text-xl mt-1">{dbUser?.location || " "}</p>
-                  <p className="text-xl mt-1">{dbUser?.followersCount || "0 followers"}</p>
-                  {isOwner ? <button type='button' className='mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white flex items-center justify-between gap-2' onClick={() => setEditInfoDrawerOpen(true)}>
-                    <PencilLine className='w-4 h-4' /> Edit Profile
-                  </button> : <button
-                    onClick={() => setFollowed(!followed)}
-                    className={`mt-2 px-4 py-1 border border-zinc-900 rounded-xl hover:cursor-pointer flex items-center justify-between gap-2 transition-colors ${followed
-                      ? 'bg-white text-zinc-900'
-                      : 'bg-zinc-900 text-white'
+                  {dbUser?.bio && (
+                    <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                      {dbUser.bio}
+                    </p>
+                  )}
+                  {dbUser?.location && (
+                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                      <Globe className="w-3.5 h-3.5 inline" /> {dbUser.location}
+                    </p>
+                  )}
+                  {isOwner ? (
+                    <button
+                      type="button"
+                      className="mt-3 px-4 py-1.5 border border-zinc-900 dark:border-zinc-100 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 text-sm font-medium flex items-center gap-2 transition-colors"
+                      onClick={() => setEditInfoDrawerOpen(true)}
+                    >
+                      <PencilLine className="w-4 h-4" /> Edit Profile
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setFollowed(!followed)}
+                      className={`mt-3 px-4 py-1.5 border border-zinc-900 dark:border-zinc-100 rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors ${
+                        followed
+                          ? 'bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
+                          : 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
                       }`}
-                  >
-                    {followed ? (
-                      <><UserRoundCheck className='w-4 h-4' /> Followed</>
-                    ) : (
-                      <><UserRoundPlus className='w-4 h-4' /> Follow</>
-                    )}
-                  </button>}
+                    >
+                      {followed ? (
+                        <><UserRoundCheck className='w-4 h-4' /> Followed</>
+                      ) : (
+                        <><UserRoundPlus className='w-4 h-4' /> Follow</>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -494,7 +515,7 @@ export default function Profile() {
 
           </div>
 
-          <aside className="hidden lg:flex flex-col gap-4 w-72 xl:w-80 shrink-0">
+          <aside className="flex flex-col gap-4 w-full lg:w-72 xl:w-80 shrink-0">
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>

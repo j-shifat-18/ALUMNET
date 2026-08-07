@@ -59,12 +59,12 @@ export default function UserProfileDropdown() {
   const { user, dbUser, logout } = useAuth();
   // console.log(dbUser);
 
-  return <div className="flex items-center justify-center font-sans p-8">
-    <DropdownMenu trigger={<button className="flex items-center space-x-3 p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
-      <div className="w-10 h-10 rounded-full overflow-hidden shrink-0">
+  return <div className="flex items-center justify-center font-sans p-0 sm:p-1">
+    <DropdownMenu trigger={<button className="flex items-center space-x-2 sm:space-x-3 p-1 sm:p-2 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors">
+      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden shrink-0">
         <Image src={dbUser?.profileImage || placeholder} alt="USER" width={40} height={40} className="object-cover w-full h-full" />
       </div>
-      <div className="text-left">
+      <div className="text-left hidden sm:block">
         <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">
           {dbUser?.name || user?.displayName}
         </div>

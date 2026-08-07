@@ -59,7 +59,7 @@ const Navbar = () => {
                 { }
                 <div className="flex items-center">
                     <Link href={"/"} onClick={(e) => handleHomeClick(e, "/")} className="flex items-center space-x-2 group">
-                        <Image src={logo} alt='ALUMNET' width={210}></Image>
+                        <Image src={logo} alt='ALUMNET' width={180} className="w-36 sm:w-44 lg:w-48 h-auto object-contain" />
                     </Link>
                 </div>
 
@@ -77,10 +77,10 @@ const Navbar = () => {
                 </nav>
 
                 { }
-                {
-                    user ? <>
-                        <UserProfileDropdown></UserProfileDropdown>
-                    </> : <>
+                <div className="flex items-center space-x-1 sm:space-x-2">
+                    {user ? (
+                        <UserProfileDropdown />
+                    ) : (
                         <div className="hidden md:flex items-center space-x-2 lg:space-x-3">
                             <Link href={"/login"} className="flex items-center space-x-1.5 lg:space-x-2 px-3 lg:px-4 py-1.5 lg:py-2 text-xs lg:text-sm font-medium text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-all hover:shadow-md">
                                 Sign In
@@ -89,12 +89,12 @@ const Navbar = () => {
                                 Sign Up
                             </Link>
                         </div>
-                    </>
-                }
-                { }
-                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors" aria-label="Toggle menu">
-                    {isMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
-                </button>
+                    )}
+
+                    <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="md:hidden p-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors" aria-label="Toggle menu">
+                        {isMenuOpen ? <X className="h-5 w-5 sm:h-6 sm:w-6" /> : <Menu className="h-5 w-5 sm:h-6 sm:w-6" />}
+                    </button>
+                </div>
             </div>
 
             { }
@@ -107,9 +107,7 @@ const Navbar = () => {
                                 <span>{link.label}</span>
                             </Link>
                         ))}
-                        {user ? (
-                            <UserProfileDropdown></UserProfileDropdown>
-                        ) : (
+                        {!user && (
                             <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col space-y-2">
                                 <Link href={"/login"} onClick={() => setIsMenuOpen(false)} className="flex items-center justify-center space-x-2 px-3 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     Sign In
