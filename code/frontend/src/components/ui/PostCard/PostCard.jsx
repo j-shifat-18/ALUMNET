@@ -25,6 +25,14 @@ export default function PostCard({ post, currentUser, onDelete }) {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [deletingCommentId, setDeletingCommentId] = useState(null);
 
+  const [editingCommentId, setEditingCommentId] = useState(null);
+  const [editingCommentText, setEditingCommentText] = useState("");
+  const [isUpdatingComment, setIsUpdatingComment] = useState(false);
+
+  const [isEditingPost, setIsEditingPost] = useState(false);
+  const [editedContent, setEditedContent] = useState(post?.content || "");
+  const [isSavingPost, setIsSavingPost] = useState(false);
+
   useEffect(() => {
     if (!currentUser || !post?.id) return;
     axiosInstance
@@ -37,10 +45,23 @@ export default function PostCard({ post, currentUser, onDelete }) {
           setLikesCount(res.data.data.likesCount);
         }
       })
-      .catch(() => {
-
-      });
+      .catch(() => {});
   }, [currentUser, post?.id]);
+
+  useEffect(() => {
+    if (!post?.id || commentsCount === 0 || comments.length > 0) return;
+    axiosInstance
+      .get(`/api/v1/posts/${post.id}/comments`, {
+        validateStatus: (status) => status < 500,
+      })
+      .then((res) => {
+        if (res.status === 200 && res.data?.data) {
+          setComments(res.data.data);
+          setCommentsCount(res.data.data.length);
+        }
+      })
+      .catch(() => {});
+  }, [post?.id, commentsCount, comments.length]);
 
   const authorId = post.author?.uid || post.author?.id;
 
@@ -97,6 +118,39 @@ export default function PostCard({ post, currentUser, onDelete }) {
       });
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleSavePostEdit = async () => {
+    if (!editedContent.trim() || isSavingPost) return;
+
+    setIsSavingPost(true);
+    try {
+      const res = await axiosInstance.patch(`/api/v1/posts/${post.id}`, {
+        content: editedContent.trim(),
+      });
+      if (res.data?.data) {
+        post.content = res.data.data.content;
+      } else {
+        post.content = editedContent.trim();
+      }
+      setIsEditingPost(false);
+      Swal.fire({
+        title: "Updated!",
+        text: "Your post has been updated.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error updating post:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to update post.",
+        icon: "error",
+      });
+    } finally {
+      setIsSavingPost(false);
     }
   };
 
@@ -188,6 +242,43 @@ export default function PostCard({ post, currentUser, onDelete }) {
       });
     } finally {
       setDeletingCommentId(null);
+    }
+  };
+
+  const handleStartEditComment = (comment) => {
+    setEditingCommentId(comment.id);
+    setEditingCommentText(comment.content);
+  };
+
+  const handleCancelEditComment = () => {
+    setEditingCommentId(null);
+    setEditingCommentText("");
+  };
+
+  const handleSaveCommentEdit = async (commentId) => {
+    if (!editingCommentText.trim() || isUpdatingComment) return;
+
+    setIsUpdatingComment(true);
+    try {
+      const res = await axiosInstance.patch(`/api/v1/comments/${commentId}`, {
+        content: editingCommentText.trim(),
+      });
+      if (res.data?.data) {
+        setComments((prev) =>
+          prev.map((c) => (c.id === commentId ? { ...c, content: res.data.data.content } : c))
+        );
+      }
+      setEditingCommentId(null);
+      setEditingCommentText("");
+    } catch (err) {
+      console.error("Error editing comment:", err);
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to update comment.",
+        icon: "error",
+      });
+    } finally {
+      setIsUpdatingComment(false);
     }
   };
 
@@ -283,6 +374,8 @@ export default function PostCard({ post, currentUser, onDelete }) {
                     type="button"
                     onClick={() => {
                       setShowDropdown(false);
+                      setIsEditingPost(true);
+                      setEditedContent(post?.content || "");
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700/60 flex items-center gap-2 transition-colors hover:cursor-pointer"
                   >
@@ -308,33 +401,71 @@ export default function PostCard({ post, currentUser, onDelete }) {
         )}
       </div>
 
-      <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-break-words break-all wrap-anywhere text-base leading-relaxed">
-        {!isExpanded && (post?.content?.length > 200 || post?.content?.split("\n").length > 3) ? (
-          <>
-            {getTruncatedContent(post.content)}
+      {isEditingPost ? (
+        <div className="space-y-3">
+          <textarea
+            value={editedContent}
+            onChange={(e) => setEditedContent(e.target.value)}
+            rows={4}
+            className="w-full p-3 text-base bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
+            placeholder="Edit your post content..."
+            autoFocus
+          />
+          <div className="flex items-center gap-2 justify-end">
             <button
               type="button"
-              onClick={() => setIsExpanded(true)}
-              className="inline-block ml-1 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
+              onClick={() => setIsEditingPost(false)}
+              disabled={isSavingPost}
+              className="px-4 py-1.5 text-xs font-semibold text-gray-600 dark:text-gray-300 border border-gray-300 dark:border-gray-700 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hover:cursor-pointer"
             >
-              ...see more
+              Cancel
             </button>
-          </>
-        ) : (
-          <>
-            {post.content}
-            {(post?.content?.length > 260 || post?.content?.split("\n").length > 3) && (
+            <button
+              type="button"
+              onClick={handleSavePostEdit}
+              disabled={!editedContent.trim() || isSavingPost}
+              className="px-4 py-1.5 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl disabled:opacity-50 transition-colors hover:cursor-pointer flex items-center gap-1.5"
+            >
+              {isSavingPost ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Saving...</span>
+                </>
+              ) : (
+                "Save Changes"
+              )}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap break-break-words break-all wrap-anywhere text-base leading-relaxed">
+          {!isExpanded && (post?.content?.length > 200 || post?.content?.split("\n").length > 3) ? (
+            <>
+              {getTruncatedContent(post.content)}
               <button
                 type="button"
-                onClick={() => setIsExpanded(false)}
-                className="inline-block ml-2 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
+                onClick={() => setIsExpanded(true)}
+                className="inline-block ml-1 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
               >
-                See less
+                ...see more
               </button>
-            )}
-          </>
-        )}
-      </p>
+            </>
+          ) : (
+            <>
+              {post.content}
+              {(post?.content?.length > 260 || post?.content?.split("\n").length > 3) && (
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded(false)}
+                  className="inline-block ml-2 font-semibold hover:underline hover:cursor-pointer focus:outline-none"
+                >
+                  See less
+                </button>
+              )}
+            </>
+          )}
+        </p>
+      )}
 
       {post.imageUrl && (
         <div className="relative rounded-lg overflow-hidden border border-gray-100 dark:border-gray-800 bg-black/5 max-h-96">
@@ -379,6 +510,64 @@ export default function PostCard({ post, currentUser, onDelete }) {
         </div>
       </div>
 
+      {!showComments && comments.length > 0 && (
+        <div className="pt-3 border-t border-gray-100 dark:border-gray-800">
+          <div className="flex items-start gap-2.5 text-xs">
+            {comments[comments.length - 1].user?.uid || comments[comments.length - 1].user?.id ? (
+              <Link
+                href={`/profile/${comments[comments.length - 1].user?.uid || comments[comments.length - 1].user?.id}`}
+                className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700 mt-0.5"
+              >
+                <Image
+                  src={comments[comments.length - 1].user?.profileImage || placeholderUser}
+                  alt={comments[comments.length - 1].user?.name || "User"}
+                  fill
+                  className="object-cover"
+                />
+              </Link>
+            ) : (
+              <div className="w-7 h-7 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700 mt-0.5">
+                <Image
+                  src={comments[comments.length - 1].user?.profileImage || placeholderUser}
+                  alt={comments[comments.length - 1].user?.name || "User"}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+            <div className="flex-1 bg-gray-50 dark:bg-gray-800 p-2.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {comments[comments.length - 1].user?.uid || comments[comments.length - 1].user?.id ? (
+                    <Link
+                      href={`/profile/${comments[comments.length - 1].user?.uid || comments[comments.length - 1].user?.id}`}
+                      className="font-semibold text-gray-900 dark:text-white hover:underline"
+                    >
+                      {comments[comments.length - 1].user?.name || "User"}
+                    </Link>
+                  ) : (
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {comments[comments.length - 1].user?.name || "User"}
+                    </span>
+                  )}
+                  {comments[comments.length - 1].user?.role && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-medium uppercase">
+                      {comments[comments.length - 1].user.role}
+                    </span>
+                  )}
+                </div>
+                <span className="text-[10px] text-gray-400">
+                  {formatDate(comments[comments.length - 1].createdAt)}
+                </span>
+              </div>
+              <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
+                {comments[comments.length - 1].content}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showComments && (
         <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-4">
           <form onSubmit={handleAddComment} className="flex gap-2 items-center">
@@ -421,6 +610,11 @@ export default function PostCard({ post, currentUser, onDelete }) {
                   (currentUser.uid === comment.user?.uid ||
                     currentUser.email === comment.user?.email ||
                     isOwner);
+
+                const canEditComment =
+                  currentUser &&
+                  (currentUser.uid === comment.user?.uid ||
+                    currentUser.email === comment.user?.email);
 
                 return (
                   <div key={comment.id} className="flex items-start gap-2.5 text-xs">
@@ -471,6 +665,17 @@ export default function PostCard({ post, currentUser, onDelete }) {
                           <span className="text-[10px] text-gray-400">
                             {formatDate(comment.createdAt)}
                           </span>
+                          {canEditComment && (
+                            <button
+                              type="button"
+                              onClick={() => handleStartEditComment(comment)}
+                              disabled={editingCommentId === comment.id}
+                              className="text-gray-400 hover:text-blue-500 transition-colors p-0.5 hover:cursor-pointer"
+                              title="Edit comment"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           {canDeleteComment && (
                             <button
                               type="button"
@@ -488,9 +693,43 @@ export default function PostCard({ post, currentUser, onDelete }) {
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
-                        {comment.content}
-                      </p>
+                      {editingCommentId === comment.id ? (
+                        <div className="mt-1 space-y-2">
+                          <input
+                            type="text"
+                            value={editingCommentText}
+                            onChange={(e) => setEditingCommentText(e.target.value)}
+                            className="w-full px-2.5 py-1 text-xs bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            autoFocus
+                          />
+                          <div className="flex items-center gap-1.5 justify-end">
+                            <button
+                              type="button"
+                              onClick={handleCancelEditComment}
+                              disabled={isUpdatingComment}
+                              className="px-2 py-0.5 text-[10px] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors hover:cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleSaveCommentEdit(comment.id)}
+                              disabled={!editingCommentText.trim() || isUpdatingComment}
+                              className="px-2 py-0.5 text-[10px] bg-blue-600 hover:bg-blue-700 text-white rounded font-medium disabled:opacity-50 transition-colors hover:cursor-pointer flex items-center gap-1"
+                            >
+                              {isUpdatingComment ? (
+                                <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                              ) : (
+                                "Save"
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-gray-700 dark:text-gray-300 text-xs wrap-break-words break-all">
+                          {comment.content}
+                        </p>
+                      )}
                     </div>
                   </div>
                 );
