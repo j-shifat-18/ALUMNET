@@ -1684,6 +1684,265 @@ Mentor can update any field. Mentee can only update `isCompleted`.
 
 ---
 
+### Events Module (`/api/v1/events`)
+
+#### `GET /api/v1/events/upcoming` — Get Upcoming Events
+
+Returns events with a future date, ordered by date ascending.
+
+**Auth Required:** No  
+**Query Params:** `?page=1&limit=10`
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Upcoming events retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "title": "IUT Alumni Networking Night",
+      "description": "An evening to connect students with alumni professionals.",
+      "type": "networking",
+      "date": "2026-09-15T18:00:00.000Z",
+      "endDate": "2026-09-15T21:00:00.000Z",
+      "location": "IUT Auditorium",
+      "link": null,
+      "organizerId": 5,
+      "createdAt": "2026-08-01T10:00:00.000Z",
+      "organizer": {
+        "id": 5, "uid": "...", "name": "Jane Smith",
+        "profileImage": "...", "role": "ALUMNI", "isVerified": true
+      },
+      "_count": { "attendees": 42 }
+    }
+  ],
+  "meta": { "page": 1, "limit": 10, "total": 3, "totalPages": 1 }
+}
+```
+
+---
+
+#### `GET /api/v1/events` — Get All Events
+
+Returns all events (past and upcoming), ordered by date descending.
+
+**Auth Required:** No  
+**Query Params:** `?page=1&limit=10`
+
+---
+
+#### `GET /api/v1/events/:id` — Get Single Event
+
+Returns full event details including the attendee list.
+
+**Auth Required:** No  
+**Params:** `id` — Event ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Event retrieved successfully",
+  "data": {
+    "id": 1,
+    "title": "IUT Alumni Networking Night",
+    "type": "networking",
+    "date": "2026-09-15T18:00:00.000Z",
+    "location": "IUT Auditorium",
+    "organizer": { "id": 5, "name": "Jane Smith", "role": "ALUMNI" },
+    "attendees": [
+      {
+        "userId": 2, "eventId": 1, "registeredAt": "2026-08-05T10:00:00.000Z",
+        "user": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+      }
+    ],
+    "_count": { "attendees": 42 }
+  }
+}
+```
+
+---
+
+#### `POST /api/v1/events` — Create Event
+
+**Auth Required:** Yes (Alumni or Admin only)
+
+**Request Body:**
+```json
+{
+  "title": "IUT Alumni Networking Night",
+  "description": "An evening to connect students with alumni professionals.",
+  "type": "networking",
+  "date": "2026-09-15T18:00:00.000Z",
+  "endDate": "2026-09-15T21:00:00.000Z",
+  "location": "IUT Auditorium",
+  "link": null
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| title | string | Yes | |
+| description | string | Yes | |
+| type | string | Yes | `workshop`, `seminar`, `networking`, `webinar`, `other` |
+| date | ISO datetime | Yes | |
+| endDate | ISO datetime | No | |
+| location | string | No | Physical address |
+| link | string | No | Must be valid URL |
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only alumni or admins can create events" }
+```
+
+---
+
+#### `PATCH /api/v1/events/:id` — Update Event
+
+**Auth Required:** Yes (Organizer or Admin)  
+**Params:** `id` — Event ID (integer)
+
+All fields from create body are optional. Pass `null` to clear `endDate`, `location`, or `link`.
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the organizer or admin can update this event" }
+```
+
+---
+
+#### `DELETE /api/v1/events/:id` — Delete Event
+
+**Auth Required:** Yes (Organizer or Admin)  
+**Params:** `id` — Event ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Event deleted successfully" }
+```
+
+---
+
+#### `POST /api/v1/events/:id/register` — Register for Event
+
+**Auth Required:** Yes  
+**Params:** `id` — Event ID (integer)
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Registered for event successfully",
+  "data": {
+    "userId": 2,
+    "eventId": 1,
+    "registeredAt": "2026-08-10T09:00:00.000Z",
+    "event": { "id": 1, "title": "IUT Alumni Networking Night", "date": "2026-09-15T18:00:00.000Z" }
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Cannot register for a past event" }
+```
+
+**Error (409):**
+```json
+{ "success": false, "message": "Already registered for this event" }
+```
+
+---
+
+#### `DELETE /api/v1/events/:id/register` — Cancel Registration
+
+**Auth Required:** Yes  
+**Params:** `id` — Event ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Registration cancelled successfully" }
+```
+
+---
+
+#### `GET /api/v1/events/:id/register/status` — Get Registration Status
+
+Check if the current user is registered for an event.
+
+**Auth Required:** Yes  
+**Params:** `id` — Event ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Registration status retrieved",
+  "data": { "registered": true }
+}
+```
+
+---
+
+### Mentor Matching Module (`/api/v1/matching`)
+
+#### `GET /api/v1/matching/mentors` — Get Matched Mentors
+
+Returns ranked mentor recommendations for the currently authenticated student based on profile matching. Only available for users with role `STUDENT` who have completed their student profile. Excludes alumni the student has already sent a mentorship request to.
+
+**Auth Required:** Yes (Student only)  
+**Query Params:** `?limit=10` (default: 10)
+
+**Scoring logic:**
+- +3 per matching skill
+- +2 per matching domain/interest (checked against `expertiseAreas`, `mentorshipDomains`, `interestedDomains`)
+- +2 if same department
+- +1 if alumni is verified
+- +1 if alumni has 3+ years of experience
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentor matches retrieved successfully",
+  "data": [
+    {
+      "id": 5,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "...",
+      "bio": "Senior Engineer at Google",
+      "isVerified": true,
+      "followersCount": 120,
+      "currentCompany": "Google",
+      "currentPosition": "Senior Software Engineer",
+      "industry": "Technology",
+      "experienceYears": 5,
+      "department": "CSE",
+      "totalMentees": 8,
+      "matchScore": 18,
+      "matchPercentage": 75,
+      "matchedSkills": ["React", "Node.js"],
+      "matchedDomains": ["Web Development", "Career Guidance"]
+    }
+  ]
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Mentor matching is only available for students" }
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Complete your student profile first to get mentor recommendations" }
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -1755,10 +2014,19 @@ backend/
 │           │   ├── admin.route.ts
 │           │   ├── admin.controller.ts
 │           │   └── admin.service.ts
-│           └── search/
-│               ├── search.route.ts
-│               ├── search.controller.ts
-│               └── search.service.ts
+│           ├── search/
+│           │   ├── search.route.ts
+│           │   ├── search.controller.ts
+│           │   └── search.service.ts
+│           ├── event/
+│           │   ├── event.route.ts
+│           │   ├── event.controller.ts
+│           │   ├── event.service.ts
+│           │   └── event.validation.ts
+│           └── matching/
+│               ├── matching.route.ts
+│               ├── matching.controller.ts
+│               └── matching.service.ts
 ├── tsconfig.json
 └── prisma.config.ts
 ```
