@@ -74,6 +74,10 @@ model User {
   sentMentorshipRequests     MentorshipRequest[] @relation("StudentRequests")
   receivedMentorshipRequests MentorshipRequest[] @relation("AlumniRequests")
 
+  // Events
+  organizedEvents Event[]         @relation("EventOrganizer")
+  eventAttendees  EventAttendee[]
+
   @@index([email])
   @@index([role])
 }
@@ -307,4 +311,44 @@ model PostLike {
 
   @@index([userId])
   @@index([postId])
+}
+
+model Event {
+  id Int @id @default(autoincrement())
+
+  title       String
+  description String
+  type        String
+
+  date    DateTime
+  endDate DateTime?
+
+  location String?
+  link     String?
+
+  organizerId Int
+
+  organizer User @relation("EventOrganizer", fields: [organizerId], references: [id], onDelete: Cascade)
+
+  attendees EventAttendee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizerId])
+  @@index([date])
+}
+
+model EventAttendee {
+  userId  Int
+  eventId Int
+
+  registeredAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@id([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
 }
