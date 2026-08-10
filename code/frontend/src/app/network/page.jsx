@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
@@ -32,16 +32,17 @@ export default function NetworkPage() {
   const [togglingMap, setTogglingMap] = useState({});
   const [coversMap, setCoversMap] = useState({});
 
+  const [followersMap, setFollowersMap] = useState({});
+
   const [activeTab, setActiveTab] = useState("EXPLORE");
   const [connectionSubTab, setConnectionSubTab] = useState("FOLLOWING");
   const [followingList, setFollowingList] = useState([]);
   const [followersList, setFollowersList] = useState([]);
   const [loadingConnections, setLoadingConnections] = useState(false);
 
-  useEffect(() => {
-    if (activeTab !== "CONNECTIONS" || !user?.uid) return;
-
-    let isMounted = true;
+  const fetchConnections = useCallback(() => {
+    if (!user?.uid) return;
+    setLoadingConnections(true);
 
     Promise.all([
       axiosInstance.get(`/api/v1/users/${user.uid}/following`, {
@@ -52,30 +53,71 @@ export default function NetworkPage() {
       }),
     ])
       .then(([followingRes, followersRes]) => {
-        if (!isMounted) return;
-        if (followingRes.status === 200 && followingRes.data?.data) {
-          setFollowingList(followingRes.data.data);
-          const fMap = {};
-          followingRes.data.data.forEach((u) => {
-            if (u.uid) fMap[u.uid] = true;
-          });
-          setFollowingMap((prev) => ({ ...prev, ...fMap }));
-        }
-        if (followersRes.status === 200 && followersRes.data?.data) {
-          setFollowersList(followersRes.data.data);
-        }
+        const followingData =
+          followingRes.status === 200 && followingRes.data?.data
+            ? followingRes.data.data
+            : [];
+        const followersData =
+          followersRes.status === 200 && followersRes.data?.data
+            ? followersRes.data.data
+            : [];
+
+        setFollowingList(followingData);
+        setFollowersList(followersData);
+
+        const fMap = {};
+        followingData.forEach((u) => {
+          if (u.uid) fMap[u.uid] = true;
+        });
+        setFollowingMap((prev) => ({ ...prev, ...fMap }));
+
+        const fersMap = {};
+        followersData.forEach((u) => {
+          if (u.uid) fersMap[u.uid] = true;
+        });
+        setFollowersMap((prev) => ({ ...prev, ...fersMap }));
+
+        const allConnectionUsers = [...followingData, ...followersData];
+        const uniqueConnectionUids = Array.from(
+          new Set(allConnectionUsers.map((u) => u.uid).filter(Boolean))
+        );
+
+        uniqueConnectionUids.forEach((uid) => {
+          axiosInstance
+            .get(`/api/v1/users/${uid}`, {
+              validateStatus: (status) => status < 500,
+            })
+            .then((userRes) => {
+              if (userRes.status === 200 && userRes.data?.data) {
+                const fullUser = userRes.data.data;
+                if (fullUser.coverImage) {
+                  setCoversMap((prev) => ({
+                    ...prev,
+                    [uid]: fullUser.coverImage,
+                  }));
+                }
+                setFollowingList((prev) =>
+                  prev.map((u) => (u.uid === uid ? { ...u, ...fullUser } : u))
+                );
+                setFollowersList((prev) =>
+                  prev.map((u) => (u.uid === uid ? { ...u, ...fullUser } : u))
+                );
+              }
+            })
+            .catch(() => {});
+        });
       })
       .catch((err) => {
-        if (isMounted) console.error("Error fetching connections:", err);
+        console.error("Error fetching connections:", err);
       })
       .finally(() => {
-        if (isMounted) setLoadingConnections(false);
+        setLoadingConnections(false);
       });
+  }, [user?.uid]);
 
-    return () => {
-      isMounted = false;
-    };
-  }, [activeTab, user]);
+  useEffect(() => {
+    fetchConnections();
+  }, [fetchConnections]);
 
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
@@ -175,11 +217,27 @@ export default function NetworkPage() {
     if (togglingMap[targetUid]) return;
 
     const isCurrentlyFollowing = !!followingMap[targetUid];
+    const targetUser =
+      usersList.find((u) => u.uid === targetUid) ||
+      followersList.find((u) => u.uid === targetUid) ||
+      followingList.find((u) => u.uid === targetUid);
+
     setFollowingMap((prev) => ({
       ...prev,
       [targetUid]: !isCurrentlyFollowing,
     }));
     setTogglingMap((prev) => ({ ...prev, [targetUid]: true }));
+
+    if (!isCurrentlyFollowing) {
+      if (targetUser) {
+        setFollowingList((prev) => {
+          if (prev.some((u) => u.uid === targetUid)) return prev;
+          return [targetUser, ...prev];
+        });
+      }
+    } else {
+      setFollowingList((prev) => prev.filter((u) => u.uid !== targetUid));
+    }
 
     try {
       if (isCurrentlyFollowing) {
@@ -193,6 +251,11 @@ export default function NetworkPage() {
         ...prev,
         [targetUid]: isCurrentlyFollowing,
       }));
+      if (!isCurrentlyFollowing) {
+        setFollowingList((prev) => prev.filter((u) => u.uid !== targetUid));
+      } else if (targetUser) {
+        setFollowingList((prev) => [targetUser, ...prev]);
+      }
     } finally {
       setTogglingMap((prev) => ({ ...prev, [targetUid]: false }));
     }
@@ -202,6 +265,7 @@ export default function NetworkPage() {
     const profile =
       item.role === "STUDENT" ? item.studentProfile : item.alumniProfile;
     const isFollowing = !!followingMap[item.uid];
+    const isFollower = !!followersMap[item.uid];
     const isToggling = !!togglingMap[item.uid];
     const userCoverImage =
       coversMap[item.uid] || item.coverImage || coverPlaceholder;
@@ -256,7 +320,7 @@ export default function NetworkPage() {
               </Link>
 
               {(profile?.department || profile?.batch) && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium flex flex-col gap-1 truncate">
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium flex flex-col gap-1 truncate">
                   <div className="flex items-center gap-1">
                     <span className="truncate">
                       {profile.department || "Student"}{" "}
@@ -265,7 +329,7 @@ export default function NetworkPage() {
                   <span className="truncate">
                     Batch: {profile.batch ? `${profile.batch}` : ""}
                   </span>
-                </p>
+                </div>
               )}
 
               {(profile?.currentPosition || profile?.currentCompany) && (
@@ -304,6 +368,8 @@ export default function NetworkPage() {
               disabled={isToggling}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors hover:cursor-pointer disabled:opacity-50 ${isFollowing
                   ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
+                  : isFollower
+                  ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white hover:bg-blue-700 dark:hover:bg-blue-600"
                   : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
                 }`}
             >
@@ -313,6 +379,11 @@ export default function NetworkPage() {
                 <>
                   <UserCheck className="w-3.5 h-3.5" />
                   <span>Following</span>
+                </>
+              ) : isFollower ? (
+                <>
+                  <UserPlus className="w-3.5 h-3.5" />
+                  <span>Follow Back</span>
                 </>
               ) : (
                 <>
@@ -363,7 +434,7 @@ export default function NetworkPage() {
                   type="button"
                   onClick={() => {
                     setActiveTab("CONNECTIONS");
-                    setLoadingConnections(true);
+                    fetchConnections();
                   }}
                   className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${activeTab === "CONNECTIONS"
                       ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
@@ -434,7 +505,7 @@ export default function NetworkPage() {
                       <Loader2 className="w-8 h-8 animate-spin text-gray-500 mb-3" />
                       <p className="text-sm text-gray-500">Finding People...</p>
                     </div>
-                  ) : usersList.length === 0 ? (
+                  ) : usersList.filter((item) => !followingMap[item.uid]).length === 0 ? (
                     <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 space-y-3">
                       <Users className="w-12 h-12 text-gray-400 mx-auto" />
                       <h3 className="text-lg font-bold text-gray-900 dark:text-white">
@@ -443,7 +514,9 @@ export default function NetworkPage() {
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                      {usersList.map((item) => renderMemberCard(item))}
+                      {usersList
+                        .filter((item) => !followingMap[item.uid])
+                        .map((item) => renderMemberCard(item))}
                     </div>
                   )}
                 </>

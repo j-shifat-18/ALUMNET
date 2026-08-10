@@ -4,6 +4,7 @@ import ProtectedRoute from '@/components/shared/ProtectedRoute'
 import LoadingScreen from '@/components/shared/LoadingScreen/LoadingScreen'
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import Link from 'next/link';
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 import Image from 'next/image';
@@ -11,7 +12,7 @@ import Navbar from '@/components/shared/Navbar/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/divider';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2 } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
 import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
@@ -54,6 +55,95 @@ export default function Profile() {
   const [selectedGender, setSelectedGender] = useState(cachedUser?.gender || "");
   const [profileImageUrl, setProfileImageUrl] = useState(cachedUser?.profileImage || "");
   const [coverImageUrl, setCoverImageUrl] = useState(cachedUser?.coverImage || "");
+
+  const [profileFollowingList, setProfileFollowingList] = useState([]);
+  const [profileFollowersList, setProfileFollowersList] = useState([]);
+  const [isFollowingProfile, setIsFollowingProfile] = useState(false);
+  const [isFollowerOfProfile, setIsFollowerOfProfile] = useState(false);
+  const [togglingProfileFollow, setTogglingProfileFollow] = useState(false);
+  const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
+  const [connectionsModalTab, setConnectionsModalTab] = useState("FOLLOWING");
+  const [loadingProfileConnections, setLoadingProfileConnections] = useState(false);
+
+  const fetchProfileConnections = useCallback(async () => {
+    if (!id) return;
+    setLoadingProfileConnections(true);
+    try {
+      const [followingRes, followersRes] = await Promise.all([
+        axiosInstance.get(`/api/v1/users/${id}/following`, {
+          validateStatus: (status) => status < 500,
+        }),
+        axiosInstance.get(`/api/v1/users/${id}/followers`, {
+          validateStatus: (status) => status < 500,
+        }),
+      ]);
+
+      const followingData =
+        followingRes.status === 200 && followingRes.data?.data
+          ? followingRes.data.data
+          : [];
+      const followersData =
+        followersRes.status === 200 && followersRes.data?.data
+          ? followersRes.data.data
+          : [];
+
+      setProfileFollowingList(followingData);
+      setProfileFollowersList(followersData);
+
+      if (user?.uid && user.uid !== id) {
+        const statusRes = await axiosInstance.get(
+          `/api/v1/users/${id}/follow/status`,
+          { validateStatus: (status) => status < 500 }
+        );
+        if (statusRes.status === 200 && statusRes.data?.data) {
+          setIsFollowingProfile(statusRes.data.data.isFollowing);
+        }
+
+        const isFollower = followingData.some((u) => u.uid === user.uid);
+        setIsFollowerOfProfile(isFollower);
+      }
+    } catch (err) {
+      console.error("Error fetching profile connections:", err);
+    } finally {
+      setLoadingProfileConnections(false);
+    }
+  }, [id, user?.uid]);
+
+  useEffect(() => {
+    fetchProfileConnections();
+  }, [fetchProfileConnections]);
+
+  const handleToggleFollowProfile = async () => {
+    if (!user?.uid || user.uid === id || togglingProfileFollow) return;
+    const isCurrentlyFollowing = isFollowingProfile;
+
+    setIsFollowingProfile(!isCurrentlyFollowing);
+    setTogglingProfileFollow(true);
+
+    if (!isCurrentlyFollowing) {
+      setProfileFollowersList((prev) => [user, ...prev]);
+    } else {
+      setProfileFollowersList((prev) => prev.filter((u) => u.uid !== user.uid));
+    }
+
+    try {
+      if (isCurrentlyFollowing) {
+        await axiosInstance.delete(`/api/v1/users/${id}/follow`);
+      } else {
+        await axiosInstance.post(`/api/v1/users/${id}/follow`);
+      }
+    } catch (err) {
+      console.error("Error toggling follow on profile:", err);
+      setIsFollowingProfile(isCurrentlyFollowing);
+      if (!isCurrentlyFollowing) {
+        setProfileFollowersList((prev) => prev.filter((u) => u.uid !== user.uid));
+      } else {
+        setProfileFollowersList((prev) => [user, ...prev]);
+      }
+    } finally {
+      setTogglingProfileFollow(false);
+    }
+  };
   
   const [posts, setPosts] = useState(() => (id ? postsCache.get(id) || [] : []));
   const [loadingPosts, setLoadingPosts] = useState(() => (id ? !postsCache.has(id) : true));
@@ -337,30 +427,81 @@ export default function Profile() {
                       {dbUser.location}
                     </p>
                   )}
-                  {isOwner ? (
-                    <button
-                      type="button"
-                      className="mt-3 px-4 py-1.5 border border-zinc-900 dark:border-zinc-100 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 text-sm font-medium flex items-center gap-2 transition-colors"
-                      onClick={() => setEditInfoDrawerOpen(true)}
-                    >
-                      <PencilLine className="w-4 h-4" /> Edit Profile
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setFollowed(!followed)}
-                      className={`mt-3 px-4 py-1.5 border border-zinc-900 dark:border-zinc-100 rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors ${
-                        followed
-                          ? 'bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100'
-                          : 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                      }`}
-                    >
-                      {followed ? (
-                        <><UserRoundCheck className='w-4 h-4' /> Followed</>
+
+                  <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-4 text-xs sm:text-sm">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConnectionsModalTab("FOLLOWING");
+                          setConnectionsModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hover:cursor-pointer group"
+                      >
+                        <span className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {profileFollowingList.length}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400">Following</span>
+                      </button>
+
+                      <span className="text-gray-300 dark:text-gray-700">•</span>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setConnectionsModalTab("FOLLOWERS");
+                          setConnectionsModalOpen(true);
+                        }}
+                        className="flex items-center gap-1.5 font-medium text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors hover:cursor-pointer group"
+                      >
+                        <span className="font-bold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400">
+                          {profileFollowersList.length}
+                        </span>
+                        <span className="text-gray-500 dark:text-gray-400">Followers</span>
+                      </button>
+                    </div>
+
+                    <div>
+                      {isOwner ? (
+                        <button
+                          type="button"
+                          className="px-4 py-1.5 border border-zinc-900 dark:border-zinc-100 rounded-xl hover:cursor-pointer hover:bg-zinc-900 hover:text-white dark:hover:bg-zinc-100 dark:hover:text-zinc-900 text-sm font-medium flex items-center gap-2 transition-colors"
+                          onClick={() => setEditInfoDrawerOpen(true)}
+                        >
+                          <PencilLine className="w-4 h-4" /> Edit Profile
+                        </button>
                       ) : (
-                        <><UserRoundPlus className='w-4 h-4' /> Follow</>
+                        <button
+                          type="button"
+                          onClick={handleToggleFollowProfile}
+                          disabled={togglingProfileFollow}
+                          className={`px-4 py-1.5 border rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 ${
+                            isFollowingProfile
+                              ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 border-zinc-900 dark:border-zinc-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                              : isFollowerOfProfile
+                              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
+                              : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200"
+                          }`}
+                        >
+                          {togglingProfileFollow ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : isFollowingProfile ? (
+                            <>
+                              <UserRoundCheck className="w-4 h-4" /> Following
+                            </>
+                          ) : isFollowerOfProfile ? (
+                            <>
+                              <UserRoundPlus className="w-4 h-4" /> Follow Back
+                            </>
+                          ) : (
+                            <>
+                              <UserRoundPlus className="w-4 h-4" /> Follow
+                            </>
+                          )}
+                        </button>
                       )}
-                    </button>
-                  )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -739,6 +880,143 @@ export default function Profile() {
           setPostsRefreshKey((prev) => prev + 1);
         }}
       />
+
+      {connectionsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 w-full max-w-md overflow-hidden shadow-xl flex flex-col max-h-[80vh]">
+            <div className="p-4 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setConnectionsModalTab("FOLLOWING")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
+                    connectionsModalTab === "FOLLOWING"
+                      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  Following ({profileFollowingList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConnectionsModalTab("FOLLOWERS")}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
+                    connectionsModalTab === "FOLLOWERS"
+                      ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                      : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  }`}
+                >
+                  Followers ({profileFollowersList.length})
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => setConnectionsModalOpen(false)}
+                className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 hover:cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-3 flex-1">
+              {loadingProfileConnections ? (
+                <div className="flex flex-col items-center justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin text-gray-400 mb-2" />
+                  <p className="text-xs text-gray-500">Loading...</p>
+                </div>
+              ) : connectionsModalTab === "FOLLOWING" ? (
+                profileFollowingList.length === 0 ? (
+                  <p className="text-center text-sm text-gray-500 py-8">
+                    Not following anyone yet.
+                  </p>
+                ) : (
+                  profileFollowingList.map((item) => (
+                    <div
+                      key={item.uid || item.id}
+                      className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    >
+                      <Link
+                        href={`/profile/${item.uid}`}
+                        onClick={() => setConnectionsModalOpen(false)}
+                        className="flex items-center gap-3 min-w-0 flex-1"
+                      >
+                        <div className="w-10 h-10 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700">
+                          <Image
+                            src={item.profileImage || user_placeholder}
+                            alt={item.name || "User"}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1 text-left">
+                          <h5 className="font-bold text-sm text-gray-900 dark:text-white truncate hover:underline">
+                            {item.name || "User"}
+                          </h5>
+                          {item.role && (
+                            <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">
+                              {item.role}
+                            </span>
+                          )}
+                        </div>
+                      </Link>
+                      <Link
+                        href={`/profile/${item.uid}`}
+                        onClick={() => setConnectionsModalOpen(false)}
+                        className="px-3 py-1 text-xs font-semibold border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+                      >
+                        View
+                      </Link>
+                    </div>
+                  ))
+                )
+              ) : profileFollowersList.length === 0 ? (
+                <p className="text-center text-sm text-gray-500 py-8">
+                  No followers yet.
+                </p>
+              ) : (
+                profileFollowersList.map((item) => (
+                  <div
+                    key={item.uid || item.id}
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
+                    <Link
+                      href={`/profile/${item.uid}`}
+                      onClick={() => setConnectionsModalOpen(false)}
+                      className="flex items-center gap-3 min-w-0 flex-1"
+                    >
+                      <div className="w-10 h-10 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-gray-700">
+                        <Image
+                          src={item.profileImage || user_placeholder}
+                          alt={item.name || "User"}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1 text-left">
+                        <h5 className="font-bold text-sm text-gray-900 dark:text-white truncate hover:underline">
+                          {item.name || "User"}
+                        </h5>
+                        {item.role && (
+                          <span className="text-[10px] uppercase font-bold text-gray-500 dark:text-gray-400">
+                            {item.role}
+                          </span>
+                        )}
+                      </div>
+                    </Link>
+                    <Link
+                      href={`/profile/${item.uid}`}
+                      onClick={() => setConnectionsModalOpen(false)}
+                      className="px-3 py-1 text-xs font-semibold border border-gray-300 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 shrink-0"
+                    >
+                      View
+                    </Link>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   )
 }
