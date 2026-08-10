@@ -15,7 +15,6 @@ import {
   UserPlus,
   UserCheck,
   MapPin,
-  GraduationCap,
   Briefcase,
   Loader2,
   ExternalLink,
@@ -23,6 +22,8 @@ import {
 
 export default function NetworkPage() {
   const { user } = useAuth();
+
+  // ── Explore tab state ──────────────────────────────────────────────────────
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -30,7 +31,6 @@ export default function NetworkPage() {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [followingMap, setFollowingMap] = useState({});
   const [togglingMap, setTogglingMap] = useState({});
-  const [coversMap, setCoversMap] = useState({});
 
   const [followersMap, setFollowersMap] = useState({});
 
@@ -119,62 +119,69 @@ export default function NetworkPage() {
     fetchConnections();
   }, [fetchConnections]);
 
-  const handleSearchSubmit = (e) => {
-    if (e) e.preventDefault();
-    setActiveSearchQuery(searchInput);
-    setLoading(true);
-  };
-
+  // ── Explore tab: suggestions + search ─────────────────────────────────────
   useEffect(() => {
     if (!user) return;
 
+    setLoading(true);
     const q = activeSearchQuery.trim();
-    const commonParams = { limit: 100 };
-    if (roleFilter !== "ALL") {
-      commonParams.role = roleFilter;
-    }
 
-    let searchRequests = [];
-    if (q) {
-      searchRequests = [
-        axiosInstance.get("/api/v1/search/users", {
-          params: { ...commonParams, name: q },
-        }),
-        axiosInstance.get("/api/v1/search/users", {
-          params: { ...commonParams, department: q },
-        }),
-      ];
+    if (!q && roleFilter === "ALL") {
+      // No search query and no filter — use the suggestions endpoint
+      axiosInstance
+        .get("/api/v1/connections/suggestions", { params: { limit: 50 } })
+        .then((res) => {
+          const list = res.data?.data || [];
+          setUsersList(list);
+
+          // suggestions endpoint excludes already-followed, so all are not following
+          const fMap = {};
+          list.forEach((u) => {
+            if (u.uid) fMap[u.uid] = false;
+          });
+          setFollowingMap((prev) => ({ ...prev, ...fMap }));
+        })
+        .catch((err) => {
+          console.error("Error fetching suggestions:", err);
+          setUsersList([]);
+        })
+        .finally(() => setLoading(false));
     } else {
-      searchRequests = [
-        axiosInstance.get("/api/v1/search/users", {
-          params: commonParams,
-        }),
-      ];
-    }
+      // Search or role filter active — use search endpoint
+      const params = { limit: 100 };
+      if (roleFilter !== "ALL") params.role = roleFilter;
 
-    Promise.all(searchRequests)
-      .then((responses) => {
-        let combinedRaw = [];
-        responses.forEach((res) => {
-          const list = res.data?.data?.data || res.data?.data || [];
-          combinedRaw = combinedRaw.concat(list);
-        });
+      const requests = q
+        ? [
+            axiosInstance.get("/api/v1/search/users", { params: { ...params, name: q } }),
+            axiosInstance.get("/api/v1/search/users", { params: { ...params, department: q } }),
+          ]
+        : [axiosInstance.get("/api/v1/search/users", { params })];
 
-        const uniqueMap = new Map();
-        combinedRaw.forEach((u) => {
-          if (u.uid && u.uid !== user.uid && u.email !== user.email) {
-            uniqueMap.set(u.uid, u);
-          }
-        });
+      Promise.all(requests)
+        .then((responses) => {
+          let combinedRaw = [];
+          responses.forEach((res) => {
+            const list = res.data?.data?.data || res.data?.data || [];
+            combinedRaw = combinedRaw.concat(list);
+          });
 
-        const otherUsers = Array.from(uniqueMap.values());
-        setUsersList(otherUsers);
+          const uniqueMap = new Map();
+          combinedRaw.forEach((u) => {
+            if (u.uid && u.uid !== user.uid) {
+              uniqueMap.set(u.uid, u);
+            }
+          });
 
-        otherUsers.forEach((otherUser) => {
-          if (otherUser.uid) {
+          const otherUsers = Array.from(uniqueMap.values());
+          setUsersList(otherUsers);
+
+          // Batch check follow status for search results
+          otherUsers.forEach((otherUser) => {
+            if (!otherUser.uid) return;
             axiosInstance
               .get(`/api/v1/users/${otherUser.uid}/follow/status`, {
-                validateStatus: (status) => status < 500,
+                validateStatus: (s) => s < 500,
               })
               .then((statusRes) => {
                 if (statusRes.status === 200 && statusRes.data?.data) {
@@ -184,35 +191,24 @@ export default function NetworkPage() {
                   }));
                 }
               })
-              .catch(() => { });
-
-            axiosInstance
-              .get(`/api/v1/users/${otherUser.uid}`, {
-                validateStatus: (status) => status < 500,
-              })
-              .then((userRes) => {
-                if (userRes.status === 200 && userRes.data?.data) {
-                  const fullUser = userRes.data.data;
-                  if (fullUser.coverImage) {
-                    setCoversMap((prev) => ({
-                      ...prev,
-                      [otherUser.uid]: fullUser.coverImage,
-                    }));
-                  }
-                }
-              })
-              .catch(() => { });
-          }
-        });
-      })
-      .catch((err) => {
-        console.error("Error searching users from backend:", err);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+              .catch(() => {});
+          });
+        })
+        .catch((err) => {
+          console.error("Error searching users:", err);
+          setUsersList([]);
+        })
+        .finally(() => setLoading(false));
+    }
   }, [user, activeSearchQuery, roleFilter]);
 
+  const handleSearchSubmit = (e) => {
+    if (e) e.preventDefault();
+    setActiveSearchQuery(searchInput);
+    setLoading(true);
+  };
+
+  // ── Follow / Unfollow toggle ───────────────────────────────────────────────
   const handleToggleFollow = async (targetUid) => {
     if (togglingMap[targetUid]) return;
 
@@ -261,14 +257,20 @@ export default function NetworkPage() {
     }
   };
 
+  // ── Member card (shared between explore & connections) ────────────────────
   const renderMemberCard = (item) => {
-    const profile =
-      item.role === "STUDENT" ? item.studentProfile : item.alumniProfile;
+    const profile = item.role === "STUDENT" ? item.studentProfile : item.alumniProfile;
     const isFollowing = !!followingMap[item.uid];
     const isFollower = !!followersMap[item.uid];
     const isToggling = !!togglingMap[item.uid];
-    const userCoverImage =
-      coversMap[item.uid] || item.coverImage || coverPlaceholder;
+    const coverImage = item.coverImage || coverPlaceholder;
+
+    // currentPosition / currentCompany may come either from nested profile or
+    // directly on item (connections/suggestions endpoint flattens them)
+    const currentPosition = item.currentPosition || profile?.currentPosition;
+    const currentCompany = item.currentCompany || profile?.currentCompany;
+    const department = item.department || profile?.department;
+    const batch = profile?.batch;
 
     return (
       <div
@@ -277,12 +279,7 @@ export default function NetworkPage() {
       >
         <div>
           <div className="relative h-24 bg-gray-200 dark:bg-gray-800 overflow-hidden">
-            <Image
-              src={userCoverImage}
-              alt={item.name || "Cover Banner"}
-              fill
-              className="object-cover"
-            />
+            <Image src={coverImage} alt={item.name || "Cover"} fill className="object-cover" />
           </div>
 
           <div className="p-4 pt-0 relative">
@@ -301,10 +298,11 @@ export default function NetworkPage() {
 
               {item.role && (
                 <span
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase border ${item.role.toUpperCase() === "ALUMNI"
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase border ${
+                    item.role.toUpperCase() === "ALUMNI"
                       ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                       : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                    }`}
+                  }`}
                 >
                   {item.role}
                 </span>
@@ -332,15 +330,13 @@ export default function NetworkPage() {
                 </div>
               )}
 
-              {(profile?.currentPosition || profile?.currentCompany) && (
+              {(currentPosition || currentCompany) && (
                 <p className="text-xs text-gray-700 dark:text-gray-300 font-medium flex items-center gap-1 truncate">
                   <Briefcase className="w-3.5 h-3.5 shrink-0 text-gray-400" />
                   <span className="truncate">
-                    {profile.currentPosition}
-                    {profile.currentPosition && profile.currentCompany
-                      ? " at "
-                      : ""}
-                    {profile.currentCompany}
+                    {currentPosition}
+                    {currentPosition && currentCompany ? " at " : ""}
+                    {currentCompany}
                   </span>
                 </p>
               )}
@@ -357,21 +353,29 @@ export default function NetworkPage() {
                   {item.bio}
                 </p>
               )}
+
+              {item.followsYouBack && (
+                <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium">
+                  Follows you
+                </span>
+              )}
             </div>
           </div>
         </div>
+
         <div className="p-4 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center gap-2">
           {item.uid !== user?.uid && (
             <button
               type="button"
               onClick={() => handleToggleFollow(item.uid)}
               disabled={isToggling}
-              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors hover:cursor-pointer disabled:opacity-50 ${isFollowing
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors hover:cursor-pointer disabled:opacity-50 ${
+                isFollowing
                   ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                   : isFollower
                   ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white hover:bg-blue-700 dark:hover:bg-blue-600"
                   : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
-                }`}
+              }`}
             >
               {isToggling ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -407,6 +411,7 @@ export default function NetworkPage() {
     );
   };
 
+  // ── JSX ───────────────────────────────────────────────────────────────────
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-black/95">
@@ -419,10 +424,11 @@ export default function NetworkPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("EXPLORE")}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${activeTab === "EXPLORE"
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
+                    activeTab === "EXPLORE"
                       ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4" />
@@ -436,10 +442,11 @@ export default function NetworkPage() {
                     setActiveTab("CONNECTIONS");
                     fetchConnections();
                   }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${activeTab === "CONNECTIONS"
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
+                    activeTab === "CONNECTIONS"
                       ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
+                  }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <UserCheck className="w-4 h-4" />
@@ -487,10 +494,11 @@ export default function NetworkPage() {
                             setRoleFilter(role);
                             setLoading(true);
                           }}
-                          className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer whitespace-nowrap ${roleFilter === role
+                          className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer whitespace-nowrap ${
+                            roleFilter === role
                               ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                               : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                            }`}
+                          }`}
                         >
                           {role === "ALL"
                             ? "All People"
@@ -526,20 +534,22 @@ export default function NetworkPage() {
                     <button
                       type="button"
                       onClick={() => setConnectionSubTab("FOLLOWING")}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${connectionSubTab === "FOLLOWING"
+                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${
+                        connectionSubTab === "FOLLOWING"
                           ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
+                      }`}
                     >
                       Following ({followingList.length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setConnectionSubTab("FOLLOWERS")}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${connectionSubTab === "FOLLOWERS"
+                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${
+                        connectionSubTab === "FOLLOWERS"
                           ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                        }`}
+                      }`}
                     >
                       Followers ({followersList.length})
                     </button>
