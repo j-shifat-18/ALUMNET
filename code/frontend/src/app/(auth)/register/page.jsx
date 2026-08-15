@@ -1,9 +1,13 @@
 import RegistrationForm from "@/components/auth/RegistrationForm";
+import AuthLayout from "@/components/auth/AuthLayout";
 
-export default function page() {
-    return (
-        <div className="min-h-screen flex justify-center items-center">
-            <RegistrationForm></RegistrationForm>
-        </div>
-    );
+export default function RegisterPage() {
+  return (
+    <AuthLayout
+      heading="Join ALUMNET"
+      subheading="Create your account with your official IUT email to connect with alumni and students."
+    >
+      <RegistrationForm />
+    </AuthLayout>
+  );
 }

@@ -123,7 +123,7 @@ export default function LoginForm() {
           />
         </div>
       )}
-      <div className="relative w-full max-w-sm p-6 space-y-6 bg-white dark:bg-black rounded-lg border border-zinc-200 dark:border-zinc-800 shadow-lg dark:shadow-zinc-900/50">
+      <div className="relative w-full max-w-md p-8 space-y-6 bg-white dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 shadow-none">
         <div className="text-center space-y-3">
           <div className="flex justify-center">
             <Image src={logo} alt='ALUMNET' width={80} height={80} />

@@ -156,7 +156,7 @@ const RegistrationForm = () => {
           />
         </div>
       )}
-      <div className="w-full max-w-sm">
+      <div className="w-full max-w-md">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Step {step} of 3</span>
@@ -169,7 +169,7 @@ const RegistrationForm = () => {
           </div>
         </div>
 
-        <div className="signin-card bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+        <div className="signin-card bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-none p-8">
           <div className="text-center mb-6">
             <div className="flex justify-center">
               <Image src={logo} alt='ALUMNET' width={80} height={80} />
