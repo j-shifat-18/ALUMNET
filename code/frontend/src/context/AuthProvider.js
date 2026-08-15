@@ -48,52 +48,32 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const registerUser = async (email, password) => {
-    setLoading(true);
-    try {
-      const result = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
+    const result = await createUserWithEmailAndPassword(
+      auth,
+      email,
+      password
+    );
 
-      await sendEmailVerification(result.user);
+    await sendEmailVerification(result.user);
 
-      return result.user;
-    } finally {
-      setLoading(false);
-    }
+    return result.user;
   };
 
   const signInUser = async (email, password) => {
-    setLoading(true);
-    try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+    const result = await signInWithEmailAndPassword(auth, email, password);
 
-      return result.user;
-    } finally {
-      setLoading(false);
-    }
+    return result.user;
   };
 
   const signInGoogle = async () => {
-    setLoading(true);
-    try {
-      const result = await signInWithPopup(auth, googleProvider);
+    const result = await signInWithPopup(auth, googleProvider);
 
-      return result.user;
-    } finally {
-      setLoading(false);
-    }
+    return result.user;
   };
 
   const logout = async () => {
-    setLoading(true);
-    try {
-      await signOut(auth);
-      setDbUser(null);
-    } finally {
-      setLoading(false);
-    }
+    await signOut(auth);
+    setDbUser(null);
   };
 
   const updateUserProfile = (profile) => {

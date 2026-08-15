@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import ProtectedRoute from "@/components/shared/ProtectedRoute";
@@ -23,7 +23,6 @@ import {
 export default function NetworkPage() {
   const { user } = useAuth();
 
-  // ── Explore tab state ──────────────────────────────────────────────────────
   const [usersList, setUsersList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchInput, setSearchInput] = useState("");
@@ -31,6 +30,7 @@ export default function NetworkPage() {
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [followingMap, setFollowingMap] = useState({});
   const [togglingMap, setTogglingMap] = useState({});
+  const [coversMap, setCoversMap] = useState({});
 
   const [followersMap, setFollowersMap] = useState({});
 
@@ -39,16 +39,14 @@ export default function NetworkPage() {
   const [followingList, setFollowingList] = useState([]);
   const [followersList, setFollowersList] = useState([]);
   const [loadingConnections, setLoadingConnections] = useState(false);
+  const currentUid = user?.uid;
 
-  const fetchConnections = useCallback(() => {
-    if (!user?.uid) return;
-    setLoadingConnections(true);
-
+  const performConnectionsFetch = (uid) => {
     Promise.all([
-      axiosInstance.get(`/api/v1/users/${user.uid}/following`, {
+      axiosInstance.get(`/api/v1/users/${uid}/following`, {
         validateStatus: (status) => status < 500,
       }),
-      axiosInstance.get(`/api/v1/users/${user.uid}/followers`, {
+      axiosInstance.get(`/api/v1/users/${uid}/followers`, {
         validateStatus: (status) => status < 500,
       }),
     ])
@@ -82,9 +80,9 @@ export default function NetworkPage() {
           new Set(allConnectionUsers.map((u) => u.uid).filter(Boolean))
         );
 
-        uniqueConnectionUids.forEach((uid) => {
+        uniqueConnectionUids.forEach((connUid) => {
           axiosInstance
-            .get(`/api/v1/users/${uid}`, {
+            .get(`/api/v1/users/${connUid}`, {
               validateStatus: (status) => status < 500,
             })
             .then((userRes) => {
@@ -93,14 +91,14 @@ export default function NetworkPage() {
                 if (fullUser.coverImage) {
                   setCoversMap((prev) => ({
                     ...prev,
-                    [uid]: fullUser.coverImage,
+                    [connUid]: fullUser.coverImage,
                   }));
                 }
                 setFollowingList((prev) =>
-                  prev.map((u) => (u.uid === uid ? { ...u, ...fullUser } : u))
+                  prev.map((u) => (u.uid === connUid ? { ...u, ...fullUser } : u))
                 );
                 setFollowersList((prev) =>
-                  prev.map((u) => (u.uid === uid ? { ...u, ...fullUser } : u))
+                  prev.map((u) => (u.uid === connUid ? { ...u, ...fullUser } : u))
                 );
               }
             })
@@ -113,33 +111,56 @@ export default function NetworkPage() {
       .finally(() => {
         setLoadingConnections(false);
       });
-  }, [user?.uid]);
+  };
+
+  const fetchConnections = () => {
+    if (!currentUid) return;
+    setLoadingConnections(true);
+    performConnectionsFetch(currentUid);
+  };
 
   useEffect(() => {
-    fetchConnections();
-  }, [fetchConnections]);
+    if (!currentUid) return;
+    performConnectionsFetch(currentUid);
+  }, [currentUid]);
 
-  // ── Explore tab: suggestions + search ─────────────────────────────────────
   useEffect(() => {
     if (!user) return;
 
-    setLoading(true);
     const q = activeSearchQuery.trim();
 
     if (!q && roleFilter === "ALL") {
-      // No search query and no filter — use the suggestions endpoint
       axiosInstance
         .get("/api/v1/connections/suggestions", { params: { limit: 50 } })
         .then((res) => {
           const list = res.data?.data || [];
           setUsersList(list);
 
-          // suggestions endpoint excludes already-followed, so all are not following
           const fMap = {};
           list.forEach((u) => {
             if (u.uid) fMap[u.uid] = false;
           });
           setFollowingMap((prev) => ({ ...prev, ...fMap }));
+
+          list.forEach((u) => {
+            if (!u.uid) return;
+            axiosInstance
+              .get(`/api/v1/users/${u.uid}`, { validateStatus: (s) => s < 500 })
+              .then((pRes) => {
+                if (pRes.status === 200 && pRes.data?.data) {
+                  const full = pRes.data.data;
+                  if (full.coverImage) {
+                    setCoversMap((prev) => ({ ...prev, [u.uid]: full.coverImage }));
+                  }
+                  setUsersList((prev) =>
+                    prev.map((item) =>
+                      item.uid === u.uid ? { ...item, ...full } : item
+                    )
+                  );
+                }
+              })
+              .catch(() => {});
+          });
         })
         .catch((err) => {
           console.error("Error fetching suggestions:", err);
@@ -147,7 +168,6 @@ export default function NetworkPage() {
         })
         .finally(() => setLoading(false));
     } else {
-      // Search or role filter active — use search endpoint
       const params = { limit: 100 };
       if (roleFilter !== "ALL") params.role = roleFilter;
 
@@ -176,7 +196,6 @@ export default function NetworkPage() {
           const otherUsers = Array.from(uniqueMap.values());
           setUsersList(otherUsers);
 
-          // Batch check follow status for search results
           otherUsers.forEach((otherUser) => {
             if (!otherUser.uid) return;
             axiosInstance
@@ -189,6 +208,25 @@ export default function NetworkPage() {
                     ...prev,
                     [otherUser.uid]: statusRes.data.data.isFollowing,
                   }));
+                }
+              })
+              .catch(() => {});
+
+            axiosInstance
+              .get(`/api/v1/users/${otherUser.uid}`, {
+                validateStatus: (s) => s < 500,
+              })
+              .then((uRes) => {
+                if (uRes.status === 200 && uRes.data?.data) {
+                  const full = uRes.data.data;
+                  if (full.coverImage) {
+                    setCoversMap((prev) => ({ ...prev, [otherUser.uid]: full.coverImage }));
+                  }
+                  setUsersList((prev) =>
+                    prev.map((item) =>
+                      item.uid === otherUser.uid ? { ...item, ...full } : item
+                    )
+                  );
                 }
               })
               .catch(() => {});
@@ -208,7 +246,6 @@ export default function NetworkPage() {
     setLoading(true);
   };
 
-  // ── Follow / Unfollow toggle ───────────────────────────────────────────────
   const handleToggleFollow = async (targetUid) => {
     if (togglingMap[targetUid]) return;
 
@@ -257,20 +294,16 @@ export default function NetworkPage() {
     }
   };
 
-  // ── Member card (shared between explore & connections) ────────────────────
   const renderMemberCard = (item) => {
     const profile = item.role === "STUDENT" ? item.studentProfile : item.alumniProfile;
     const isFollowing = !!followingMap[item.uid];
     const isFollower = !!followersMap[item.uid];
     const isToggling = !!togglingMap[item.uid];
-    const coverImage = item.coverImage || coverPlaceholder;
-
-    // currentPosition / currentCompany may come either from nested profile or
-    // directly on item (connections/suggestions endpoint flattens them)
+    const coverImage = coversMap[item.uid] || item.coverImage || coverPlaceholder;
     const currentPosition = item.currentPosition || profile?.currentPosition;
     const currentCompany = item.currentCompany || profile?.currentCompany;
-    const department = item.department || profile?.department;
-    const batch = profile?.batch;
+    const department = profile?.department || item.department;
+    const batch = profile?.batch || item.batch;
 
     return (
       <div
@@ -317,16 +350,18 @@ export default function NetworkPage() {
                 {item.name || "User"}
               </Link>
 
-              {(profile?.department || profile?.batch) && (
-                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium flex flex-col gap-1 truncate">
-                  <div className="flex items-center gap-1">
-                    <span className="truncate">
-                      {profile.department || "Student"}{" "}
+              {(department || batch) && (
+                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium flex flex-col gap-0.5">
+                  {department && (
+                    <div className="flex items-center gap-1">
+                      <span className="truncate">{department}</span>
+                    </div>
+                  )}
+                  {batch && (
+                    <span className="truncate text-gray-500 dark:text-gray-400 text-[11px] font-normal">
+                      Batch: {batch}
                     </span>
-                  </div>
-                  <span className="truncate">
-                    Batch: {profile.batch ? `${profile.batch}` : ""}
-                  </span>
+                  )}
                 </div>
               )}
 
@@ -411,7 +446,6 @@ export default function NetworkPage() {
     );
   };
 
-  // ── JSX ───────────────────────────────────────────────────────────────────
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50 dark:bg-black/95">

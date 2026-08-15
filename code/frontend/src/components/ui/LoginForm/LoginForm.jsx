@@ -81,7 +81,7 @@ export default function LoginForm() {
         });
         setTimeout(() => {
           router.push("/verify-email");
-        }, 3000);
+        }, 1500);
         return;
       }
 
@@ -89,12 +89,12 @@ export default function LoginForm() {
         type: "success",
         title: "Successfully Logged In!",
         message: "Welcome back!",
-        duration: 3000
+        duration: 2000
       });
 
       setTimeout(() => {
         router.push("/");
-      }, 3000);
+      }, 1000);
 
     } catch (err) {
       setNotification({
@@ -103,7 +103,6 @@ export default function LoginForm() {
         message: err.message || String(err),
         duration: 5000
       });
-    } finally {
       setIsLoading(false);
     }
   }
@@ -136,7 +135,7 @@ export default function LoginForm() {
 
       { }
       <div className="">
-        <GoogleSignInButton></GoogleSignInButton>
+        <GoogleSignInButton disabled={isLoading}></GoogleSignInButton>
       </div>
 
       { }
@@ -157,20 +156,20 @@ export default function LoginForm() {
           <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900 dark:text-zinc-50">
             Email
           </label>
-          <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" className="flex h-9 w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-5 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50" />
+          <input type="email" id="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@example.com" disabled={isLoading} className="flex h-9 w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-5 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50" />
         </div>
         <div className="space-y-2">
           <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 text-zinc-900 dark:text-zinc-50">
             Password
           </label>
           <div className="relative">
-            <input type={showPassword ? "text" : "password"} id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" className="flex h-9 w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-5 pr-10 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50" />
+            <input type={showPassword ? "text" : "password"} id="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Enter your password" disabled={isLoading} className="flex h-9 w-full rounded-md border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 px-3 py-5 pr-10 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:cursor-not-allowed disabled:opacity-50" />
             <button type="button" onClick={() => setShowPassword(!showPassword)} className="hover:cursor-pointer absolute right-3 top-1/2 -translate-y-1/2 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
               {showPassword ? <EyeOffIcon /> : <EyeIcon />}
             </button>
           </div>
         </div>
-        <button type="submit" className="bg-zinc-900 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 px-4 py-2 w-full">
+        <button type="submit" disabled={isLoading || !email || !password} className="bg-zinc-900 inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors hover:cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-zinc-950 dark:focus-visible:ring-zinc-300 disabled:pointer-events-none disabled:opacity-50 text-zinc-50 shadow hover:bg-zinc-900/90 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-50/90 h-9 px-4 py-2 w-full">
           {isLoading ? <div className="flex items-center justify-center gap-2">
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-gray-900 border-t-transparent"></div>
             Signing in...

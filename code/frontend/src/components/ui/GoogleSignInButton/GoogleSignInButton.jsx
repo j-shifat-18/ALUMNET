@@ -6,7 +6,7 @@ import axiosInstance from "@/lib/axios";
 import { useRouter } from "next/navigation";
 import Notification from "../toast";
 
-const GoogleSignInButton = () => {
+const GoogleSignInButton = ({ disabled = false }) => {
   const { signInGoogle, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [notification, setNotification] = useState(null);
@@ -55,18 +55,18 @@ const GoogleSignInButton = () => {
 
         setTimeout(() => {
           router.push("/profile-setup");
-        }, 3000);
+        }, 1500);
       } else {
         setNotification({
           type: "success",
           title: "Successfully Logged In!",
           message: "Welcome back!",
-          duration: 3000,
+          duration: 2000,
         });
 
         setTimeout(() => {
           router.push("/");
-        }, 3000);
+        }, 1000);
       }
     } catch (err) {
       setNotification({
@@ -75,7 +75,6 @@ const GoogleSignInButton = () => {
         message: err.message || String(err),
         duration: 5000,
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -99,7 +98,8 @@ const GoogleSignInButton = () => {
         iconLeft={<GoogleIcon />}
         className="w-full"
         onClick={handleGoogleSignIn}
-        disabled={isLoading}
+        loading={isLoading}
+        disabled={isLoading || disabled}
       >
         {isLoading ? "Signing in..." : "Continue with Google"}
       </Button>

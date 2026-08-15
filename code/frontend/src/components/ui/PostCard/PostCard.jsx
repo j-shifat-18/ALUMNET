@@ -475,7 +475,8 @@ export default function PostCard({ post, currentUser, onDelete }) {
             width={800}
             height={500}
             unoptimized
-            className="w-full h-auto max-h-96 object-contain rounded-lg"
+            style={{ height: 'auto' }}
+            className="w-full max-h-96 object-contain rounded-lg"
           />
         </div>
       )}

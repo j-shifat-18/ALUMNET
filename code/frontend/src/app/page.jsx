@@ -103,6 +103,7 @@ export default function Home() {
                         src={activeDbUser.coverImage}
                         alt="Cover"
                         fill
+                        priority
                         unoptimized
                         className="object-cover opacity-80 transition-transform duration-300"
                       />
