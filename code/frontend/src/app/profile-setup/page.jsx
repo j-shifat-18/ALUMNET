@@ -1,5 +1,5 @@
-import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import ProfileSetupForm from "@/components/ui/ProfileSetup/ProfileSetupForm";
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import ProfileSetupForm from "@/components/profile/ProfileSetupForm";
 
 export default function page() {
   return (

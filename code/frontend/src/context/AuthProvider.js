@@ -13,7 +13,7 @@ import {
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { createContext, useContext, useEffect, useState } from "react";
-import LoadingScreen from "@/components/shared/LoadingScreen/LoadingScreen";
+import LoadingScreen from "@/components/layout/LoadingScreen";
 import axiosInstance from "@/lib/axios";
 
 const AuthContext = createContext();

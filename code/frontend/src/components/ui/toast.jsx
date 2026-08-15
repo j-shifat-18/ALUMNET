@@ -1,4 +1,4 @@
-'use client';;
+'use client';
 import React from 'react';
 import { motion } from 'framer-motion';
 
@@ -68,18 +68,18 @@ const ErrorIcon = ({ className }) => (
 
 // Close Icon SVG
 const CloseIcon = ({ className }) => (
-    <svg
-      className={className}
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M6 18L18 6M6 6l12 12" />
-    </svg>
+  <svg
+    className={className}
+    xmlns="http://www.w3.org/2000/svg"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+      d="M6 18L18 6M6 6l12 12" />
+  </svg>
 );
 
 // Loading Spinner SVG
@@ -103,7 +103,6 @@ const LoadingSpinner = ({ className }) => (
   </svg>
 );
 
-// A map to store styles and icons for each notification type
 const notificationConfig = {
   info: {
     bgColor: 'bg-blue-50 dark:bg-blue-950/20',
@@ -133,7 +132,7 @@ const notificationConfig = {
     icon: <ErrorIcon className="h-6 w-6" />,
     gradient: 'from-red-100/60 to-transparent dark:from-red-900/20 dark:to-transparent',
   },
-  loading: { // New loading configuration
+  loading: {
     bgColor: 'bg-gray-50 dark:bg-gray-950/20',
     borderColor: 'border-gray-200 dark:border-gray-800/50',
     iconColor: 'text-gray-500 dark:text-gray-400',
@@ -143,10 +142,9 @@ const notificationConfig = {
 };
 
 const Notification = ({ type, title, message, showIcon = true, duration, onClose }) => {
-  const config = notificationConfig[type];
+  const config = notificationConfig[type] || notificationConfig.info;
 
   return (
-    // Wrap with motion.div for animations and apply glassy styles with dark mode support
     <motion.div
       initial={{ opacity: 0, x: 100 }}
       animate={{ opacity: 1, x: 0 }}
@@ -156,34 +154,33 @@ const Notification = ({ type, title, message, showIcon = true, duration, onClose
       <div
         className={`absolute top-0 left-0 h-full w-full bg-gradient-to-br ${config.gradient} opacity-50`}></div>
       <div className="relative z-10 flex items-center space-x-4">
-          {showIcon && (
-              <div className={`flex-shrink-0 ${config.iconColor}`}>
-                  {config.icon}
-              </div>
-          )}
-          <div className="flex-1">
-              <p className="font-normal text-gray-900 dark:text-gray-100 text-lg">{title}</p>
-              {message && (
-                  <p className="text-sm text-gray-800 dark:text-gray-300 mt-1">{message}</p>
-              )}
+        {showIcon && (
+          <div className={`flex-shrink-0 ${config.iconColor}`}>
+            {config.icon}
           </div>
-          <button
-            onClick={onClose}
-            className="flex-shrink-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
-              <CloseIcon className="h-5 w-5" />
-          </button>
+        )}
+        <div className="flex-1">
+          <p className="font-normal text-gray-900 dark:text-gray-100 text-lg">{title}</p>
+          {message && (
+            <p className="text-sm text-gray-800 dark:text-gray-300 mt-1">{message}</p>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="flex-shrink-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800">
+          <CloseIcon className="h-5 w-5" />
+        </button>
       </div>
-      {duration && ( // Render progress bar only if duration is provided
-          (<div
-            className="absolute bottom-0 left-0 h-1 w-full bg-gray-300/50 dark:bg-gray-600/50 rounded-b-xl overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: '100%' }}
-              transition={{ duration: duration / 1000, ease: "linear" }}
-              // Call onClose when progress bar animation completes
-              onAnimationComplete={() => onClose()}
-              className={`h-full bg-gradient-to-r from-green-400 via-blue-400 to-sky-400 dark:from-green-500 dark:via-blue-500 dark:to-sky-500`}></motion.div>
-          </div>)
+      {duration && (
+        <div
+          className="absolute bottom-0 left-0 h-1 w-full bg-gray-300/50 dark:bg-gray-600/50 rounded-b-xl overflow-hidden">
+          <motion.div
+            initial={{ width: 0 }}
+            animate={{ width: '100%' }}
+            transition={{ duration: duration / 1000, ease: "linear" }}
+            onAnimationComplete={() => onClose()}
+            className={`h-full bg-gradient-to-r from-green-400 via-blue-400 to-sky-400 dark:from-green-500 dark:via-blue-500 dark:to-sky-500`}></motion.div>
+        </div>
       )}
     </motion.div>
   );

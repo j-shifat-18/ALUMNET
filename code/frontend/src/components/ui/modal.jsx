@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,7 +12,6 @@ const Modal = ({
   size = "md",
   animation = "scale",
 }) => {
-  // Animation variants based on animation type
   const getModalVariants = (animationType) => {
     switch (animationType) {
       case "scale":
@@ -121,18 +121,15 @@ const Modal = ({
   };
 
   const modalVariants = getModalVariants(animation);
-  // Handle body scroll and pointer events
+
   useEffect(() => {
     if (isOpen) {
-      // Store original values
       const originalOverflow = document.body.style.overflow;
       const originalPointerEvents = document.body.style.pointerEvents;
 
-      // Apply modal styles
       document.body.style.overflow = "hidden";
       document.body.style.pointerEvents = "none";
 
-      // Cleanup on modal close or unmount
       return () => {
         document.body.style.overflow = originalOverflow || "";
         document.body.style.pointerEvents = originalPointerEvents || "";
@@ -140,9 +137,8 @@ const Modal = ({
     }
   }, [isOpen]);
 
-  // Handle escape key - only when modal is open
   useEffect(() => {
-    if (!isOpen) return; // Early return if modal is closed
+    if (!isOpen) return;
 
     const handleEscape = (event) => {
       if (event.key === "Escape") {
@@ -150,10 +146,7 @@ const Modal = ({
       }
     };
 
-    // Add listener only when modal is open
     document.addEventListener("keydown", handleEscape);
-
-    // Cleanup when modal closes or component unmounts
     return () => document.removeEventListener("keydown", handleEscape);
   }, [isOpen, onClose]);
 
@@ -166,68 +159,69 @@ const Modal = ({
     xl: "max-w-4xl",
   };
 
-  return createPortal(<AnimatePresence>
-    {isOpen && (
-      <motion.div
-        className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-auto"
-        initial="hidden"
-        animate="visible"
-        exit="exit"
-        variants={backdropVariants}
-        transition={{ duration: 0.2 }}>
-        {/* Backdrop */}
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
         <motion.div
-          className={cn("absolute inset-0 backdrop-blur-sm", "bg-black/50 dark:bg-black/70")}
-          onClick={onClose}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }} />
-
-        {/* Modal Content */}
-        <motion.div
-          className={cn(
-            "relative rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-auto",
-            "bg-white dark:bg-gray-900",
-            "border-0 dark:border dark:border-gray-700",
-            sizeClasses[size]
-          )}
-          variants={modalVariants}
+          className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-auto"
           initial="hidden"
           animate="visible"
-          exit="exit">
-          {title && (
-            <div
-              className={cn(
-                "flex items-center justify-between p-4 border-b",
-                "border-gray-200 dark:border-gray-700"
-              )}>
-              <h3 className={cn("text-lg font-semibold", "text-gray-900 dark:text-white")}>
-                {title}
-              </h3>
-              <button
-                onClick={onClose}
-                className={cn(
-                  "p-1 rounded-md transition-colors",
-                  "text-gray-400 hover:text-gray-600",
-                  "dark:text-gray-400 dark:hover:text-gray-200",
-                  "hover:bg-gray-100 dark:hover:bg-gray-800"
-                )}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          )}
+          exit="exit"
+          variants={backdropVariants}
+          transition={{ duration: 0.2 }}>
+          <motion.div
+            className={cn("absolute inset-0 backdrop-blur-sm", "bg-black/50 dark:bg-black/70")}
+            onClick={onClose}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }} />
 
-          <div className="p-4">{children}</div>
+          <motion.div
+            className={cn(
+              "relative rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-auto",
+              "bg-white dark:bg-gray-900",
+              "border-0 dark:border dark:border-gray-700",
+              sizeClasses[size]
+            )}
+            variants={modalVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit">
+            {title && (
+              <div
+                className={cn(
+                  "flex items-center justify-between p-4 border-b",
+                  "border-gray-200 dark:border-gray-700"
+                )}>
+                <h3 className={cn("text-lg font-semibold", "text-gray-900 dark:text-white")}>
+                  {title}
+                </h3>
+                <button
+                  onClick={onClose}
+                  className={cn(
+                    "p-1 rounded-md transition-colors",
+                    "text-gray-400 hover:text-gray-600",
+                    "dark:text-gray-400 dark:hover:text-gray-200",
+                    "hover:bg-gray-100 dark:hover:bg-gray-800"
+                  )}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+
+            <div className="p-4">{children}</div>
+          </motion.div>
         </motion.div>
-      </motion.div>
-    )}
-  </AnimatePresence>, document.body);
+      )}
+    </AnimatePresence>,
+    document.body
+  );
 };
 
 export default Modal;

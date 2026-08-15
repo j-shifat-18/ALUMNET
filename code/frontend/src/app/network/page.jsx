@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import Navbar from "@/components/shared/Navbar/Navbar";
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
 import placeholderUser from "../../../public/placeholder-user.jpg";

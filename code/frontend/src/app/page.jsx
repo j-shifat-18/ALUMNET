@@ -3,12 +3,12 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import ProtectedRoute from "@/components/shared/ProtectedRoute";
-import LoadingScreen from "@/components/shared/LoadingScreen/LoadingScreen";
-import Navbar from "@/components/shared/Navbar/Navbar";
-import PostCard from "@/components/ui/PostCard/PostCard";
-import CreatePostModal from "@/components/ui/CreatePostModal/CreatePostModal";
-import Divider from "@/components/ui/divider";
+import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import LoadingScreen from "@/components/layout/LoadingScreen";
+import Navbar from "@/components/layout/Navbar";
+import PostCard from "@/components/posts/PostCard";
+import CreatePostModal from "@/components/posts/CreatePostModal";
+import Divider from "@/components/ui/Divider";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
 import { ImagePlus, Loader2, MapPin } from "lucide-react";

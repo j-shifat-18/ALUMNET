@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthProvider';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import icon from '../../../../public/icon.png';
-import Notification from '@/components/ui/toast';
+import Notification from '@/components/ui/Toast';
 import { Mail, CheckCircle, RefreshCw, LogOut } from 'lucide-react';
 import { auth } from '@/lib/firebase';
 import { sendEmailVerification } from 'firebase/auth';

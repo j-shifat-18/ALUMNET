@@ -1,26 +1,26 @@
 "use client";
 
-import ProtectedRoute from '@/components/shared/ProtectedRoute'
-import LoadingScreen from '@/components/shared/LoadingScreen/LoadingScreen'
-import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { useParams } from 'next/navigation'
+import ProtectedRoute from '@/components/layout/ProtectedRoute';
+import LoadingScreen from '@/components/layout/LoadingScreen';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 import Image from 'next/image';
-import Navbar from '@/components/shared/Navbar/Navbar';
+import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
-import Divider from '@/components/ui/divider';
+import Divider from '@/components/ui/Divider';
 import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2 } from 'lucide-react';
-import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/EditDrawer/EditDrawer';
-import GenderDropdown from '@/components/ui/GenderDropdown/GenderDropdown';
-import ProfilePhotoEditModal from '@/components/ui/ProfilePhotoEditModal/ProfilePhotoEditModal';
-import CoverPhotoEditModal from '@/components/ui/CoverPhotoEditModal/CoverPhotoEditModal';
-import CreatePostModal from '@/components/ui/CreatePostModal/CreatePostModal';
-import PostCard from '@/components/ui/PostCard/PostCard';
-import Github from '@/components/ImageToJSX/Github';
-import IUTLogo from "../../../../public/IUT.png"
+import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
+import GenderDropdown from '@/components/profile/GenderDropdown';
+import ProfilePhotoEditModal from '@/components/profile/ProfilePhotoEditModal';
+import CoverPhotoEditModal from '@/components/profile/CoverPhotoEditModal';
+import CreatePostModal from '@/components/posts/CreatePostModal';
+import PostCard from '@/components/posts/PostCard';
+import { GithubIcon as Github } from '@/components/ui/Icons';
+import IUTLogo from "../../../../public/IUT.png";
 
 const profileCache = new Map();
 const postsCache = new Map();
@@ -728,15 +728,15 @@ export default function Profile() {
                 <div className="flex items-start gap-3">
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.githubUrl ? <a href={profile?.githubUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
-                      <div className='flex items-center gap-2'><Github /> Github</div>
-                    </a> : <div className='flex items-center gap-2'><Github className='w-6 h-6' /> N\A</div>}</div>
+                      <div className='flex items-center gap-2'><Github className='w-6 h-6 text-black dark:text-white' /> Github</div>
+                    </a> : <div className='flex items-center gap-2'><Github className='w-6 h-6 text-black dark:text-white' /> N\A</div>}</div>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
                     <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.portfolioUrl ? <a href={profile?.portfolioUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
-                      <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black' /> Portfolio</div>
-                    </a> : <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black' /> N\A</div>}</div>
+                      <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black dark:text-white' /> Portfolio</div>
+                    </a> : <div className='flex items-center gap-2'><Globe className='w-6 h-6 text-black dark:text-white' /> N\A</div>}</div>
                   </div>
                 </div>
                 {
@@ -744,8 +744,8 @@ export default function Profile() {
                     <div className="flex items-start gap-3">
                       <div>
                         <div className="text-xl text-gray-700 dark:text-gray-300">{profile?.resumeUrl ? <a href={profile?.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400 break-all">
-                          <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black' /> Resume</div>
-                        </a> : <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black' /> N\A</div>}</div>
+                          <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black dark:text-white' /> Resume</div>
+                        </a> : <div className='flex items-center gap-2'><FileUser className='w-6 h-6 text-black dark:text-white' /> N\A</div>}</div>
                       </div>
                     </div>
                   </> : <></>
