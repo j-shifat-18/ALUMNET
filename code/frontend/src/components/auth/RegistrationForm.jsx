@@ -123,12 +123,13 @@ const RegistrationForm = () => {
       setNotification({
         type: "success",
         title: "Registration Successful!",
-        message: "Verification email sent! Check your email and verify your account",
+        // message: "Verification email sent! Check your email and verify your account",
         duration: 3000
       });
       
       setTimeout(() => {
-        router.push("/verify-email");
+        // router.push("/verify-email"); Off temporarily
+        router.push("/profile-setup");
       }, 3000);
     } catch (err) {
       setNotification({

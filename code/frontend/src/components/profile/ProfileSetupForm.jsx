@@ -68,7 +68,7 @@ const ArrowLeftIcon = () => (
 
 const ProfileSetupForm = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { user } = useAuth();
+  const { user, dbUser } = useAuth();
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [selectedPreferences, setSelectedPreferences] = useState([]);
@@ -178,6 +178,19 @@ const ProfileSetupForm = () => {
     }
   };
 
+  const normalizeUrl = (url) => {
+    if (!url || typeof url !== "string") return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      new URL(withProtocol);
+      return withProtocol;
+    } catch {
+      return null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -186,65 +199,78 @@ const ProfileSetupForm = () => {
       const role = alumniActive ? "ALUMNI" : "STUDENT";
       
       const mappedSkills = Array.isArray(selectedSkills)
-        ? selectedSkills.map((s) => s.name)
+        ? selectedSkills.map((s) => (typeof s === "string" ? s : s.name || s))
         : [];
       const mappedPreferences = Array.isArray(selectedPreferences)
-        ? selectedPreferences.map((p) => p.name)
+        ? selectedPreferences.map((p) => (typeof p === "string" ? p : p.name || p))
         : [];
 
+      const resolvedName =
+        (user?.displayName && user.displayName.trim().length > 0)
+          ? user.displayName.trim()
+          : (dbUser?.name && dbUser.name.trim().length > 0)
+          ? dbUser.name.trim()
+          : user?.email?.split("@")[0] || "User";
+
       const payload = {
-        name: user?.displayName || "",
-        gender: selectedGender,
-        contactNo: contactNo || null,
-        bio: bio || null,
-        location: location || null,
-        profileImage: profileImageUrl || null,
+        name: resolvedName,
+        gender: selectedGender || null,
+        contactNo: contactNo?.trim() || null,
+        bio: bio?.trim() || null,
+        location: location?.trim() || null,
+        profileImage: normalizeUrl(profileImageUrl),
         coverImage: null,
         role,
       };
 
       if (role === "STUDENT") {
         payload.studentProfile = {
-          department: selectedDepartment,
-          program: selectedProgramme,
-          batch: selectedBatch,
-          careerGoal: careerGoal || null,
+          department: selectedDepartment || "General",
+          program: selectedProgramme || "General",
+          batch: selectedBatch || "1",
+          careerGoal: careerGoal?.trim() || null,
           interestedDomains: mappedPreferences,
           skills: mappedSkills,
-          currentCompany: jobPlace || null,
-          currentPosition: jobPosition || null,
-          resumeUrl: resumeUrl || null,
-          portfolioUrl: portfolioUrl || null,
-          githubUrl: githubUrl || null,
+          currentCompany: jobPlace?.trim() || null,
+          currentPosition: jobPosition?.trim() || null,
+          resumeUrl: normalizeUrl(resumeUrl),
+          portfolioUrl: normalizeUrl(portfolioUrl),
+          githubUrl: normalizeUrl(githubUrl),
           certifications: [],
           achievements: [],
         };
       } else if (role === "ALUMNI") {
         const mappedExpertiseAreas = Array.isArray(selectedExpertiseAreas)
-          ? selectedExpertiseAreas.map((a) => a.name || a)
+          ? selectedExpertiseAreas.map((a) => (typeof a === "string" ? a : a.name || a))
           : [];
         const mappedMentorshipDomains = Array.isArray(selectedMentorshipDomains)
-          ? selectedMentorshipDomains.map((d) => d.name || d)
+          ? selectedMentorshipDomains.map((d) => (typeof d === "string" ? d : d.name || d))
           : [];
 
+        const parsedGradYear = graduationYear
+          ? parseInt(graduationYear)
+          : selectedBatch && !isNaN(parseInt(selectedBatch))
+          ? parseInt(selectedBatch)
+          : new Date().getFullYear();
+
         payload.alumniProfile = {
-          department: selectedDepartment,
-          program: selectedProgramme,
-          batch: selectedBatch,
-          graduationYear: graduationYear ? parseInt(graduationYear) : null,
-          currentCompany: jobPlace || null,
-          currentPosition: jobPosition || null,
-          industry: industry || null,
+          department: selectedDepartment || "General",
+          program: selectedProgramme || "General",
+          batch: selectedBatch || "1",
+          graduationYear: parsedGradYear,
+          currentCompany: jobPlace?.trim() || null,
+          currentPosition: jobPosition?.trim() || null,
+          industry: industry?.trim() || null,
           experienceYears: experienceYears ? parseInt(experienceYears) : null,
           interestedDomains: mappedPreferences,
           skills: mappedSkills,
           expertiseAreas: mappedExpertiseAreas,
-          education: education || null,
+          education: education?.trim() || null,
           certifications: [],
           achievements: [],
-          resumeUrl: resumeUrl || null,
-          githubUrl: githubUrl || null,
-          portfolioUrl: portfolioUrl || null,
+          resumeUrl: normalizeUrl(resumeUrl),
+          githubUrl: normalizeUrl(githubUrl),
+          portfolioUrl: normalizeUrl(portfolioUrl),
           personalWebsite: null,
           mentorshipDomains: mappedMentorshipDomains,
         };
@@ -261,13 +287,22 @@ const ProfileSetupForm = () => {
 
       setTimeout(() => {
         router.push("/");
-      }, 3000);
+      }, 2000);
     } catch (err) {
+      console.error("Profile setup error:", err.response?.data || err);
+      const detailedMsg =
+        (Array.isArray(err.response?.data?.errorSources)
+          ? err.response.data.errorSources.map((e) => `${e.path}: ${e.message}`).join(", ")
+          : null) ||
+        err.response?.data?.message ||
+        err.message ||
+        String(err);
+
       setNotification({
         type: "error",
         title: "Setup Failed",
-        message: err.response?.data?.message || err.message || String(err),
-        duration: 5000,
+        message: detailedMsg,
+        duration: 6000,
       });
     } finally {
       setIsLoading(false);
@@ -350,7 +385,7 @@ const ProfileSetupForm = () => {
   };
 
   return (
-    <div className="flex items-center justify-center p-4">
+    <div className="w-full flex items-center justify-center">
       {notification && (
         <div className="fixed top-4 right-4 z-50">
           <Notification
@@ -383,7 +418,7 @@ const ProfileSetupForm = () => {
           </div>
         </div>
 
-        <div className="signin-card bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg shadow-sm p-6">
+        <div className="signin-card bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-none p-8">
           <div className="text-center mb-6">
             <div className="flex justify-center">
               <Image src={logo} alt="ALUMNET" width={80} height={80} />

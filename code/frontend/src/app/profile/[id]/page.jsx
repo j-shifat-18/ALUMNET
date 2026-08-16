@@ -12,8 +12,9 @@ import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2 } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
+import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/profile/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/profile/CoverPhotoEditModal';
@@ -35,6 +36,7 @@ export default function Profile() {
   const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
   const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
+  const [jobDrawerOpen, setJobDrawerOpen] = useState(false);
   const [profilePhotoModalOpen, setProfilePhotoModalOpen] = useState(false);
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
@@ -45,6 +47,8 @@ export default function Profile() {
   const [name, setName] = useState(cachedUser?.name || "");
   const [location, setLocation] = useState(cachedUser?.location || "");
   const [contactNo, setContactNo] = useState(cachedUser?.contactNo || "");
+  const [currentCompany, setCurrentCompany] = useState("");
+  const [currentPosition, setCurrentPosition] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
   const [resumeUrl, setResumeUrl] = useState("");
@@ -169,6 +173,8 @@ export default function Profile() {
         setGithubUrl(userProfile?.githubUrl || "");
         setPortfolioUrl(userProfile?.portfolioUrl || "");
         setResumeUrl(userProfile?.resumeUrl || "");
+        setCurrentCompany(userProfile?.currentCompany || "");
+        setCurrentPosition(userProfile?.currentPosition || "");
       })
       .catch(err => {
         console.error("Error fetching profile:", err.response?.data || err.message);
@@ -273,38 +279,163 @@ export default function Profile() {
     }
   };
 
+  const normalizeUrl = (url) => {
+    if (!url || typeof url !== "string") return null;
+    const trimmed = url.trim();
+    if (!trimmed) return null;
+    const withProtocol = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+    try {
+      new URL(withProtocol);
+      return withProtocol;
+    } catch {
+      return null;
+    }
+  };
+
   const handleEditAdditionalInfo = async () => {
     try {
       setIsSaving(true);
-      const payload = dbUser?.role === "STUDENT" ? {
-        studentProfile: {
-          githubUrl,
-          portfolioUrl,
-          resumeUrl
-        }
-      } : {
-        alumniProfile: {
-          githubUrl,
-          portfolioUrl,
-          resumeUrl,
-        }
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          resumeUrl: normalizeUrl(resumeUrl),
+          portfolioUrl: normalizeUrl(portfolioUrl),
+          githubUrl: normalizeUrl(githubUrl),
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+          resumeUrl: normalizeUrl(resumeUrl),
+          githubUrl: normalizeUrl(githubUrl),
+          portfolioUrl: normalizeUrl(portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        [profileKey]: subProfile,
       };
 
       await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      updateUserProfileState(prev => ({
-        ...prev, [dbUser?.role === "STUDENT" ? "studentProfile" : "alumniProfile"]: {
-          ...profile,
-          githubUrl,
-          portfolioUrl,
-          resumeUrl,
-        }
+      updateUserProfileState((prev) => ({
+        ...prev,
+        [profileKey]: {
+          ...(prev?.[profileKey] || {}),
+          ...subProfile,
+        },
       }));
       setAdditionalInfoDrawerOpen(false);
+    } catch (err) {
+      console.error("Error updating additional info:", err.response?.data || err);
+    } finally {
+      setIsSaving(false);
     }
-    catch (err) {
+  };
 
-    }
-    finally {
+  const handleEditJobInfo = async () => {
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          currentCompany: currentCompany?.trim() || null,
+          currentPosition: currentPosition?.trim() || null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: currentCompany?.trim() || null,
+          currentPosition: currentPosition?.trim() || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        [profileKey]: subProfile,
+      };
+
+      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      updateUserProfileState((prev) => ({
+        ...prev,
+        [profileKey]: {
+          ...(prev?.[profileKey] || {}),
+          ...subProfile,
+        },
+      }));
+      setJobDrawerOpen(false);
+    } catch (err) {
+      console.error("Error updating job info:", err.response?.data || err);
+    } finally {
       setIsSaving(false);
     }
   };
@@ -601,6 +732,80 @@ export default function Profile() {
               </div>
             </div>
 
+            {(() => {
+              const hasJob = Boolean(profile?.currentCompany || profile?.currentPosition);
+              if (!hasJob && !isOwner) return null;
+
+              return (
+                <div className="">
+                  <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
+                    <div className='flex justify-between items-center'>
+                      <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Experience</h4>
+                      {isOwner ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentCompany(profile?.currentCompany || "");
+                            setCurrentPosition(profile?.currentPosition || "");
+                            setJobDrawerOpen(true);
+                          }}
+                          className="btn btn-secondary text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
+                          title={hasJob ? "Edit Job Experience" : "Add Job Experience"}
+                        >
+                          <Plus className='w-5 h-5 hover:cursor-pointer' />
+                        </button>
+                      ) : <></>}
+                    </div>
+                    <Divider className='mt-2 mb-4' />
+                    {hasJob ? (
+                      <div className='flex items-start gap-4'>
+                        <div className='p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex-shrink-0'>
+                          <Briefcase className='w-6 h-6' />
+                        </div>
+                        <div className='space-y-1'>
+                          {profile?.currentPosition && (
+                            <p className='font-bold text-lg text-gray-900 dark:text-white'>
+                              {profile.currentPosition}
+                            </p>
+                          )}
+                          {profile?.currentCompany && (
+                            <p className='text-base font-medium text-gray-700 dark:text-gray-300'>
+                              {profile.currentCompany}
+                            </p>
+                          )}
+                          {profile?.industry && (
+                            <p className='text-xs text-gray-500 dark:text-gray-400'>
+                              Industry: {profile.industry}
+                            </p>
+                          )}
+                          {profile?.experienceYears && (
+                            <p className='text-xs text-gray-500 dark:text-gray-400'>
+                              Experience: {profile.experienceYears} {profile.experienceYears === 1 ? "year" : "years"}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No job experience added yet.</p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCurrentCompany("");
+                            setCurrentPosition("");
+                            setJobDrawerOpen(true);
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Add Job
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
@@ -871,6 +1076,49 @@ export default function Profile() {
           onSave={handleCoverPhotoSave}
         />
       )}
+
+      {/* Add / Edit Job Modal */}
+      <Modal
+        isOpen={jobDrawerOpen}
+        onClose={() => setJobDrawerOpen(false)}
+        title={Boolean(profile?.currentCompany || profile?.currentPosition) ? "Edit Job Experience" : "Add Job Experience"}
+        size="md"
+      >
+        <div className="space-y-4 py-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Job Position
+            </label>
+            <input
+              type="text"
+              value={currentPosition}
+              onChange={(e) => setCurrentPosition(e.target.value)}
+              placeholder="e.g. Software Engineer, Product Designer, Intern"
+              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Jobplace / Company
+            </label>
+            <input
+              type="text"
+              value={currentCompany}
+              onChange={(e) => setCurrentCompany(e.target.value)}
+              placeholder="e.g. Google, Brain Station 23, IUT"
+              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <Button variant="outline" onClick={() => setJobDrawerOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditJobInfo} disabled={isSaving || (!currentPosition?.trim() && !currentCompany?.trim())}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <CreatePostModal
         isOpen={createPostModalOpen}

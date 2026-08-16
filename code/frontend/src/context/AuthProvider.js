@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
       password
     );
 
-    await sendEmailVerification(result.user);
+    // await sendEmailVerification(result.user);
 
     return result.user;
   };
