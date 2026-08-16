@@ -345,19 +345,25 @@ export default function Profile() {
         };
       }
 
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
       const profileKey = isStudent ? "studentProfile" : "alumniProfile";
       const payload = {
+        role,
         [profileKey]: subProfile,
       };
 
-      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      updateUserProfileState((prev) => ({
-        ...prev,
-        [profileKey]: {
-          ...(prev?.[profileKey] || {}),
-          ...subProfile,
-        },
-      }));
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            ...subProfile,
+          },
+        }));
+      }
       setAdditionalInfoDrawerOpen(false);
     } catch (err) {
       console.error("Error updating additional info:", err.response?.data || err);
@@ -419,19 +425,25 @@ export default function Profile() {
         };
       }
 
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
       const profileKey = isStudent ? "studentProfile" : "alumniProfile";
       const payload = {
+        role,
         [profileKey]: subProfile,
       };
 
-      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      updateUserProfileState((prev) => ({
-        ...prev,
-        [profileKey]: {
-          ...(prev?.[profileKey] || {}),
-          ...subProfile,
-        },
-      }));
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            ...subProfile,
+          },
+        }));
+      }
       setJobDrawerOpen(false);
     } catch (err) {
       console.error("Error updating job info:", err.response?.data || err);
