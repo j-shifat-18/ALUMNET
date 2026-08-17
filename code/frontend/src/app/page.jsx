@@ -11,16 +11,22 @@ import CreatePostModal from "@/components/posts/CreatePostModal";
 import Divider from "@/components/ui/Divider";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
-import { ImagePlus, Loader2, MapPin } from "lucide-react";
+import { Check, ImagePlus, Loader2, UserPlus } from "lucide-react";
 import placeholderUser from "../../public/placeholder-user.jpg";
-
-const homeProfileCache = new Map();
 
 export default function Home() {
   const { user, dbUser } = useAuth();
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+
+  const [recentFollowing, setRecentFollowing] = useState([]);
+  const [loadingFollowing, setLoadingFollowing] = useState(true);
+
+  const [recentFollowers, setRecentFollowers] = useState([]);
+  const [loadingFollowers, setLoadingFollowers] = useState(true);
+  const [followingUidsSet, setFollowingUidsSet] = useState(new Set());
+  const [followingInProgress, setFollowingInProgress] = useState({});
 
   const fetchPosts = () => {
     setLoadingPosts(true);
@@ -39,27 +45,83 @@ export default function Home() {
       });
   };
 
-  useEffect(() => {
-    if (!user) return;
-
+  const fetchRecentFollowing = () => {
+    if (!user?.uid) return;
+    setLoadingFollowing(true);
     axiosInstance
-      .get("/api/v1/posts")
-      .then((response) => {
-        if (response.data?.data) {
-          setPosts(response.data.data);
+      .get(`/api/v1/users/${user.uid}/following`)
+      .then((res) => {
+        if (res.data?.data) {
+          const list = res.data.data;
+          setRecentFollowing(list.slice(0, 5));
+          setFollowingUidsSet(new Set(list.map((u) => u.uid)));
         }
       })
       .catch((err) => {
-        console.error("Error fetching feed posts:", err);
+        console.error("Error fetching recently followed users:", err);
       })
       .finally(() => {
-        setLoadingPosts(false);
+        setLoadingFollowing(false);
       });
+  };
+
+  const fetchRecentFollowers = () => {
+    if (!user?.uid) return;
+    setLoadingFollowers(true);
+    axiosInstance
+      .get(`/api/v1/users/${user.uid}/followers`)
+      .then((res) => {
+        if (res.data?.data) {
+          setRecentFollowers(res.data.data.slice(0, 5));
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching recent followers:", err);
+      })
+      .finally(() => {
+        setLoadingFollowers(false);
+      });
+  };
+
+  const handleFollowBack = async (e, targetUid) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (followingInProgress[targetUid]) return;
+
+    setFollowingInProgress((prev) => ({ ...prev, [targetUid]: true }));
+
+    try {
+      const res = await axiosInstance.post(
+        `/api/v1/users/${targetUid}/follow`,
+        {},
+        { validateStatus: (status) => status < 500 }
+      );
+
+      if (res.status === 200 || res.status === 201 || res.status === 409) {
+        setFollowingUidsSet((prev) => new Set([...prev, targetUid]));
+        fetchRecentFollowing();
+      }
+    } catch (err) {
+      console.error("Error following user back:", err);
+    } finally {
+      setFollowingInProgress((prev) => ({ ...prev, [targetUid]: false }));
+    }
+  };
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetchPosts();
+    fetchRecentFollowing();
+    fetchRecentFollowers();
   }, [user]);
 
   useEffect(() => {
     const handleRefreshFeed = () => {
       fetchPosts();
+      fetchRecentFollowing();
+      fetchRecentFollowers();
     };
 
     window.addEventListener("refresh-feed", handleRefreshFeed);
@@ -92,6 +154,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Left Sidebar - Profile Card */}
               <div className="hidden lg:block lg:col-span-3">
                 <Link
                   href={`/profile/${user?.uid}`}
@@ -152,6 +215,7 @@ export default function Home() {
                 </Link>
               </div>
 
+              {/* Main Feed Column */}
               <div className="lg:col-span-6 space-y-6">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
                   <button
@@ -206,8 +270,179 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Sidebar - Empty as requested */}
-              <div className="hidden lg:block lg:col-span-3"></div>
+              {/* Right Sidebar - Recently Followed & Recent Followers */}
+              <div className="hidden lg:block lg:col-span-3">
+                <div className="sticky top-24 space-y-4">
+                  {/* Section 1: Recently Followed */}
+                  <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                        Recently Followed
+                      </h3>
+                      <Link
+                        href="/network"
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View All
+                      </Link>
+                    </div>
+
+                    {loadingFollowing ? (
+                      <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span>Loading...</span>
+                      </div>
+                    ) : recentFollowing.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-gray-500 dark:text-gray-400 space-y-2">
+                        <p>You haven't followed any accounts yet.</p>
+                        <Link
+                          href="/network"
+                          className="inline-block text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          Explore Network &rarr;
+                        </Link>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        {recentFollowing.map((account) => (
+                          <Link
+                            key={account.id || account.uid}
+                            href={`/profile/${account.uid}`}
+                            className="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                              <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                                <Image
+                                  src={account.profileImage || placeholderUser}
+                                  alt={account.name || "User"}
+                                  fill
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                                  {account.name || "User"}
+                                </p>
+                                {account.username && (
+                                  <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                                    @{account.username}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                            <span
+                              className={`shrink-0 px-1.5 py-0.5 text-[9px] font-bold rounded tracking-wider uppercase ${
+                                account.role === "ALUMNI"
+                                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                                  : account.role === "STUDENT"
+                                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                                  : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                              }`}
+                            >
+                              {account.role || "USER"}
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Section 2: Recent Followers */}
+                  <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                        Recent Followers
+                      </h3>
+                      <Link
+                        href="/network"
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        View All
+                      </Link>
+                    </div>
+
+                    {loadingFollowers ? (
+                      <div className="flex items-center justify-center py-6 text-gray-400 text-sm">
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        <span>Loading...</span>
+                      </div>
+                    ) : recentFollowers.length === 0 ? (
+                      <div className="text-center py-6 text-xs text-gray-500 dark:text-gray-400">
+                        <p>No followers yet.</p>
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                        {recentFollowers.map((account) => {
+                          const isAlreadyFollowing = followingUidsSet.has(account.uid);
+                          const isBusy = Boolean(followingInProgress[account.uid]);
+
+                          return (
+                            <div
+                              key={account.id || account.uid}
+                              className="flex items-center justify-between py-2.5 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group"
+                            >
+                              <Link
+                                href={`/profile/${account.uid}`}
+                                className="flex items-center gap-2.5 min-w-0 pr-2 flex-1"
+                              >
+                                <div className="relative w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
+                                  <Image
+                                    src={account.profileImage || placeholderUser}
+                                    alt={account.name || "User"}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                                    {account.name || "User"}
+                                  </p>
+                                  <div className="flex items-center gap-1.5 mt-0.5">
+                                    <span
+                                      className={`px-1.5 py-0.2 text-[9px] font-bold rounded tracking-wider uppercase ${
+                                        account.role === "ALUMNI"
+                                          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
+                                          : account.role === "STUDENT"
+                                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                                          : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                                      }`}
+                                    >
+                                      {account.role || "USER"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </Link>
+
+                              <div className="shrink-0 ml-2">
+                                {isAlreadyFollowing ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-lg bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 border border-gray-200 dark:border-gray-700">
+                                    <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                                    Followed
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleFollowBack(e, account.uid)}
+                                    disabled={isBusy}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+                                  >
+                                    {isBusy ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <UserPlus className="w-3 h-3" />
+                                    )}
+                                    Follow Back
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </main>

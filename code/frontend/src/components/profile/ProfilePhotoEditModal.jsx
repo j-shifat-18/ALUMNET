@@ -4,7 +4,7 @@ import React, { useState, useRef } from "react";
 import Image from "next/image";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import { ImageUp } from "lucide-react";
+import { ImageUp, Loader2 } from "lucide-react";
 import placeholderUser from "../../../public/placeholder-user.jpg";
 
 const ProfilePhotoEditModal = ({ onClose, currentImage, onSave }) => {
@@ -59,19 +59,20 @@ const ProfilePhotoEditModal = ({ onClose, currentImage, onSave }) => {
   };
 
   return (
-    <Modal isOpen={true} onClose={onClose} title="Update Profile Photo">
-      <div className="space-y-4 p-4">
+    <Modal isOpen={true} onClose={onClose} title="Update Profile Photo" size="md">
+      <div className="space-y-6 py-2">
         <div className="flex justify-center">
-          <Image
-            src={profileImageUrl || placeholderUser}
-            alt="user"
-            width={200}
-            height={200}
-            className="rounded-full object-cover"
-          />
+          <div className="relative w-36 h-36 sm:w-44 sm:h-44 rounded-full overflow-hidden border-4 border-gray-200 dark:border-gray-700 shadow-md bg-gray-100 dark:bg-gray-800">
+            <Image
+              src={profileImageUrl || placeholderUser}
+              alt="Profile preview"
+              fill
+              className="object-cover"
+            />
+          </div>
         </div>
 
-        <div className="mt-6">
+        <div>
           <input
             id="photo-upload"
             ref={fileInputRef}
@@ -82,30 +83,45 @@ const ProfilePhotoEditModal = ({ onClose, currentImage, onSave }) => {
           />
           <label
             htmlFor="photo-upload"
-            className="border-2 border-zinc-900 w-full rounded-md hover:cursor-pointer hover:text-zinc-900/90 hover:border-zinc-900/90 block"
+            className="border-2 border-dashed border-zinc-300 dark:border-zinc-700 hover:border-zinc-600 dark:hover:border-zinc-400 bg-zinc-50 dark:bg-zinc-800/40 hover:bg-zinc-100 dark:hover:bg-zinc-800/80 text-zinc-800 dark:text-zinc-200 w-full rounded-xl hover:cursor-pointer transition-all duration-200 block p-4 text-center group"
           >
-            <p className="flex items-center gap-2 p-2 justify-center">
-              <ImageUp />
-              {isUploading ? "Uploading..." : "Upload your photo"}
-            </p>
+            <div className="flex items-center gap-2.5 justify-center font-medium text-sm sm:text-base">
+              {isUploading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin text-blue-600 dark:text-blue-400" />
+                  <span>Uploading photo...</span>
+                </>
+              ) : (
+                <>
+                  <ImageUp className="w-5 h-5 text-zinc-600 dark:text-zinc-300 group-hover:scale-110 transition-transform" />
+                  <span>Choose new profile photo</span>
+                </>
+              )}
+            </div>
           </label>
           {selectedPhotoName && (
-            <p className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <p className="text-center text-xs text-gray-500 dark:text-gray-400 mt-2 font-medium truncate px-4">
               {selectedPhotoName}
             </p>
           )}
         </div>
 
-        <div className="flex justify-end gap-2">
-          <Button onClick={onClose} variant="secondary">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <Button
+            type="button"
+            onClick={onClose}
+            variant="outline"
+            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
+          >
             Cancel
           </Button>
           <Button
+            type="button"
             onClick={handleSave}
-            variant="default"
-            disabled={!profileImageUrl}
+            disabled={!profileImageUrl || isUploading}
+            className="bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
           >
-            Save
+            Save Photo
           </Button>
         </div>
       </div>

@@ -28,7 +28,7 @@ const postsCache = new Map();
 
 export default function Profile() {
 
-  const { user, setDbUser: setAuthDbUser } = useAuth();
+  const { user, dbUser: authDbUser, setDbUser: setAuthDbUser } = useAuth();
   const { id } = useParams();
   
   const [dbUser, setDbUser] = useState(() => (id ? profileCache.get(id) || null : null));
@@ -132,17 +132,27 @@ export default function Profile() {
 
     try {
       if (isCurrentlyFollowing) {
-        await axiosInstance.delete(`/api/v1/users/${id}/follow`);
+        await axiosInstance.delete(`/api/v1/users/${id}/follow`, {
+          validateStatus: (status) => status < 500,
+        });
       } else {
-        await axiosInstance.post(`/api/v1/users/${id}/follow`);
+        await axiosInstance.post(`/api/v1/users/${id}/follow`, {}, {
+          validateStatus: (status) => status < 500,
+        });
       }
     } catch (err) {
-      console.error("Error toggling follow on profile:", err);
-      setIsFollowingProfile(isCurrentlyFollowing);
-      if (!isCurrentlyFollowing) {
-        setProfileFollowersList((prev) => prev.filter((u) => u.uid !== user.uid));
+      if (err.response?.status === 409) {
+        setIsFollowingProfile(true);
+      } else if (err.response?.status === 404 && isCurrentlyFollowing) {
+        setIsFollowingProfile(false);
       } else {
-        setProfileFollowersList((prev) => [user, ...prev]);
+        console.error("Error toggling follow on profile:", err.response?.data || err);
+        setIsFollowingProfile(isCurrentlyFollowing);
+        if (!isCurrentlyFollowing) {
+          setProfileFollowersList((prev) => prev.filter((u) => u.uid !== user.uid));
+        } else {
+          setProfileFollowersList((prev) => [user, ...prev]);
+        }
       }
     } finally {
       setTogglingProfileFollow(false);
@@ -604,7 +614,7 @@ export default function Profile() {
                       </button>
                     </div>
 
-                    <div>
+                    <div className="flex items-center gap-2">
                       {isOwner ? (
                         <button
                           type="button"
@@ -614,34 +624,45 @@ export default function Profile() {
                           <PencilLine className="w-4 h-4" /> Edit Profile
                         </button>
                       ) : (
-                        <button
-                          type="button"
-                          onClick={handleToggleFollowProfile}
-                          disabled={togglingProfileFollow}
-                          className={`px-4 py-1.5 border rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 ${
-                            isFollowingProfile
-                              ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 border-zinc-900 dark:border-zinc-100 hover:bg-gray-100 dark:hover:bg-gray-800"
-                              : isFollowerOfProfile
-                              ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
-                              : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-                          }`}
-                        >
-                          {togglingProfileFollow ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : isFollowingProfile ? (
-                            <>
-                              <UserRoundCheck className="w-4 h-4" /> Following
-                            </>
-                          ) : isFollowerOfProfile ? (
-                            <>
-                              <UserRoundPlus className="w-4 h-4" /> Follow Back
-                            </>
-                          ) : (
-                            <>
-                              <UserRoundPlus className="w-4 h-4" /> Follow
-                            </>
+                        <>
+                          <button
+                            type="button"
+                            onClick={handleToggleFollowProfile}
+                            disabled={togglingProfileFollow}
+                            className={`px-4 py-1.5 border rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 ${
+                              isFollowingProfile
+                                ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 border-zinc-900 dark:border-zinc-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+                                : isFollowerOfProfile
+                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
+                                : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200"
+                            }`}
+                          >
+                            {togglingProfileFollow ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : isFollowingProfile ? (
+                              <>
+                                <UserRoundCheck className="w-4 h-4" /> Following
+                              </>
+                            ) : isFollowerOfProfile ? (
+                              <>
+                                <UserRoundPlus className="w-4 h-4" /> Follow Back
+                              </>
+                            ) : (
+                              <>
+                                <UserRoundPlus className="w-4 h-4" /> Follow
+                              </>
+                            )}
+                          </button>
+
+                          {authDbUser?.role === "STUDENT" && dbUser?.role === "ALUMNI" && (
+                            <button
+                              type="button"
+                              className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors"
+                            >
+                              Request Mentorship
+                            </button>
                           )}
-                        </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -726,19 +747,21 @@ export default function Profile() {
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
-                  <h4 className='text-2xl font-bold'>Education</h4>
-                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
+                  <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Education</h4>
+                  {isOwner ? <button type="button" className="btn btn-secondary text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white" title="Edit">
                     <Plus className='w-5 h-5 hover:cursor-pointer' />
                   </button> : <></>}
                 </div>
-                <Divider className='mt-2 mb-2' />
-                <div className='flex gap-3'>
-                  <Image src={IUTLogo} alt='IUT' width={60}></Image>
-                  <div>
-                    <p className='font-bold'>Islamic University of Technology</p>
-                    <p className='text-sm text-gray-600'>{profile?.program}</p>
-                    <p className='text-sm text-gray-600'>Department of {profile?.department}</p>
-                    <p className='text-md'>Batch: {profile?.batch}</p>
+                <Divider className='mt-2 mb-4' />
+                <div className='flex items-start gap-4'>
+                  <div className="w-14 h-14 relative shrink-0">
+                    <Image src={IUTLogo} alt='IUT' width={56} height={56} className="object-contain" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className='font-bold text-lg text-gray-900 dark:text-white leading-snug'>Islamic University of Technology</p>
+                    <p className='text-sm text-gray-600 dark:text-gray-300 font-medium'>{profile?.program}</p>
+                    <p className='text-sm text-gray-600 dark:text-gray-300'>Department of {profile?.department}</p>
+                    <p className='text-xs font-semibold text-gray-500 dark:text-gray-400 pt-1'>Batch: {profile?.batch}</p>
                   </div>
                 </div>
               </div>
@@ -821,7 +844,7 @@ export default function Profile() {
             <div className="">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
-                  <h4 className='text-2xl font-bold'>Skills</h4>
+                  <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Skills</h4>
                   {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
                     <PencilLine className='w-5 h-5 hover:cursor-pointer' />
                   </button> : <></>}
@@ -830,7 +853,7 @@ export default function Profile() {
                 {(() => {
                   const skills = profile?.skills ?? [];
                   if (skills.length === 0) {
-                    return <p className='text-gray-500 text-sm'>No skills added yet.</p>;
+                    return <p className='text-gray-500 dark:text-gray-400 text-sm'>No skills added yet.</p>;
                   }
                   const INITIAL_COUNT = 3;
                   const visible = showAllSkills ? skills : skills.slice(0, INITIAL_COUNT);
@@ -846,7 +869,7 @@ export default function Profile() {
                         <button
                           type='button'
                           onClick={() => setShowAllSkills(prev => !prev)}
-                          className='mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-400 hover:cursor-pointer w-full transition-colors'
+                          className='mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-400 dark:border-gray-800 hover:cursor-pointer w-full transition-colors'
                         >
                           {showAllSkills ? <>
                             <div className='pt-3 flex items-center justify-center gap-2'>
@@ -868,13 +891,13 @@ export default function Profile() {
             <div className="mb-20">
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
-                  <h4 className='text-2xl font-bold'>Certifications & Achievements</h4>
+                  <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Certifications & Achievements</h4>
                   {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
                     <Plus className='w-5 h-5 hover:cursor-pointer' />
                   </button> : <></>}
                 </div>
                 <Divider className='mt-2 mb-2' />
-                <p className='flex items-center gap-2 justify-center text-2xl font-bold'><Construction className='text-red-700'/> Section Under Construction... Developer ghumacche</p>
+                <p className='flex items-center gap-2 justify-center text-xl font-bold text-gray-700 dark:text-gray-300'><Construction className='text-amber-500'/> Section Under Construction</p>
               </div>
             </div>
 
@@ -885,7 +908,7 @@ export default function Profile() {
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
-                <h4 className='text-xl font-bold'>Basic Information</h4>
+                <h4 className='text-xl font-bold text-gray-900 dark:text-white'>Basic Information</h4>
                 {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setBasicInfoDrawerOpen(true)} title="Edit">
                   <PencilLine className='w-5 h-5 hover:cursor-pointer' />
                 </button> : <></>}
@@ -894,13 +917,13 @@ export default function Profile() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Role</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5 text-gray-900 dark:text-white">Role</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.role}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Gender</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5 text-gray-900 dark:text-white">Gender</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.gender}</p>
                   </div>
                 </div>
@@ -910,7 +933,7 @@ export default function Profile() {
             {/* Contant Info section is here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
-                <h4 className='text-xl font-bold'>Contact Information</h4>
+                <h4 className='text-xl font-bold text-gray-900 dark:text-white'>Contact Information</h4>
                 {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setContactInfoDrawerOpen(true)} title="Edit">
                   <PencilLine className='w-5 h-5 hover:cursor-pointer' />
                 </button> : <></>}
@@ -919,13 +942,13 @@ export default function Profile() {
               <div className="flex flex-col gap-4">
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Email</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5 text-gray-900 dark:text-white">Email</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.email}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <div>
-                    <p className="text-xl font-semibold tracking-wide mb-0.5">Contact No.</p>
+                    <p className="text-xl font-semibold tracking-wide mb-0.5 text-gray-900 dark:text-white">Contact No.</p>
                     <p className="text-md text-gray-700 dark:text-gray-300">{dbUser?.contactNo || "N\\A"}</p>
                   </div>
                 </div>
@@ -935,7 +958,7 @@ export default function Profile() {
             {/* Additional Info section containing URLs are here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
-                <h4 className='text-xl font-bold'>Additional Information</h4>
+                <h4 className='text-xl font-bold text-gray-900 dark:text-white'>Additional Information</h4>
                 {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setAdditionalInfoDrawerOpen(true)} title="Edit">
                   <PencilLine className='w-5 h-5 hover:cursor-pointer' />
                 </button> : <></>}

@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthProvider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import UserProfileDropdown from '@/components/profile/UserProfileDropdown';
+import ThemeToggle from '@/components/ui/ThemeToggle';
 
 const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -55,7 +56,7 @@ const Navbar = () => {
                 <div className="flex h-14 sm:h-16 lg:h-20 items-center justify-between">
                     <div className="flex items-center">
                         <Link href={"/"} onClick={(e) => handleHomeClick(e, "/")} className="flex items-center space-x-2 group">
-                            <Image src={logo} alt='ALUMNET' width={180} className="w-36 sm:w-44 lg:w-48 h-auto object-contain" />
+                            <Image src={logo} alt='ALUMNET' width={180} className="w-36 sm:w-44 lg:w-48 h-auto object-contain dark:brightness-0 dark:invert transition-all" priority />
                         </Link>
                     </div>
 
@@ -72,6 +73,7 @@ const Navbar = () => {
                     </nav>
 
                     <div className="flex items-center space-x-1 sm:space-x-2">
+                        <ThemeToggle />
                         {user ? (
                             <UserProfileDropdown />
                         ) : (
