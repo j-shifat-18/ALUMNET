@@ -12,7 +12,8 @@ import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase } from 'lucide-react';
+import Swal from 'sweetalert2';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2 } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -382,6 +383,15 @@ export default function Profile() {
     }
   };
 
+  const openJobModal = () => {
+    const isStudent = dbUser?.role === "STUDENT";
+    const subProf = isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile;
+
+    setCurrentCompany(subProf?.currentCompany || "");
+    setCurrentPosition(subProf?.currentPosition || "");
+    setJobDrawerOpen(true);
+  };
+
   const handleEditJobInfo = async () => {
     try {
       setIsSaving(true);
@@ -457,6 +467,113 @@ export default function Profile() {
       setJobDrawerOpen(false);
     } catch (err) {
       console.error("Error updating job info:", err.response?.data || err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteJobInfo = async () => {
+    const result = await Swal.fire({
+      title: "Delete Job Experience?",
+      text: "Are you sure you want to remove this experience from your profile?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          currentCompany: null,
+          currentPosition: null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: null,
+          currentPosition: null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        role,
+        [profileKey]: subProfile,
+      };
+
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            ...subProfile,
+          },
+        }));
+      }
+      setCurrentCompany("");
+      setCurrentPosition("");
+      setJobDrawerOpen(false);
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Job experience has been removed.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error deleting job info:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to delete job experience.",
+        icon: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -780,12 +897,12 @@ export default function Profile() {
                         <button
                           type="button"
                           onClick={() => {
-                            setCurrentCompany(profile?.currentCompany || "");
-                            setCurrentPosition(profile?.currentPosition || "");
+                            setCurrentCompany("");
+                            setCurrentPosition("");
                             setJobDrawerOpen(true);
                           }}
                           className="btn btn-secondary text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
-                          title={hasJob ? "Edit Job Experience" : "Add Job Experience"}
+                          title="Add Job Experience"
                         >
                           <Plus className='w-5 h-5 hover:cursor-pointer' />
                         </button>
@@ -793,32 +910,46 @@ export default function Profile() {
                     </div>
                     <Divider className='mt-2 mb-4' />
                     {hasJob ? (
-                      <div className='flex items-start gap-4'>
-                        <div className='p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex-shrink-0'>
-                          <Briefcase className='w-6 h-6' />
+                      <div className='flex items-start justify-between gap-4'>
+                        <div className='flex items-start gap-4 min-w-0'>
+                          <div className='p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex-shrink-0'>
+                            <Briefcase className='w-6 h-6' />
+                          </div>
+                          <div className='space-y-1 min-w-0'>
+                            {profile?.currentPosition && (
+                              <p className='font-bold text-lg text-gray-900 dark:text-white leading-snug'>
+                                {profile.currentPosition}
+                              </p>
+                            )}
+                            {profile?.currentCompany && (
+                              <p className='text-base font-medium text-gray-700 dark:text-gray-300'>
+                                {profile.currentCompany}
+                              </p>
+                            )}
+                          </div>
                         </div>
-                        <div className='space-y-1'>
-                          {profile?.currentPosition && (
-                            <p className='font-bold text-lg text-gray-900 dark:text-white'>
-                              {profile.currentPosition}
-                            </p>
-                          )}
-                          {profile?.currentCompany && (
-                            <p className='text-base font-medium text-gray-700 dark:text-gray-300'>
-                              {profile.currentCompany}
-                            </p>
-                          )}
-                          {profile?.industry && (
-                            <p className='text-xs text-gray-500 dark:text-gray-400'>
-                              Industry: {profile.industry}
-                            </p>
-                          )}
-                          {profile?.experienceYears && (
-                            <p className='text-xs text-gray-500 dark:text-gray-400'>
-                              Experience: {profile.experienceYears} {profile.experienceYears === 1 ? "year" : "years"}
-                            </p>
-                          )}
-                        </div>
+
+                        {isOwner && (
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={openJobModal}
+                              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                              title="Edit Job Experience"
+                            >
+                              <PencilLine className='w-4 h-4' />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleDeleteJobInfo}
+                              disabled={isSaving}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                              title="Delete Job Experience"
+                            >
+                              <Trash2 className='w-4 h-4' />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="text-center py-4">
@@ -1122,7 +1253,7 @@ export default function Profile() {
         <div className="space-y-4 py-2">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Job Position
+              Job Position <span className="text-xs text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -1132,9 +1263,10 @@ export default function Profile() {
               className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
             />
           </div>
+
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Jobplace / Company
+              Jobplace / Company <span className="text-xs text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -1144,12 +1276,13 @@ export default function Profile() {
               className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
             />
           </div>
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+
+          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
             <Button variant="outline" onClick={() => setJobDrawerOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleEditJobInfo} disabled={isSaving || (!currentPosition?.trim() && !currentCompany?.trim())}>
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? "Saving..." : "Save Experience"}
             </Button>
           </div>
         </div>
