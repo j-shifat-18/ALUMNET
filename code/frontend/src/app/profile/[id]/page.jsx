@@ -13,13 +13,14 @@ import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2 } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/profile/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/profile/CoverPhotoEditModal';
 import CreatePostModal from '@/components/posts/CreatePostModal';
+import RequestMentorshipModal from '@/components/mentorship/RequestMentorshipModal';
 import PostCard from '@/components/posts/PostCard';
 import { GithubIcon as Github } from '@/components/ui/Icons';
 import IUTLogo from "../../../../public/IUT.png";
@@ -41,6 +42,8 @@ export default function Profile() {
   const [profilePhotoModalOpen, setProfilePhotoModalOpen] = useState(false);
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
+  const [requestMentorshipModalOpen, setRequestMentorshipModalOpen] = useState(false);
+  const [mentorshipRequestStatus, setMentorshipRequestStatus] = useState(null);
   const textareaRef = useRef(null);
   
   const cachedUser = id ? profileCache.get(id) : null;
@@ -117,6 +120,24 @@ export default function Profile() {
   useEffect(() => {
     fetchProfileConnections();
   }, [fetchProfileConnections]);
+
+  useEffect(() => {
+    if (authDbUser?.role === "STUDENT" && dbUser?.role === "ALUMNI" && (dbUser?.id || dbUser?.uid)) {
+      axiosInstance
+        .get("/api/v1/mentorship/sent", { validateStatus: (s) => s < 500 })
+        .then((res) => {
+          if (res.status === 200 && Array.isArray(res.data?.data)) {
+            const matched = res.data.data.find(
+              (r) => r.alumniId === dbUser.id || r.alumni?.uid === dbUser.uid
+            );
+            if (matched) {
+              setMentorshipRequestStatus(matched.status);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+  }, [authDbUser?.role, dbUser?.role, dbUser?.id, dbUser?.uid]);
 
   const handleToggleFollowProfile = async () => {
     if (!user?.uid || user.uid === id || togglingProfileFollow) return;
@@ -774,9 +795,36 @@ export default function Profile() {
                           {authDbUser?.role === "STUDENT" && dbUser?.role === "ALUMNI" && (
                             <button
                               type="button"
-                              className="px-4 py-1.5 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors"
+                              onClick={() => {
+                                if (!mentorshipRequestStatus || mentorshipRequestStatus === "REJECTED") {
+                                  setRequestMentorshipModalOpen(true);
+                                }
+                              }}
+                              disabled={mentorshipRequestStatus === "PENDING" || mentorshipRequestStatus === "ACCEPTED"}
+                              className={`px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors ${
+                                mentorshipRequestStatus === "ACCEPTED"
+                                  ? "bg-emerald-600 text-white cursor-default"
+                                  : mentorshipRequestStatus === "PENDING"
+                                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-default"
+                                  : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer"
+                              }`}
                             >
-                              Request Mentorship
+                              {mentorshipRequestStatus === "ACCEPTED" ? (
+                                <>
+                                  <Check className="w-4 h-4" />
+                                  <span>Your Mentor</span>
+                                </>
+                              ) : mentorshipRequestStatus === "PENDING" ? (
+                                <>
+                                  <Clock className="w-4 h-4" />
+                                  <span>Request Sent</span>
+                                </>
+                              ) : (
+                                <>
+                                  <GraduationCap className="w-4 h-4" />
+                                  <span>Request Mentorship</span>
+                                </>
+                              )}
                             </button>
                           )}
                         </>
@@ -1433,6 +1481,15 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      <RequestMentorshipModal
+        isOpen={requestMentorshipModalOpen}
+        onClose={() => setRequestMentorshipModalOpen(false)}
+        alumni={dbUser}
+        onRequestSent={(data) => {
+          setMentorshipRequestStatus("PENDING");
+        }}
+      />
     </ProtectedRoute>
   )
 }
