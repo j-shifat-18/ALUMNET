@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, Award, Trophy } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, Award, Trophy, ExternalLink, Calendar, Building2, UploadCloud } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -43,8 +43,22 @@ export default function Profile() {
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [editingSkills, setEditingSkills] = useState([]);
   const [certModalOpen, setCertModalOpen] = useState(false);
+  const [certList, setCertList] = useState([]);
+  const [achieveList, setAchieveList] = useState([]);
+  const [loadingCredentials, setLoadingCredentials] = useState(false);
   const [newCertTitle, setNewCertTitle] = useState("");
   const [newCertCategory, setNewCertCategory] = useState("CERTIFICATE");
+  const [newCertIssuedBy, setNewCertIssuedBy] = useState("");
+  const [newCertIssueDate, setNewCertIssueDate] = useState("");
+  const [newCertExpiryDate, setNewCertExpiryDate] = useState("");
+  const [newCertCredentialId, setNewCertCredentialId] = useState("");
+  const [newCertCredentialUrl, setNewCertCredentialUrl] = useState("");
+  const [newCertImageUrl, setNewCertImageUrl] = useState("");
+  const [newAchieveUrl, setNewAchieveUrl] = useState("");
+  const [newCertDescription, setNewCertDescription] = useState("");
+  const [isUploadingCertImage, setIsUploadingCertImage] = useState(false);
+  const certFileInputRef = useRef(null);
+  const [previewCertImage, setPreviewCertImage] = useState(null);
   const [showAllCerts, setShowAllCerts] = useState(false);
   const [profilePhotoModalOpen, setProfilePhotoModalOpen] = useState(false);
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
@@ -607,231 +621,6 @@ export default function Profile() {
     }
   };
 
-  const handleAddCertificateOrAchievement = async (e) => {
-    e?.preventDefault?.();
-    if (!newCertTitle.trim()) return;
-
-    try {
-      setIsSaving(true);
-      const isStudent = dbUser?.role === "STUDENT";
-      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
-
-      const titleToAdd = newCertTitle.trim();
-      let updatedCertifications = [...(existing.certifications || [])];
-      let updatedAchievements = [...(existing.achievements || [])];
-
-      if (newCertCategory === "ACHIEVEMENT") {
-        if (!updatedAchievements.includes(titleToAdd)) {
-          updatedAchievements.push(titleToAdd);
-        }
-      } else {
-        if (!updatedCertifications.includes(titleToAdd)) {
-          updatedCertifications.push(titleToAdd);
-        }
-      }
-
-      let subProfile = {};
-      if (isStudent) {
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          careerGoal: existing.careerGoal || null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          currentCompany: existing.currentCompany || null,
-          currentPosition: existing.currentPosition || null,
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          certifications: updatedCertifications,
-          achievements: updatedAchievements,
-        };
-      } else {
-        const gradYear = existing.graduationYear
-          ? parseInt(existing.graduationYear)
-          : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
-
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          graduationYear: gradYear,
-          currentCompany: existing.currentCompany || null,
-          currentPosition: existing.currentPosition || null,
-          industry: existing.industry || null,
-          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          expertiseAreas: existing.expertiseAreas || [],
-          education: existing.education || null,
-          certifications: updatedCertifications,
-          achievements: updatedAchievements,
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          personalWebsite: normalizeUrl(existing.personalWebsite),
-          mentorshipDomains: existing.mentorshipDomains || [],
-        };
-      }
-
-      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
-      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
-      const payload = {
-        role,
-        [profileKey]: subProfile,
-      };
-
-      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      if (res.data?.data) {
-        updateUserProfileState(res.data.data);
-      } else {
-        updateUserProfileState((prev) => ({
-          ...prev,
-          [profileKey]: {
-            ...(prev?.[profileKey] || {}),
-            ...subProfile,
-          },
-        }));
-      }
-
-      setNewCertTitle("");
-      setCertModalOpen(false);
-
-      Swal.fire({
-        title: "Added!",
-        text: `${newCertCategory === "ACHIEVEMENT" ? "Achievement" : "Certificate"} added successfully.`,
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error("Error adding certificate/achievement:", err.response?.data || err);
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to add item.",
-        icon: "error",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleRemoveCertificateOrAchievement = async (itemToRemove, category) => {
-    const confirm = await Swal.fire({
-      title: "Remove item?",
-      text: `Are you sure you want to remove "${itemToRemove}"?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#4b5563",
-      confirmButtonText: "Yes, delete",
-    });
-
-    if (!confirm.isConfirmed) return;
-
-    try {
-      setIsSaving(true);
-      const isStudent = dbUser?.role === "STUDENT";
-      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
-
-      let updatedCertifications = [...(existing.certifications || [])];
-      let updatedAchievements = [...(existing.achievements || [])];
-
-      if (category === "ACHIEVEMENT") {
-        updatedAchievements = updatedAchievements.filter((a) => a !== itemToRemove);
-      } else {
-        updatedCertifications = updatedCertifications.filter((c) => c !== itemToRemove);
-      }
-
-      let subProfile = {};
-      if (isStudent) {
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          careerGoal: existing.careerGoal || null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          currentCompany: existing.currentCompany || null,
-          currentPosition: existing.currentPosition || null,
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          certifications: updatedCertifications,
-          achievements: updatedAchievements,
-        };
-      } else {
-        const gradYear = existing.graduationYear
-          ? parseInt(existing.graduationYear)
-          : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
-
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          graduationYear: gradYear,
-          currentCompany: existing.currentCompany || null,
-          currentPosition: existing.currentPosition || null,
-          industry: existing.industry || null,
-          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          expertiseAreas: existing.expertiseAreas || [],
-          education: existing.education || null,
-          certifications: updatedCertifications,
-          achievements: updatedAchievements,
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          personalWebsite: normalizeUrl(existing.personalWebsite),
-          mentorshipDomains: existing.mentorshipDomains || [],
-        };
-      }
-
-      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
-      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
-      const payload = {
-        role,
-        [profileKey]: subProfile,
-      };
-
-      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      if (res.data?.data) {
-        updateUserProfileState(res.data.data);
-      } else {
-        updateUserProfileState((prev) => ({
-          ...prev,
-          [profileKey]: {
-            ...(prev?.[profileKey] || {}),
-            ...subProfile,
-          },
-        }));
-      }
-
-      Swal.fire({
-        title: "Removed!",
-        text: "Item removed successfully.",
-        icon: "success",
-        timer: 1400,
-        showConfirmButton: false,
-      });
-    } catch (err) {
-      console.error("Error removing item:", err.response?.data || err);
-      Swal.fire({
-        title: "Error!",
-        text: "Failed to remove item.",
-        icon: "error",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const openSkillsModal = () => {
     const isStudent = dbUser?.role === "STUDENT";
     const subProf = isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile;
@@ -1086,6 +875,237 @@ export default function Profile() {
       setCoverPhotoModalOpen(false);
     } catch (error) {
       console.error("Error updating cover photo:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const resetCertModalForm = () => {
+    setNewCertTitle("");
+    setNewCertIssuedBy("");
+    setNewCertIssueDate("");
+    setNewCertExpiryDate("");
+    setNewCertCredentialId("");
+    setNewCertCredentialUrl("");
+    setNewCertImageUrl("");
+    setNewAchieveUrl("");
+    setNewCertDescription("");
+    setIsUploadingCertImage(false);
+    if (certFileInputRef.current) {
+      certFileInputRef.current.value = "";
+    }
+  };
+
+  const handleCertImageUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingCertImage(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch(
+        `https://api.imgbb.com/1/upload?key=${process.env.NEXT_PUBLIC_IMGBB_API_KEY}`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      if (data.success && data.data?.url) {
+        setNewCertImageUrl(data.data.url);
+      } else {
+        Swal.fire({
+          title: "Upload Failed",
+          text: "Failed to upload image. Please try again.",
+          icon: "error",
+        });
+      }
+    } catch (err) {
+      console.error("Certificate image upload error:", err);
+      Swal.fire({
+        title: "Upload Error",
+        text: "Error uploading photo. Please try again.",
+        icon: "error",
+      });
+    } finally {
+      setIsUploadingCertImage(false);
+    }
+  };
+
+  const fetchCredentials = useCallback(async (targetUid) => {
+    if (!targetUid) return;
+    setLoadingCredentials(true);
+    try {
+      const [certsRes, achsRes] = await Promise.all([
+        axiosInstance.get(`/api/v1/credentials/certifications/${targetUid}`, {
+          validateStatus: (s) => s < 500,
+        }),
+        axiosInstance.get(`/api/v1/credentials/achievements/${targetUid}`, {
+          validateStatus: (s) => s < 500,
+        }),
+      ]);
+      if (certsRes.status === 200 && Array.isArray(certsRes.data?.data)) {
+        setCertList(certsRes.data.data);
+      }
+      if (achsRes.status === 200 && Array.isArray(achsRes.data?.data)) {
+        setAchieveList(achsRes.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching credentials:", err);
+    } finally {
+      setLoadingCredentials(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (id) {
+      fetchCredentials(id);
+    }
+  }, [id, fetchCredentials]);
+
+  const handleAddCertificateOrAchievement = async (e) => {
+    e.preventDefault();
+    if (!newCertTitle.trim()) return;
+
+    setIsSaving(true);
+    try {
+      if (newCertCategory === "CERTIFICATE") {
+        if (!newCertIssuedBy.trim() || !newCertIssueDate) {
+          Swal.fire({
+            title: "Required Fields",
+            text: "Please provide Organization (Issued By) and Issue Date.",
+            icon: "warning",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        const payload = {
+          title: newCertTitle.trim(),
+          issuedBy: newCertIssuedBy.trim(),
+          issueDate: new Date(newCertIssueDate).toISOString(),
+          expiryDate: newCertExpiryDate ? new Date(newCertExpiryDate).toISOString() : null,
+          credentialId: newCertCredentialId.trim() || null,
+          credentialUrl: newCertCredentialUrl.trim() || null,
+          imageUrl: newCertImageUrl.trim() || null,
+          description: newCertDescription.trim() || null,
+        };
+
+        const res = await axiosInstance.post("/api/v1/credentials/certifications", payload);
+        if (res.status === 201 || res.status === 200) {
+          if (res.data?.data) {
+            setCertList((prev) => [res.data.data, ...prev]);
+          } else {
+            fetchCredentials(id || user?.uid);
+          }
+        }
+      } else {
+        const payload = {
+          title: newCertTitle.trim(),
+          issuedBy: newCertIssuedBy.trim() || null,
+          date: newCertIssueDate ? new Date(newCertIssueDate).toISOString() : null,
+          description: newCertDescription.trim() || null,
+          imageUrl: newCertImageUrl.trim() || null,
+          achievementUrl: newAchieveUrl.trim() || null,
+        };
+
+        const res = await axiosInstance.post("/api/v1/credentials/achievements", payload);
+        if (res.status === 201 || res.status === 200) {
+          if (res.data?.data) {
+            setAchieveList((prev) => [res.data.data, ...prev]);
+          } else {
+            fetchCredentials(id || user?.uid);
+          }
+        }
+      }
+
+      setCertModalOpen(false);
+      resetCertModalForm();
+
+      Swal.fire({
+        title: "Added!",
+        text: `${newCertCategory === "CERTIFICATE" ? "Certification" : "Achievement"} added successfully.`,
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error adding credential:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to add item.",
+        icon: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteCredential = async (item) => {
+    const isCert = item.category === "CERTIFICATE";
+    const confirm = await Swal.fire({
+      title: `Delete ${isCert ? "Certification" : "Achievement"}?`,
+      text: `Are you sure you want to remove "${item.title || item.name}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setIsSaving(true);
+      if (item.id) {
+        if (isCert) {
+          await axiosInstance.delete(`/api/v1/credentials/certifications/${item.id}`);
+          setCertList((prev) => prev.filter((c) => c.id !== item.id));
+        } else {
+          await axiosInstance.delete(`/api/v1/credentials/achievements/${item.id}`);
+          setAchieveList((prev) => prev.filter((a) => a.id !== item.id));
+        }
+      } else {
+        const isStudent = dbUser?.role === "STUDENT";
+        const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+        const key = isCert ? "certifications" : "achievements";
+        const updated = (existing[key] || []).filter((s) => s !== item.name);
+
+        const payload = {
+          role: dbUser?.role,
+          [isStudent ? "studentProfile" : "alumniProfile"]: {
+            ...existing,
+            [key]: updated,
+          },
+        };
+
+        await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [isStudent ? "studentProfile" : "alumniProfile"]: {
+            ...(prev?.[isStudent ? "studentProfile" : "alumniProfile"] || {}),
+            [key]: updated,
+          },
+        }));
+      }
+
+      Swal.fire({
+        title: "Removed!",
+        text: "Item removed successfully.",
+        icon: "success",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error deleting credential:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to delete item.",
+        icon: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -1564,34 +1584,61 @@ export default function Profile() {
                 <Divider className='mt-2 mb-2' />
 
                 {(() => {
-                  const certifications = profile?.certifications ?? [];
-                  const achievements = profile?.achievements ?? [];
+                  const legacyCerts = (profile?.certifications ?? []).map((name) => ({
+                    name,
+                    title: name,
+                    category: "CERTIFICATE",
+                  }));
+                  const legacyAchs = (profile?.achievements ?? []).map((name) => ({
+                    name,
+                    title: name,
+                    category: "ACHIEVEMENT",
+                  }));
 
+                  const formattedCerts = certList.map((c) => ({
+                    ...c,
+                    category: "CERTIFICATE",
+                  }));
+                  const formattedAchs = achieveList.map((a) => ({
+                    ...a,
+                    category: "ACHIEVEMENT",
+                  }));
+
+                  // If database credentials exist, prefer them; otherwise fallback to legacy
                   const allItems = [
-                    ...certifications.map((item) => ({ name: item, category: "CERTIFICATE" })),
-                    ...achievements.map((item) => ({ name: item, category: "ACHIEVEMENT" })),
+                    ...formattedCerts,
+                    ...legacyCerts.filter(
+                      (lc) => !formattedCerts.some((fc) => fc.title === lc.title)
+                    ),
+                    ...formattedAchs,
+                    ...legacyAchs.filter(
+                      (la) => !formattedAchs.some((fa) => fa.title === la.title)
+                    ),
                   ];
 
-                  if (allItems.length === 0) {
+                  if (allItems.length === 0 && !loadingCredentials) {
                     return isOwner ? (
-                      <div className="text-center py-6 space-y-3">
+                      <div className="text-center py-8 space-y-3">
+                        <div className="w-12 h-12 mx-auto rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                          <Award className="w-6 h-6" />
+                        </div>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                           No certifications or achievements added yet.
                         </p>
                         <button
                           type="button"
                           onClick={() => {
-                            setNewCertTitle("");
+                            resetCertModalForm();
                             setNewCertCategory("CERTIFICATE");
                             setCertModalOpen(true);
                           }}
-                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
                         >
                           <Plus className="w-4 h-4" /> Add Certificate or Achievement
                         </button>
                       </div>
                     ) : (
-                      <p className='text-gray-500 dark:text-gray-400 text-sm py-2'>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm py-4 text-center">
                         No certifications or achievements added yet.
                       </p>
                     );
@@ -1601,51 +1648,156 @@ export default function Profile() {
                   const visibleItems = showAllCerts ? allItems : allItems.slice(0, INITIAL_COUNT);
 
                   return (
-                    <div className="space-y-3 pt-1">
-                      {visibleItems.map((item, idx) => (
-                        <div
-                          key={`${item.category}-${item.name}-${idx}`}
-                          className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700 transition-all"
-                        >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div
-                              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                                item.category === "CERTIFICATE"
-                                  ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
-                                  : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
-                              }`}
-                            >
-                              {item.category === "CERTIFICATE" ? (
-                                <Award className="w-5 h-5" />
-                              ) : (
-                                <Trophy className="w-5 h-5" />
+                    <div className="space-y-3 pt-2">
+                      {visibleItems.map((item, idx) => {
+                        const isCert = item.category === "CERTIFICATE";
+                        const linkUrl = item.credentialUrl || item.achievementUrl;
+                        const dateFormatted = item.issueDate
+                          ? new Date(item.issueDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : item.date
+                          ? new Date(item.date).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : null;
+
+                        const expiryFormatted = item.expiryDate
+                          ? new Date(item.expiryDate).toLocaleDateString("en-US", {
+                              month: "short",
+                              year: "numeric",
+                            })
+                          : null;
+
+                        return (
+                          <div
+                            key={item.id ? `cred-${item.id}` : `${item.category}-${item.title}-${idx}`}
+                            className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700 transition-all space-y-2.5"
+                          >
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-start gap-3 min-w-0 flex-1">
+                                {item.imageUrl ? (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setPreviewCertImage({
+                                        url: item.imageUrl,
+                                        title: item.title || item.name,
+                                      })
+                                    }
+                                    className="w-12 h-12 rounded-xl overflow-hidden relative bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 shrink-0 shadow-2xs hover:opacity-90 hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer group"
+                                    title="Click to view certificate photo"
+                                  >
+                                    <Image
+                                      src={item.imageUrl}
+                                      alt={item.title || "Certificate"}
+                                      fill
+                                      className="object-cover group-hover:scale-105 transition-transform"
+                                    />
+                                  </button>
+                                ) : (
+                                  <div
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                      isCert
+                                        ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+                                        : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
+                                    }`}
+                                  >
+                                    {isCert ? (
+                                      <Award className="w-5 h-5" />
+                                    ) : (
+                                      <Trophy className="w-5 h-5" />
+                                    )}
+                                  </div>
+                                )}
+
+                                <div className="min-w-0 flex-1 space-y-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h5 className="font-bold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                                      {item.title || item.name}
+                                    </h5>
+                                    <span
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                        isCert
+                                          ? "bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300"
+                                          : "bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300"
+                                      }`}
+                                    >
+                                      {isCert ? "Certification" : "Achievement"}
+                                    </span>
+                                  </div>
+
+                                  {item.issuedBy && (
+                                    <p className="text-xs font-medium text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                      <Building2 className="w-3.5 h-3.5 text-gray-400" />
+                                      <span>{item.issuedBy}</span>
+                                    </p>
+                                  )}
+
+                                  <div className="flex items-center gap-3 text-[11px] text-gray-500 dark:text-gray-400 flex-wrap">
+                                    {dateFormatted && (
+                                      <span className="flex items-center gap-1">
+                                        <Calendar className="w-3 h-3 text-gray-400" />
+                                        <span>
+                                          {isCert ? `Issued ${dateFormatted}` : dateFormatted}
+                                        </span>
+                                      </span>
+                                    )}
+
+                                    {expiryFormatted && (
+                                      <span className="flex items-center gap-1 text-gray-400">
+                                        <span>• Expires {expiryFormatted}</span>
+                                      </span>
+                                    )}
+
+                                    {item.credentialId && (
+                                      <span className="text-gray-500 dark:text-gray-400">
+                                        • ID: <span className="font-mono">{item.credentialId}</span>
+                                      </span>
+                                    )}
+                                  </div>
+
+                                  {item.description && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 pt-1 leading-relaxed">
+                                      {item.description}
+                                    </p>
+                                  )}
+
+                                  {linkUrl && (
+                                    <div className="pt-1.5">
+                                      <a
+                                        href={linkUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors"
+                                      >
+                                        <ExternalLink className="w-3 h-3" />
+                                        <span>
+                                          {isCert ? "Show Credential" : "View Details / Proof"}
+                                        </span>
+                                      </a>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {isOwner && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCredential(item)}
+                                  disabled={isSaving}
+                                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
+                                  title={`Delete ${isCert ? "Certificate" : "Achievement"}`}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
                               )}
                             </div>
-                            <div className="min-w-0 flex-1">
-                              <p className="font-semibold text-sm text-gray-900 dark:text-white leading-snug break-words">
-                                {item.name}
-                              </p>
-                              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                {item.category === "CERTIFICATE" ? "Certification" : "Achievement"}
-                              </span>
-                            </div>
                           </div>
-
-                          {isOwner && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleRemoveCertificateOrAchievement(item.name, item.category)
-                              }
-                              disabled={isSaving}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
-                              title={`Delete ${item.category === "CERTIFICATE" ? "Certificate" : "Achievement"}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          )}
-                        </div>
-                      ))}
+                        );
+                      })}
 
                       {allItems.length > INITIAL_COUNT && (
                         <button
@@ -1667,6 +1819,7 @@ export default function Profile() {
                     </div>
                   );
                 })()}
+
               </div>
             </div>
 
@@ -2123,13 +2276,13 @@ export default function Profile() {
       <Modal
         isOpen={certModalOpen}
         onClose={() => setCertModalOpen(false)}
-        title="Add Certificate or Achievement"
-        size="md"
+        title={newCertCategory === "CERTIFICATE" ? "Add Certification" : "Add Achievement"}
+        size="lg"
       >
         <form onSubmit={handleAddCertificateOrAchievement} className="space-y-4">
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
-              Type
+              Category
             </label>
             <div className="grid grid-cols-2 gap-3">
               <button
@@ -2161,7 +2314,7 @@ export default function Profile() {
 
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-              {newCertCategory === "CERTIFICATE" ? "Certificate Name" : "Achievement Title"}
+              {newCertCategory === "CERTIFICATE" ? "Certification Title *" : "Achievement Title *"}
             </label>
             <input
               type="text"
@@ -2170,10 +2323,203 @@ export default function Profile() {
               placeholder={
                 newCertCategory === "CERTIFICATE"
                   ? "e.g. AWS Certified Solutions Architect Associate"
-                  : "e.g. 1st Place - Inter-University Hackathon 2025"
+                  : "e.g. Champion - National Hackathon 2025"
               }
               required
               className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                {newCertCategory === "CERTIFICATE"
+                  ? "Issuing Organization *"
+                  : "Issued By / Organization (Optional)"}
+              </label>
+              <input
+                type="text"
+                value={newCertIssuedBy}
+                onChange={(e) => setNewCertIssuedBy(e.target.value)}
+                placeholder={
+                  newCertCategory === "CERTIFICATE"
+                    ? "e.g. Amazon Web Services, Google, Coursera"
+                    : "e.g. IEEE IUT Student Branch"
+                }
+                required={newCertCategory === "CERTIFICATE"}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                {newCertCategory === "CERTIFICATE" ? "Issue Date *" : "Date Achieved (Optional)"}
+              </label>
+              <input
+                type="date"
+                value={newCertIssueDate}
+                onChange={(e) => setNewCertIssueDate(e.target.value)}
+                required={newCertCategory === "CERTIFICATE"}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+              />
+            </div>
+          </div>
+
+          {newCertCategory === "CERTIFICATE" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  Expiration Date (Optional)
+                </label>
+                <input
+                  type="date"
+                  value={newCertExpiryDate}
+                  onChange={(e) => setNewCertExpiryDate(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  Credential ID (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newCertCredentialId}
+                  onChange={(e) => setNewCertCredentialId(e.target.value)}
+                  placeholder="e.g. AWS-CERT-884920"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+              </div>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              {newCertCategory === "CERTIFICATE"
+                ? "Credential Verification URL (Optional)"
+                : "Achievement / Proof URL (Optional)"}
+            </label>
+            <input
+              type="url"
+              value={newCertCategory === "CERTIFICATE" ? newCertCredentialUrl : newAchieveUrl}
+              onChange={(e) =>
+                newCertCategory === "CERTIFICATE"
+                  ? setNewCertCredentialUrl(e.target.value)
+                  : setNewAchieveUrl(e.target.value)
+              }
+              placeholder="https://..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              {newCertCategory === "CERTIFICATE"
+                ? "Certificate Image / Document"
+                : "Award / Achievement Picture"}
+            </label>
+
+            <input
+              ref={certFileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleCertImageUpload}
+              className="hidden"
+              id="cert-image-file-input"
+            />
+
+            {newCertImageUrl ? (
+              <div className="relative rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 p-3 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setPreviewCertImage({
+                        url: newCertImageUrl,
+                        title: newCertTitle || "Certificate Preview",
+                      })
+                    }
+                    className="w-14 h-14 rounded-lg overflow-hidden relative border border-gray-200 dark:border-gray-700 bg-white dark:bg-zinc-900 shrink-0 shadow-2xs hover:opacity-90 hover:ring-2 hover:ring-blue-500 transition-all cursor-pointer group"
+                    title="Click to view full image"
+                  >
+                    <Image
+                      src={newCertImageUrl}
+                      alt="Certificate preview"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform"
+                    />
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      Image Uploaded & Attached
+                    </p>
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                      {newCertImageUrl}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNewCertImageUrl("");
+                    if (certFileInputRef.current) certFileInputRef.current.value = "";
+                  }}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer shrink-0"
+                  title="Remove image"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label
+                  htmlFor="cert-image-file-input"
+                  className="border-2 border-dashed border-gray-300 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 bg-gray-50/50 dark:bg-gray-800/30 hover:bg-blue-50/30 dark:hover:bg-blue-950/20 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all group"
+                >
+                  {isUploadingCertImage ? (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400 py-1">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Uploading certificate image...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs font-semibold text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-blue-400 py-1">
+                      <UploadCloud className="w-4 h-4 text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors" />
+                      <span>Upload certificate or award photo</span>
+                    </div>
+                  )}
+                  <span className="text-[11px] text-gray-400">PNG, JPG, JPEG or WEBP</span>
+                </label>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1" />
+                  <span className="text-[10px] text-gray-400 uppercase font-semibold">
+                    Or paste direct image URL
+                  </span>
+                  <div className="h-px bg-gray-200 dark:bg-gray-700 flex-1" />
+                </div>
+
+                <input
+                  type="url"
+                  value={newCertImageUrl}
+                  onChange={(e) => setNewCertImageUrl(e.target.value)}
+                  placeholder="https://.../certificate.png"
+                  className="w-full px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+                />
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Description (Optional)
+            </label>
+            <textarea
+              rows={2}
+              value={newCertDescription}
+              onChange={(e) => setNewCertDescription(e.target.value)}
+              placeholder="Brief details regarding this certification or achievement..."
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 resize-none"
             />
           </div>
 
@@ -2187,7 +2533,7 @@ export default function Profile() {
             </button>
             <button
               type="submit"
-              disabled={isSaving || !newCertTitle.trim()}
+              disabled={isSaving || isUploadingCertImage || !newCertTitle.trim()}
               className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors cursor-pointer"
             >
               {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -2196,6 +2542,49 @@ export default function Profile() {
           </div>
         </form>
       </Modal>
+
+      {previewCertImage && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150"
+          onClick={() => setPreviewCertImage(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-white dark:bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-gray-200 dark:border-zinc-800 flex flex-col max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-4 border-b border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-4">
+              <h4 className="text-sm font-bold text-gray-900 dark:text-white truncate">
+                {previewCertImage.title || "Certificate Preview"}
+              </h4>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewCertImage.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Open Full Size</span>
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewCertImage(null)}
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div className="relative flex-1 min-h-[300px] max-h-[75vh] w-full bg-zinc-950 flex items-center justify-center p-3 overflow-auto">
+              <img
+                src={previewCertImage.url}
+                alt={previewCertImage.title || "Certificate"}
+                className="max-h-[70vh] w-auto max-w-full object-contain rounded-lg shadow-md"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </ProtectedRoute>
   )
 }
