@@ -79,6 +79,10 @@ model User {
   eventAttendees  EventAttendee[]
   taskMessages    TaskMessage[]
 
+  // Credentials
+  certifications Certification[]
+  achievements   Achievement[]
+
   @@index([email])
   @@index([role])
 }
@@ -371,4 +375,46 @@ model EventAttendee {
   @@id([userId, eventId])
   @@index([userId])
   @@index([eventId])
+}
+
+model Certification {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  title       String
+  issuedBy    String
+  issueDate   DateTime
+  expiryDate  DateTime?
+  credentialId  String?
+  credentialUrl String?
+  imageUrl      String?
+  description   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Achievement {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  title       String
+  issuedBy    String?
+  date        DateTime?
+  description String?
+  imageUrl    String?
+  achievementUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

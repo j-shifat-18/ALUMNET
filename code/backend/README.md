@@ -2128,6 +2128,193 @@ Mentor sends a feedback message after the student has marked the task complete.
 
 ---
 
+### Credentials Module (`/api/v1/credentials`)
+
+Structured certifications and achievements — replaces the old flat string arrays on profiles.
+
+GET endpoints are public. All write endpoints require auth and ownership.
+
+---
+
+#### `POST /api/v1/credentials/certifications` — Add Certification
+
+**Auth Required:** Yes
+
+**Request Body:**
+```json
+{
+  "title": "AWS Certified Solutions Architect",
+  "issuedBy": "Amazon Web Services",
+  "issueDate": "2026-03-01T00:00:00.000Z",
+  "expiryDate": "2029-03-01T00:00:00.000Z",
+  "credentialId": "AWS-SAA-12345",
+  "credentialUrl": "https://aws.amazon.com/verify/AWS-SAA-12345",
+  "imageUrl": "https://i.ibb.co/abc123/cert.png",
+  "description": "Validates ability to design distributed systems on AWS."
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| title | string | Yes | Certificate name |
+| issuedBy | string | Yes | Issuing organization |
+| issueDate | ISO datetime | Yes | Date issued |
+| expiryDate | ISO datetime | No | Leave null if no expiry |
+| credentialId | string | No | Certificate/license ID |
+| credentialUrl | string | No | Verification link (valid URL) |
+| imageUrl | string | No | Badge/certificate image (valid URL) |
+| description | string | No | Optional description |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Certification added successfully",
+  "data": {
+    "id": 1,
+    "userId": 2,
+    "title": "AWS Certified Solutions Architect",
+    "issuedBy": "Amazon Web Services",
+    "issueDate": "2026-03-01T00:00:00.000Z",
+    "expiryDate": "2029-03-01T00:00:00.000Z",
+    "credentialId": "AWS-SAA-12345",
+    "credentialUrl": "https://aws.amazon.com/verify/AWS-SAA-12345",
+    "imageUrl": "https://i.ibb.co/abc123/cert.png",
+    "description": "Validates ability to design distributed systems on AWS.",
+    "createdAt": "2026-08-19T10:00:00.000Z",
+    "updatedAt": "2026-08-19T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/credentials/certifications/:uid` — Get User Certifications
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Certifications retrieved successfully",
+  "data": [ { "id": 1, "title": "AWS Certified...", ... } ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/credentials/certifications/:id` — Update Certification
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Certification ID (integer)
+
+All fields optional. Pass `null` to clear `expiryDate`, `credentialId`, `credentialUrl`, `imageUrl`, or `description`.
+
+**Response (200):**
+```json
+{ "success": true, "message": "Certification updated successfully", "data": { ... } }
+```
+
+---
+
+#### `DELETE /api/v1/credentials/certifications/:id` — Delete Certification
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Certification ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Certification deleted successfully" }
+```
+
+---
+
+#### `POST /api/v1/credentials/achievements` — Add Achievement
+
+**Auth Required:** Yes
+
+**Request Body:**
+```json
+{
+  "title": "1st Place — IUT Programming Contest 2025",
+  "issuedBy": "Islamic University of Technology",
+  "date": "2025-11-15T00:00:00.000Z",
+  "description": "Won the inter-department programming competition.",
+  "imageUrl": "https://i.ibb.co/xyz/trophy.png",
+  "achievementUrl": "https://iut.ac.bd/contest/2025/results"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| title | string | Yes | Achievement name |
+| issuedBy | string | No | Awarding organization |
+| date | ISO datetime | No | Date of achievement |
+| description | string | No | Optional description |
+| imageUrl | string | No | Certificate/trophy image (valid URL) |
+| achievementUrl | string | No | Link to proof/announcement (valid URL) |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Achievement added successfully",
+  "data": {
+    "id": 1,
+    "userId": 2,
+    "title": "1st Place — IUT Programming Contest 2025",
+    "issuedBy": "Islamic University of Technology",
+    "date": "2025-11-15T00:00:00.000Z",
+    "description": "Won the inter-department programming competition.",
+    "imageUrl": "https://i.ibb.co/xyz/trophy.png",
+    "achievementUrl": "https://iut.ac.bd/contest/2025/results",
+    "createdAt": "2026-08-19T10:00:00.000Z",
+    "updatedAt": "2026-08-19T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/credentials/achievements/:uid` — Get User Achievements
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Achievements retrieved successfully",
+  "data": [ { "id": 1, "title": "1st Place...", ... } ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/credentials/achievements/:id` — Update Achievement
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Achievement ID (integer)
+
+All fields optional.
+
+---
+
+#### `DELETE /api/v1/credentials/achievements/:id` — Delete Achievement
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Achievement ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Achievement deleted successfully" }
+```
+
+---
+
 ## Project Structure
 
 ```
