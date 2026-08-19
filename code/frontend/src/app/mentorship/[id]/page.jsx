@@ -713,17 +713,21 @@ export default function MenteeTasksPage() {
                   No milestones created yet
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                  Create your first mentorship milestone (e.g., "Resume Review", "System Design Basics", "Mock Interview") and assign tasks to guide your mentee.
+                  {isMentor
+                    ? "Create your first mentorship milestone (e.g., 'Resume Review', 'System Design Basics', 'Mock Interview') and assign tasks to guide your mentee."
+                    : "Your mentor has not created any milestones or assigned tasks yet. They will appear here once assigned by your mentor."}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setCreateSessionModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Create First Milestone</span>
-              </button>
+              {isMentor && (
+                <button
+                  type="button"
+                  onClick={() => setCreateSessionModalOpen(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 rounded-xl text-xs sm:text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create First Milestone</span>
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
