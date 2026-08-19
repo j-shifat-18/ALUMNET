@@ -756,7 +756,6 @@ export default function MentorshipPage() {
                           </div>
                         </div>
 
-                        {/* Mentor Details */}
                         <div className="space-y-1.5 pt-1 text-xs text-gray-600 dark:text-gray-300 border-t border-gray-100 dark:border-zinc-800">
                           {mentor.alumniProfile?.currentPosition && (
                             <p className="font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
@@ -788,14 +787,13 @@ export default function MentorshipPage() {
                         </div>
                       </div>
 
-                      {/* Card Footer Actions */}
-                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800">
+                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-col gap-2">
                         <Link
-                          href={`/profile/${mentor.uid}`}
-                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors"
+                          href={`/mentorship/${requestId}?alumniUid=${mentor.uid}`}
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 text-xs font-semibold transition-colors cursor-pointer"
                         >
-                          <span>View Profile</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ListTodo className="w-3.5 h-3.5" />
+                          <span>Show all tasks</span>
                         </Link>
                       </div>
                     </div>

@@ -29,6 +29,7 @@ import {
   Sparkles,
   User,
   Building2,
+  Briefcase,
   X,
   Loader2,
 } from "lucide-react";
@@ -38,12 +39,16 @@ export default function MenteeTasksPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const studentUidParam = searchParams.get("studentUid");
+  const alumniUidParam = searchParams.get("alumniUid");
   const router = useRouter();
   const { dbUser: authDbUser } = useAuth();
 
-  const [student, setStudent] = useState(null);
+  const isMentor = authDbUser?.role === "ALUMNI";
+  const isStudent = authDbUser?.role === "STUDENT";
+
+  const [targetUser, setTargetUser] = useState(null);
   const [sessions, setSessions] = useState([]);
-  const [loadingStudent, setLoadingStudent] = useState(true);
+  const [loadingUser, setLoadingUser] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(true);
 
   const [createSessionModalOpen, setCreateSessionModalOpen] = useState(false);
@@ -65,21 +70,35 @@ export default function MenteeTasksPage() {
   const [editTaskDueDate, setEditTaskDueDate] = useState("");
   const [isUpdatingTask, setIsUpdatingTask] = useState(false);
 
-  const fetchStudentDetails = useCallback(async () => {
-    setLoadingStudent(true);
+  const fetchUserDetails = useCallback(async () => {
+    setLoadingUser(true);
     try {
-      let uidToFetch = studentUidParam;
+      let uidToFetch = studentUidParam || alumniUidParam;
 
       if (!uidToFetch && id) {
-        const menteesRes = await axiosInstance.get("/api/v1/mentorship/mentees", {
-          validateStatus: (s) => s < 500,
-        });
-        if (menteesRes.status === 200 && Array.isArray(menteesRes.data?.data)) {
-          const match = menteesRes.data.data.find(
-            (item) => item.requestId === Number(id)
-          );
-          if (match?.mentee?.uid) {
-            uidToFetch = match.mentee.uid;
+        if (isStudent || alumniUidParam) {
+          const mentorsRes = await axiosInstance.get("/api/v1/mentorship/mentors", {
+            validateStatus: (s) => s < 500,
+          });
+          if (mentorsRes.status === 200 && Array.isArray(mentorsRes.data?.data)) {
+            const match = mentorsRes.data.data.find(
+              (item) => item.requestId === Number(id)
+            );
+            if (match?.mentor?.uid) {
+              uidToFetch = match.mentor.uid;
+            }
+          }
+        } else {
+          const menteesRes = await axiosInstance.get("/api/v1/mentorship/mentees", {
+            validateStatus: (s) => s < 500,
+          });
+          if (menteesRes.status === 200 && Array.isArray(menteesRes.data?.data)) {
+            const match = menteesRes.data.data.find(
+              (item) => item.requestId === Number(id)
+            );
+            if (match?.mentee?.uid) {
+              uidToFetch = match.mentee.uid;
+            }
           }
         }
       }
@@ -89,15 +108,15 @@ export default function MenteeTasksPage() {
           validateStatus: (s) => s < 500,
         });
         if (userRes.status === 200 && userRes.data?.data) {
-          setStudent(userRes.data.data);
+          setTargetUser(userRes.data.data);
         }
       }
     } catch (err) {
-      console.error("Error fetching student details:", err);
+      console.error("Error fetching user details:", err);
     } finally {
-      setLoadingStudent(false);
+      setLoadingUser(false);
     }
-  }, [id, studentUidParam]);
+  }, [id, studentUidParam, alumniUidParam, isStudent]);
 
   const fetchSessions = useCallback(async () => {
     if (!id) return;
@@ -117,9 +136,9 @@ export default function MenteeTasksPage() {
   }, [id]);
 
   useEffect(() => {
-    fetchStudentDetails();
+    fetchUserDetails();
     fetchSessions();
-  }, [fetchStudentDetails, fetchSessions]);
+  }, [fetchUserDetails, fetchSessions]);
 
   const handleCreateSession = async (e) => {
     e.preventDefault();
@@ -340,7 +359,7 @@ export default function MenteeTasksPage() {
           </div>
 
           <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6 sm:p-7 shadow-sm">
-            {loadingStudent ? (
+            {loadingUser ? (
               <div className="flex items-center gap-4 animate-pulse">
                 <div className="w-16 h-16 rounded-full bg-gray-200 dark:bg-zinc-800 shrink-0" />
                 <div className="space-y-2.5 flex-1">
@@ -348,16 +367,16 @@ export default function MenteeTasksPage() {
                   <div className="h-4 w-72 bg-gray-100 dark:bg-zinc-800/60 rounded" />
                 </div>
               </div>
-            ) : student ? (
+            ) : targetUser ? (
               <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
                 <div className="flex items-start gap-4 sm:gap-5">
                   <Link
-                    href={`/profile/${student.uid}`}
+                    href={`/profile/${targetUser.uid}`}
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-full overflow-hidden relative shrink-0 border-2 border-gray-200 dark:border-zinc-700 hover:opacity-90 transition-opacity"
                   >
                     <Image
-                      src={student.profileImage || user_placeholder}
-                      alt={student.name || "Student"}
+                      src={targetUser.profileImage || user_placeholder}
+                      alt={targetUser.name || "User"}
                       fill
                       className="object-cover"
                     />
@@ -367,62 +386,98 @@ export default function MenteeTasksPage() {
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <Link
-                          href={`/profile/${student.uid}`}
+                          href={`/profile/${targetUser.uid}`}
                           className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white hover:underline"
                         >
-                          {student.name || "Student Mentee"}
+                          {targetUser.name || (targetUser.role === "ALUMNI" ? "Alumni Mentor" : "Student Mentee")}
                         </Link>
-                        <span className="text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                          {student.role || "STUDENT"}
+                        <span
+                          className={`text-[10px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ${
+                            targetUser.role === "ALUMNI"
+                              ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                              : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
+                          }`}
+                        >
+                          {targetUser.role === "ALUMNI" ? "ALUMNI" : "STUDENT"}
                         </span>
-                        {student.isVerified && (
+                        {targetUser.isVerified && (
                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
                             <ShieldCheck className="w-3.5 h-3.5" />
                             <span>Verified</span>
                           </span>
                         )}
                       </div>
+
+                      {targetUser.role === "ALUMNI" && targetUser.alumniProfile?.currentPosition && (
+                        <p className="text-xs sm:text-sm font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-1.5 pt-0.5">
+                          <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+                          <span>
+                            {targetUser.alumniProfile.currentPosition}
+                            {targetUser.alumniProfile.currentCompany && ` at ${targetUser.alumniProfile.currentCompany}`}
+                          </span>
+                        </p>
+                      )}
                     </div>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-600 dark:text-gray-300">
-                      {student.studentProfile?.department && (
+                      {(targetUser.alumniProfile?.department || targetUser.studentProfile?.department) && (
                         <div className="flex items-center gap-1.5">
                           <Building2 className="w-3.5 h-3.5 text-gray-400" />
                           <span>
-                            <strong>Department:</strong> {student.studentProfile.department}
+                            <strong>Department:</strong>{" "}
+                            {targetUser.alumniProfile?.department || targetUser.studentProfile?.department}
                           </span>
                         </div>
                       )}
 
-                      {student.studentProfile?.program && (
+                      {(targetUser.alumniProfile?.program || targetUser.studentProfile?.program) && (
                         <div className="flex items-center gap-1.5">
                           <BookOpen className="w-3.5 h-3.5 text-gray-400" />
                           <span>
-                            <strong>Program:</strong> {student.studentProfile.program}
+                            <strong>Program:</strong>{" "}
+                            {targetUser.alumniProfile?.program || targetUser.studentProfile?.program}
                           </span>
                         </div>
                       )}
 
-                      {student.studentProfile?.batch && (
+                      {(targetUser.alumniProfile?.batch || targetUser.studentProfile?.batch) && (
                         <div className="flex items-center gap-1.5">
                           <GraduationCap className="w-3.5 h-3.5 text-gray-400" />
                           <span>
-                            <strong>Batch:</strong> {student.studentProfile.batch}
+                            <strong>Batch:</strong>{" "}
+                            {targetUser.alumniProfile?.batch || targetUser.studentProfile?.batch}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    {student.studentProfile?.careerGoal &&
-                      !student.studentProfile.careerGoal.startsWith("{") && (
+                    {targetUser.studentProfile?.careerGoal &&
+                      !targetUser.studentProfile.careerGoal.startsWith("{") && (
                         <p className="text-xs text-gray-600 dark:text-gray-400 italic pt-1 max-w-xl">
-                          <strong>Career Goal:</strong> "{student.studentProfile.careerGoal}"
+                          <strong>Career Goal:</strong> "{targetUser.studentProfile.careerGoal}"
                         </p>
                       )}
 
-                    {student.studentProfile?.skills && student.studentProfile.skills.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1.5">
-                        {student.studentProfile.skills.map((skill) => (
+                    {targetUser.alumniProfile?.mentorshipDomains && targetUser.alumniProfile.mentorshipDomains.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                        <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 mr-1">
+                          Domains:
+                        </span>
+                        {targetUser.alumniProfile.mentorshipDomains.map((domain) => (
+                          <span
+                            key={domain}
+                            className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-100 dark:border-blue-900/40"
+                          >
+                            {domain}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+
+                    {((targetUser.studentProfile?.skills && targetUser.studentProfile.skills.length > 0) ||
+                      (targetUser.alumniProfile?.skills && targetUser.alumniProfile.skills.length > 0)) && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {(targetUser.studentProfile?.skills || targetUser.alumniProfile?.skills || []).map((skill) => (
                           <span
                             key={skill}
                             className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300"
@@ -437,7 +492,7 @@ export default function MenteeTasksPage() {
 
                 <div className="shrink-0 pt-2 sm:pt-0">
                   <Link
-                    href={`/profile/${student.uid}`}
+                    href={`/profile/${targetUser.uid}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white transition-colors"
                   >
                     <span>View Full Profile</span>
@@ -447,7 +502,7 @@ export default function MenteeTasksPage() {
               </div>
             ) : (
               <div className="text-center py-4 text-gray-500 text-sm">
-                Student details could not be loaded.
+                Details could not be loaded.
               </div>
             )}
           </div>
@@ -461,18 +516,22 @@ export default function MenteeTasksPage() {
                 </h2>
               </div>
               <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
-                Organize learning milestones and assign actionable tasks for your mentee.
+                {isMentor
+                  ? "Organize learning milestones and assign actionable tasks for your mentee."
+                  : "Track milestones and complete assigned tasks from your mentor."}
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setCreateSessionModalOpen(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add New Milestone</span>
-            </button>
+            {isMentor && (
+              <button
+                type="button"
+                onClick={() => setCreateSessionModalOpen(true)}
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add New Milestone</span>
+              </button>
+            )}
           </div>
 
           {sessions.length > 0 && (
@@ -555,23 +614,25 @@ export default function MenteeTasksPage() {
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setActiveSessionId(session.id);
-                          setCreateTaskModalOpen(true);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
-                      >
-                        <Plus className="w-3.5 h-3.5" />
-                        <span>Add Task</span>
-                      </button>
+                      {isMentor && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setActiveSessionId(session.id);
+                            setCreateTaskModalOpen(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add Task</span>
+                        </button>
+                      )}
                     </div>
 
                     <div className="p-5 sm:p-6">
                       {!session.tasks || session.tasks.length === 0 ? (
                         <div className="text-center py-6 text-xs text-gray-400 dark:text-gray-500 italic">
-                          No tasks in this milestone yet. Click "Add Task" to assign one.
+                          No tasks in this milestone yet.
                         </div>
                       ) : (
                         <div className="space-y-3">
@@ -649,24 +710,26 @@ export default function MenteeTasksPage() {
                                   </div>
                                 </div>
 
-                                <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                  <button
-                                    type="button"
-                                    onClick={() => openEditTaskModal(task)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                    title="Edit Task"
-                                  >
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleDeleteTask(task.id)}
-                                    className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                                    title="Delete Task"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
+                                {isMentor && (
+                                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditTaskModal(task)}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                      title="Edit Task"
+                                    >
+                                      <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteTask(task.id)}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                      title="Delete Task"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })}
