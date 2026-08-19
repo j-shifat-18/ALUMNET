@@ -654,19 +654,37 @@ export default function MenteeTasksPage() {
                                 }`}
                               >
                                 <div className="flex items-start gap-3 min-w-0 flex-1">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleToggleTask(task.id, task.isCompleted)
-                                    }
-                                    className="mt-0.5 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
-                                  >
-                                    {task.isCompleted ? (
-                                      <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
-                                    ) : (
-                                      <Circle className="w-5 h-5" />
-                                    )}
-                                  </button>
+                                  {isMentor ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        handleToggleTask(task.id, task.isCompleted)
+                                      }
+                                      className="mt-0.5 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
+                                      title={task.isCompleted ? "Mark incomplete" : "Mark as completed"}
+                                    >
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                                      ) : (
+                                        <Circle className="w-5 h-5" />
+                                      )}
+                                    </button>
+                                  ) : (
+                                    <div
+                                      className="mt-0.5 text-gray-400 shrink-0 cursor-default"
+                                      title={
+                                        task.isCompleted
+                                          ? "Completed (Verified by mentor)"
+                                          : "Pending completion by mentor"
+                                      }
+                                    >
+                                      {task.isCompleted ? (
+                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                                      ) : (
+                                        <Circle className="w-5 h-5 text-gray-300 dark:text-zinc-700" />
+                                      )}
+                                    </div>
+                                  )}
 
                                   <div className="space-y-1 min-w-0 flex-1">
                                     <p
