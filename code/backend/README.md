@@ -1943,6 +1943,191 @@ Returns ranked mentor recommendations for the currently authenticated student ba
 
 ---
 
+### Task Messaging Module (`/api/v1/tasks`)
+
+Scoped to a specific `MentorshipTask`. Only the student and alumni of the associated accepted mentorship can interact.
+
+Three `messageType` values:
+- `COMPLETION` — student notifies mentor they finished the task (also marks task complete atomically)
+- `FEEDBACK` — mentor closes the task with a feedback message (requires task already completed)
+- `GENERAL` — either party can send a general message on the task
+
+---
+
+#### `GET /api/v1/tasks/:taskId/messages` — Get Task Messages
+
+Returns the task details and all messages on it.
+
+**Auth Required:** Yes (student or mentor of this mentorship)  
+**Params:** `taskId` — Task ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Messages retrieved successfully",
+  "data": {
+    "task": {
+      "id": 1,
+      "title": "Read MDN JS Guide",
+      "description": "Focus on closures",
+      "isCompleted": true,
+      "dueDate": "2026-07-15T00:00:00.000Z",
+      "sessionId": 1
+    },
+    "messages": [
+      {
+        "id": 1,
+        "taskId": 1,
+        "senderId": 2,
+        "content": "I have finished reading the MDN guide and built a small project!",
+        "messageType": "COMPLETION",
+        "createdAt": "2026-07-14T10:00:00.000Z",
+        "sender": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+      },
+      {
+        "id": 2,
+        "taskId": 1,
+        "senderId": 5,
+        "content": "Great work! Your understanding of closures is solid. Move on to async/await next.",
+        "messageType": "FEEDBACK",
+        "createdAt": "2026-07-14T14:00:00.000Z",
+        "sender": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/messages` — Send a General Message
+
+Either the student or mentor can send a general message on a task.
+
+**Auth Required:** Yes  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "Quick question about this task — should I use React or vanilla JS?",
+  "messageType": "GENERAL"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| content | string | Yes | Min 1 character |
+| messageType | string | No | `GENERAL` (default), `COMPLETION`, `FEEDBACK` |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "id": 3,
+    "taskId": 1,
+    "content": "Quick question about this task...",
+    "messageType": "GENERAL",
+    "createdAt": "2026-07-13T09:00:00.000Z",
+    "sender": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+  }
+}
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/complete` — Student Marks Task Complete
+
+Student sends a completion message and marks the task as done in a single atomic operation.
+
+**Auth Required:** Yes (student only)  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "I have completed this task. Built the project and pushed to GitHub."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Task marked as complete and message sent",
+  "data": {
+    "task": {
+      "id": 1,
+      "isCompleted": true,
+      "title": "Read MDN JS Guide"
+    },
+    "message": {
+      "id": 1,
+      "content": "I have completed this task...",
+      "messageType": "COMPLETION",
+      "sender": { "id": 2, "uid": "...", "name": "John Doe", "role": "STUDENT" }
+    }
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Task is already marked as completed" }
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the student can mark a task as complete" }
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/feedback` — Mentor Closes Task with Feedback
+
+Mentor sends a feedback message after the student has marked the task complete.
+
+**Auth Required:** Yes (mentor/alumni only)  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "Excellent work! Your implementation was clean and well-structured. Ready for the next task."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Feedback sent successfully",
+  "data": {
+    "id": 2,
+    "taskId": 1,
+    "content": "Excellent work! Your implementation was clean...",
+    "messageType": "FEEDBACK",
+    "createdAt": "2026-07-14T14:00:00.000Z",
+    "sender": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Task must be marked as completed by the student before the mentor can close it" }
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the mentor can close a task and send feedback" }
+```
+
+---
+
 ## Project Structure
 
 ```

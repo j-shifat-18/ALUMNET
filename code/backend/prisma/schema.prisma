@@ -77,6 +77,7 @@ model User {
   // Events
   organizedEvents Event[]         @relation("EventOrganizer")
   eventAttendees  EventAttendee[]
+  taskMessages    TaskMessage[]
 
   @@index([email])
   @@index([role])
@@ -292,9 +293,28 @@ model MentorshipTask {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  session MentorshipSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  session  MentorshipSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  messages TaskMessage[]
 
   @@index([sessionId])
+}
+
+model TaskMessage {
+  id Int @id @default(autoincrement())
+
+  taskId   Int
+  senderId Int
+
+  content     String
+  messageType String @default("GENERAL")
+
+  createdAt DateTime @default(now())
+
+  task   MentorshipTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  sender User           @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+  @@index([senderId])
 }
 
 model PostLike {
