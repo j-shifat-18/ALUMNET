@@ -27,6 +27,7 @@ import {
   ChevronRight,
   ShieldCheck,
   Briefcase,
+  ListTodo,
 } from "lucide-react";
 import user_placeholder from "../../../public/placeholder-user.jpg";
 
@@ -676,13 +677,13 @@ export default function MentorshipPage() {
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2">
+                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-col gap-2">
                         <Link
-                          href={`/profile/${mentee.uid}`}
-                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors"
+                          href={`/mentorship/${requestId}?studentUid=${mentee.uid}`}
+                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 text-xs font-semibold transition-colors cursor-pointer"
                         >
-                          <span>View Profile</span>
-                          <ExternalLink className="w-3.5 h-3.5" />
+                          <ListTodo className="w-3.5 h-3.5" />
+                          <span>Manage Tasks</span>
                         </Link>
                       </div>
                     </div>
