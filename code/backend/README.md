@@ -1943,6 +1943,378 @@ Returns ranked mentor recommendations for the currently authenticated student ba
 
 ---
 
+### Task Messaging Module (`/api/v1/tasks`)
+
+Scoped to a specific `MentorshipTask`. Only the student and alumni of the associated accepted mentorship can interact.
+
+Three `messageType` values:
+- `COMPLETION` — student notifies mentor they finished the task (also marks task complete atomically)
+- `FEEDBACK` — mentor closes the task with a feedback message (requires task already completed)
+- `GENERAL` — either party can send a general message on the task
+
+---
+
+#### `GET /api/v1/tasks/:taskId/messages` — Get Task Messages
+
+Returns the task details and all messages on it.
+
+**Auth Required:** Yes (student or mentor of this mentorship)  
+**Params:** `taskId` — Task ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Messages retrieved successfully",
+  "data": {
+    "task": {
+      "id": 1,
+      "title": "Read MDN JS Guide",
+      "description": "Focus on closures",
+      "isCompleted": true,
+      "dueDate": "2026-07-15T00:00:00.000Z",
+      "sessionId": 1
+    },
+    "messages": [
+      {
+        "id": 1,
+        "taskId": 1,
+        "senderId": 2,
+        "content": "I have finished reading the MDN guide and built a small project!",
+        "messageType": "COMPLETION",
+        "createdAt": "2026-07-14T10:00:00.000Z",
+        "sender": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+      },
+      {
+        "id": 2,
+        "taskId": 1,
+        "senderId": 5,
+        "content": "Great work! Your understanding of closures is solid. Move on to async/await next.",
+        "messageType": "FEEDBACK",
+        "createdAt": "2026-07-14T14:00:00.000Z",
+        "sender": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+      }
+    ]
+  }
+}
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/messages` — Send a General Message
+
+Either the student or mentor can send a general message on a task.
+
+**Auth Required:** Yes  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "Quick question about this task — should I use React or vanilla JS?",
+  "messageType": "GENERAL"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| content | string | Yes | Min 1 character |
+| messageType | string | No | `GENERAL` (default), `COMPLETION`, `FEEDBACK` |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Message sent successfully",
+  "data": {
+    "id": 3,
+    "taskId": 1,
+    "content": "Quick question about this task...",
+    "messageType": "GENERAL",
+    "createdAt": "2026-07-13T09:00:00.000Z",
+    "sender": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" }
+  }
+}
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/complete` — Student Marks Task Complete
+
+Student sends a completion message and marks the task as done in a single atomic operation.
+
+**Auth Required:** Yes (student only)  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "I have completed this task. Built the project and pushed to GitHub."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Task marked as complete and message sent",
+  "data": {
+    "task": {
+      "id": 1,
+      "isCompleted": true,
+      "title": "Read MDN JS Guide"
+    },
+    "message": {
+      "id": 1,
+      "content": "I have completed this task...",
+      "messageType": "COMPLETION",
+      "sender": { "id": 2, "uid": "...", "name": "John Doe", "role": "STUDENT" }
+    }
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Task is already marked as completed" }
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the student can mark a task as complete" }
+```
+
+---
+
+#### `POST /api/v1/tasks/:taskId/feedback` — Mentor Closes Task with Feedback
+
+Mentor sends a feedback message after the student has marked the task complete.
+
+**Auth Required:** Yes (mentor/alumni only)  
+**Params:** `taskId` — Task ID (integer)
+
+**Request Body:**
+```json
+{
+  "content": "Excellent work! Your implementation was clean and well-structured. Ready for the next task."
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Feedback sent successfully",
+  "data": {
+    "id": 2,
+    "taskId": 1,
+    "content": "Excellent work! Your implementation was clean...",
+    "messageType": "FEEDBACK",
+    "createdAt": "2026-07-14T14:00:00.000Z",
+    "sender": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+  }
+}
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "Task must be marked as completed by the student before the mentor can close it" }
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only the mentor can close a task and send feedback" }
+```
+
+---
+
+### Credentials Module (`/api/v1/credentials`)
+
+Structured certifications and achievements — replaces the old flat string arrays on profiles.
+
+GET endpoints are public. All write endpoints require auth and ownership.
+
+---
+
+#### `POST /api/v1/credentials/certifications` — Add Certification
+
+**Auth Required:** Yes
+
+**Request Body:**
+```json
+{
+  "title": "AWS Certified Solutions Architect",
+  "issuedBy": "Amazon Web Services",
+  "issueDate": "2026-03-01T00:00:00.000Z",
+  "expiryDate": "2029-03-01T00:00:00.000Z",
+  "credentialId": "AWS-SAA-12345",
+  "credentialUrl": "https://aws.amazon.com/verify/AWS-SAA-12345",
+  "imageUrl": "https://i.ibb.co/abc123/cert.png",
+  "description": "Validates ability to design distributed systems on AWS."
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| title | string | Yes | Certificate name |
+| issuedBy | string | Yes | Issuing organization |
+| issueDate | ISO datetime | Yes | Date issued |
+| expiryDate | ISO datetime | No | Leave null if no expiry |
+| credentialId | string | No | Certificate/license ID |
+| credentialUrl | string | No | Verification link (valid URL) |
+| imageUrl | string | No | Badge/certificate image (valid URL) |
+| description | string | No | Optional description |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Certification added successfully",
+  "data": {
+    "id": 1,
+    "userId": 2,
+    "title": "AWS Certified Solutions Architect",
+    "issuedBy": "Amazon Web Services",
+    "issueDate": "2026-03-01T00:00:00.000Z",
+    "expiryDate": "2029-03-01T00:00:00.000Z",
+    "credentialId": "AWS-SAA-12345",
+    "credentialUrl": "https://aws.amazon.com/verify/AWS-SAA-12345",
+    "imageUrl": "https://i.ibb.co/abc123/cert.png",
+    "description": "Validates ability to design distributed systems on AWS.",
+    "createdAt": "2026-08-19T10:00:00.000Z",
+    "updatedAt": "2026-08-19T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/credentials/certifications/:uid` — Get User Certifications
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Certifications retrieved successfully",
+  "data": [ { "id": 1, "title": "AWS Certified...", ... } ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/credentials/certifications/:id` — Update Certification
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Certification ID (integer)
+
+All fields optional. Pass `null` to clear `expiryDate`, `credentialId`, `credentialUrl`, `imageUrl`, or `description`.
+
+**Response (200):**
+```json
+{ "success": true, "message": "Certification updated successfully", "data": { ... } }
+```
+
+---
+
+#### `DELETE /api/v1/credentials/certifications/:id` — Delete Certification
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Certification ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Certification deleted successfully" }
+```
+
+---
+
+#### `POST /api/v1/credentials/achievements` — Add Achievement
+
+**Auth Required:** Yes
+
+**Request Body:**
+```json
+{
+  "title": "1st Place — IUT Programming Contest 2025",
+  "issuedBy": "Islamic University of Technology",
+  "date": "2025-11-15T00:00:00.000Z",
+  "description": "Won the inter-department programming competition.",
+  "imageUrl": "https://i.ibb.co/xyz/trophy.png",
+  "achievementUrl": "https://iut.ac.bd/contest/2025/results"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| title | string | Yes | Achievement name |
+| issuedBy | string | No | Awarding organization |
+| date | ISO datetime | No | Date of achievement |
+| description | string | No | Optional description |
+| imageUrl | string | No | Certificate/trophy image (valid URL) |
+| achievementUrl | string | No | Link to proof/announcement (valid URL) |
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Achievement added successfully",
+  "data": {
+    "id": 1,
+    "userId": 2,
+    "title": "1st Place — IUT Programming Contest 2025",
+    "issuedBy": "Islamic University of Technology",
+    "date": "2025-11-15T00:00:00.000Z",
+    "description": "Won the inter-department programming competition.",
+    "imageUrl": "https://i.ibb.co/xyz/trophy.png",
+    "achievementUrl": "https://iut.ac.bd/contest/2025/results",
+    "createdAt": "2026-08-19T10:00:00.000Z",
+    "updatedAt": "2026-08-19T10:00:00.000Z"
+  }
+}
+```
+
+---
+
+#### `GET /api/v1/credentials/achievements/:uid` — Get User Achievements
+
+**Auth Required:** No  
+**Params:** `uid` — Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Achievements retrieved successfully",
+  "data": [ { "id": 1, "title": "1st Place...", ... } ]
+}
+```
+
+---
+
+#### `PATCH /api/v1/credentials/achievements/:id` — Update Achievement
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Achievement ID (integer)
+
+All fields optional.
+
+---
+
+#### `DELETE /api/v1/credentials/achievements/:id` — Delete Achievement
+
+**Auth Required:** Yes (owner only)  
+**Params:** `id` — Achievement ID (integer)
+
+**Response (200):**
+```json
+{ "success": true, "message": "Achievement deleted successfully" }
+```
+
+---
+
 ## Project Structure
 
 ```
