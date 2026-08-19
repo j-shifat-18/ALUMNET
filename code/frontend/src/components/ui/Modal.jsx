@@ -11,6 +11,8 @@ const Modal = ({
   title,
   size = "md",
   animation = "scale",
+  overflow = "auto",
+  className,
 }) => {
   const getModalVariants = (animationType) => {
     switch (animationType) {
@@ -178,10 +180,12 @@ const Modal = ({
 
           <motion.div
             className={cn(
-              "relative rounded-lg shadow-xl w-full mx-4 max-h-[90vh] overflow-auto",
+              "relative rounded-lg shadow-xl w-full mx-4 max-h-[90vh]",
+              overflow === "visible" ? "overflow-visible" : "overflow-auto",
               "bg-white dark:bg-gray-900",
               "border-0 dark:border dark:border-gray-700",
-              sizeClasses[size]
+              sizeClasses[size],
+              className
             )}
             variants={modalVariants}
             initial="hidden"

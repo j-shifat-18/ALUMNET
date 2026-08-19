@@ -13,7 +13,7 @@ import { useAuth } from '@/context/AuthProvider';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, Award, Trophy } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -24,6 +24,7 @@ import RequestMentorshipModal from '@/components/mentorship/RequestMentorshipMod
 import PostCard from '@/components/posts/PostCard';
 import { GithubIcon as Github } from '@/components/ui/Icons';
 import IUTLogo from "../../../../public/IUT.png";
+import SkillsMultiSelect from '@/components/profile/SkillsMultiSelect';
 
 const profileCache = new Map();
 const postsCache = new Map();
@@ -39,6 +40,12 @@ export default function Profile() {
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
   const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
   const [jobDrawerOpen, setJobDrawerOpen] = useState(false);
+  const [skillsModalOpen, setSkillsModalOpen] = useState(false);
+  const [editingSkills, setEditingSkills] = useState([]);
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [newCertTitle, setNewCertTitle] = useState("");
+  const [newCertCategory, setNewCertCategory] = useState("CERTIFICATE");
+  const [showAllCerts, setShowAllCerts] = useState(false);
   const [profilePhotoModalOpen, setProfilePhotoModalOpen] = useState(false);
   const [coverPhotoModalOpen, setCoverPhotoModalOpen] = useState(false);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
@@ -600,6 +607,441 @@ export default function Profile() {
     }
   };
 
+  const handleAddCertificateOrAchievement = async (e) => {
+    e?.preventDefault?.();
+    if (!newCertTitle.trim()) return;
+
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      const titleToAdd = newCertTitle.trim();
+      let updatedCertifications = [...(existing.certifications || [])];
+      let updatedAchievements = [...(existing.achievements || [])];
+
+      if (newCertCategory === "ACHIEVEMENT") {
+        if (!updatedAchievements.includes(titleToAdd)) {
+          updatedAchievements.push(titleToAdd);
+        }
+      } else {
+        if (!updatedCertifications.includes(titleToAdd)) {
+          updatedCertifications.push(titleToAdd);
+        }
+      }
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: updatedCertifications,
+          achievements: updatedAchievements,
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: updatedCertifications,
+          achievements: updatedAchievements,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        role,
+        [profileKey]: subProfile,
+      };
+
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            ...subProfile,
+          },
+        }));
+      }
+
+      setNewCertTitle("");
+      setCertModalOpen(false);
+
+      Swal.fire({
+        title: "Added!",
+        text: `${newCertCategory === "ACHIEVEMENT" ? "Achievement" : "Certificate"} added successfully.`,
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error adding certificate/achievement:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to add item.",
+        icon: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveCertificateOrAchievement = async (itemToRemove, category) => {
+    const confirm = await Swal.fire({
+      title: "Remove item?",
+      text: `Are you sure you want to remove "${itemToRemove}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      let updatedCertifications = [...(existing.certifications || [])];
+      let updatedAchievements = [...(existing.achievements || [])];
+
+      if (category === "ACHIEVEMENT") {
+        updatedAchievements = updatedAchievements.filter((a) => a !== itemToRemove);
+      } else {
+        updatedCertifications = updatedCertifications.filter((c) => c !== itemToRemove);
+      }
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: updatedCertifications,
+          achievements: updatedAchievements,
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: existing.skills || [],
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: updatedCertifications,
+          achievements: updatedAchievements,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        role,
+        [profileKey]: subProfile,
+      };
+
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            ...subProfile,
+          },
+        }));
+      }
+
+      Swal.fire({
+        title: "Removed!",
+        text: "Item removed successfully.",
+        icon: "success",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error removing item:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to remove item.",
+        icon: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const openSkillsModal = () => {
+    const isStudent = dbUser?.role === "STUDENT";
+    const subProf = isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile;
+    const currentSkills = subProf?.skills || [];
+    const mapped = currentSkills.map((s, idx) => ({ id: idx + 1, name: s, value: s }));
+    setEditingSkills(mapped);
+    setSkillsModalOpen(true);
+  };
+
+  const handleSaveSkills = async (updatedSkillsList) => {
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      const mapped = updatedSkillsList.map((s) => (typeof s === "string" ? s : s.name || s));
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: mapped,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: mapped,
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        role,
+        [profileKey]: subProfile,
+      };
+
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            skills: mapped,
+          },
+        }));
+      }
+      setSkillsModalOpen(false);
+
+      Swal.fire({
+        title: "Saved!",
+        text: "Your skills have been updated.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error updating skills:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to update skills.",
+        icon: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleRemoveSingleSkill = async (skillToRemove) => {
+    const confirm = await Swal.fire({
+      title: "Remove skill?",
+      text: `Are you sure you want to remove "${skillToRemove}"?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      setIsSaving(true);
+      const isStudent = dbUser?.role === "STUDENT";
+      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
+
+      const updatedSkills = (existing.skills || []).filter((s) => s !== skillToRemove);
+
+      let subProfile = {};
+      if (isStudent) {
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          careerGoal: existing.careerGoal || null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: updatedSkills,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+        };
+      } else {
+        const gradYear = existing.graduationYear
+          ? parseInt(existing.graduationYear)
+          : existing.batch && !isNaN(parseInt(existing.batch))
+          ? parseInt(existing.batch)
+          : new Date().getFullYear();
+
+        subProfile = {
+          department: existing.department || "General",
+          program: existing.program || "General",
+          batch: existing.batch || "1",
+          graduationYear: gradYear,
+          currentCompany: existing.currentCompany || null,
+          currentPosition: existing.currentPosition || null,
+          industry: existing.industry || null,
+          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
+          interestedDomains: existing.interestedDomains || [],
+          skills: updatedSkills,
+          expertiseAreas: existing.expertiseAreas || [],
+          education: existing.education || null,
+          certifications: existing.certifications || [],
+          achievements: existing.achievements || [],
+          resumeUrl: normalizeUrl(existing.resumeUrl),
+          githubUrl: normalizeUrl(existing.githubUrl),
+          portfolioUrl: normalizeUrl(existing.portfolioUrl),
+          personalWebsite: normalizeUrl(existing.personalWebsite),
+          mentorshipDomains: existing.mentorshipDomains || [],
+        };
+      }
+
+      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
+      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
+      const payload = {
+        role,
+        [profileKey]: subProfile,
+      };
+
+      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (res.data?.data) {
+        updateUserProfileState(res.data.data);
+      } else {
+        updateUserProfileState((prev) => ({
+          ...prev,
+          [profileKey]: {
+            ...(prev?.[profileKey] || {}),
+            skills: updatedSkills,
+          },
+        }));
+      }
+
+      Swal.fire({
+        title: "Removed!",
+        text: "Skill removed successfully.",
+        icon: "success",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error removing skill:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: "Failed to remove skill.",
+        icon: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleEditProfileInfo = async () => {
     try {
       setIsSaving(true);
@@ -1024,15 +1466,35 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
                   <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Skills</h4>
-                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
-                    <PencilLine className='w-5 h-5 hover:cursor-pointer' />
-                  </button> : <></>}
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={openSkillsModal}
+                      className="btn btn-secondary"
+                      title="Manage Skills"
+                    >
+                      <PencilLine className='w-5 h-5 hover:cursor-pointer' />
+                    </button>
+                  )}
                 </div>
                 <Divider className='mt-2 mb-2' />
                 {(() => {
                   const skills = profile?.skills ?? [];
                   if (skills.length === 0) {
-                    return <p className='text-gray-500 dark:text-gray-400 text-sm'>No skills added yet.</p>;
+                    return isOwner ? (
+                      <div className="text-center py-4">
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No skills added yet.</p>
+                        <button
+                          type="button"
+                          onClick={openSkillsModal}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Add Skills
+                        </button>
+                      </div>
+                    ) : (
+                      <p className='text-gray-500 dark:text-gray-400 text-sm'>No skills added yet.</p>
+                    );
                   }
                   const INITIAL_COUNT = 3;
                   const visible = showAllSkills ? skills : skills.slice(0, INITIAL_COUNT);
@@ -1040,8 +1502,21 @@ export default function Profile() {
                     <>
                       {visible.map((skill, idx) => (
                         <React.Fragment key={skill}>
-                          <p className='py-2 text-gray-800 dark:text-gray-200 font-medium'>{skill}</p>
-                          {idx < visible.length - 1 && <Divider className='mt-2 mb-2' />}
+                          <div className="flex items-center justify-between py-2">
+                            <p className='text-gray-800 dark:text-gray-200 font-medium'>{skill}</p>
+                            {isOwner && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSingleSkill(skill)}
+                                disabled={isSaving}
+                                className="p-1 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                                title="Remove skill"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                          {idx < visible.length - 1 && <Divider className='mt-1 mb-1' />}
                         </React.Fragment>
                       ))}
                       {skills.length > INITIAL_COUNT && (
@@ -1071,12 +1546,127 @@ export default function Profile() {
               <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                 <div className='flex justify-between items-center'>
                   <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Certifications & Achievements</h4>
-                  {isOwner ? <button type="button" className="btn btn-secondary" title="Edit">
-                    <Plus className='w-5 h-5 hover:cursor-pointer' />
-                  </button> : <></>}
+                  {isOwner && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewCertTitle("");
+                        setNewCertCategory("CERTIFICATE");
+                        setCertModalOpen(true);
+                      }}
+                      className="btn btn-secondary"
+                      title="Add Certificate or Achievement"
+                    >
+                      <Plus className='w-5 h-5 hover:cursor-pointer' />
+                    </button>
+                  )}
                 </div>
                 <Divider className='mt-2 mb-2' />
-                <p className='flex items-center gap-2 justify-center text-xl font-bold text-gray-700 dark:text-gray-300'><Construction className='text-amber-500'/> Section Under Construction</p>
+
+                {(() => {
+                  const certifications = profile?.certifications ?? [];
+                  const achievements = profile?.achievements ?? [];
+
+                  const allItems = [
+                    ...certifications.map((item) => ({ name: item, category: "CERTIFICATE" })),
+                    ...achievements.map((item) => ({ name: item, category: "ACHIEVEMENT" })),
+                  ];
+
+                  if (allItems.length === 0) {
+                    return isOwner ? (
+                      <div className="text-center py-6 space-y-3">
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          No certifications or achievements added yet.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewCertTitle("");
+                            setNewCertCategory("CERTIFICATE");
+                            setCertModalOpen(true);
+                          }}
+                          className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Add Certificate or Achievement
+                        </button>
+                      </div>
+                    ) : (
+                      <p className='text-gray-500 dark:text-gray-400 text-sm py-2'>
+                        No certifications or achievements added yet.
+                      </p>
+                    );
+                  }
+
+                  const INITIAL_COUNT = 4;
+                  const visibleItems = showAllCerts ? allItems : allItems.slice(0, INITIAL_COUNT);
+
+                  return (
+                    <div className="space-y-3 pt-1">
+                      {visibleItems.map((item, idx) => (
+                        <div
+                          key={`${item.category}-${item.name}-${idx}`}
+                          className="flex items-center justify-between gap-3 p-3 rounded-xl border border-gray-100 dark:border-gray-800/80 bg-gray-50/50 dark:bg-gray-800/40 hover:border-gray-200 dark:hover:border-gray-700 transition-all"
+                        >
+                          <div className="flex items-center gap-3 min-w-0 flex-1">
+                            <div
+                              className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                                item.category === "CERTIFICATE"
+                                  ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
+                                  : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
+                              }`}
+                            >
+                              {item.category === "CERTIFICATE" ? (
+                                <Award className="w-5 h-5" />
+                              ) : (
+                                <Trophy className="w-5 h-5" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="font-semibold text-sm text-gray-900 dark:text-white leading-snug break-words">
+                                {item.name}
+                              </p>
+                              <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                {item.category === "CERTIFICATE" ? "Certification" : "Achievement"}
+                              </span>
+                            </div>
+                          </div>
+
+                          {isOwner && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleRemoveCertificateOrAchievement(item.name, item.category)
+                              }
+                              disabled={isSaving}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer shrink-0"
+                              title={`Delete ${item.category === "CERTIFICATE" ? "Certificate" : "Achievement"}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+
+                      {allItems.length > INITIAL_COUNT && (
+                        <button
+                          type="button"
+                          onClick={() => setShowAllCerts((prev) => !prev)}
+                          className="mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-400 dark:border-gray-800 hover:cursor-pointer w-full transition-colors"
+                        >
+                          {showAllCerts ? (
+                            <div className="pt-3 flex items-center justify-center gap-2">
+                              <p>Show Less</p> <ListChevronsDownUp />
+                            </div>
+                          ) : (
+                            <div className="pt-3 flex items-center justify-center gap-2">
+                              <p>Show All ({allItems.length})</p> <ListChevronsUpDown />
+                            </div>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -1490,6 +2080,122 @@ export default function Profile() {
           setMentorshipRequestStatus("PENDING");
         }}
       />
+
+      <Modal
+        isOpen={skillsModalOpen}
+        onClose={() => setSkillsModalOpen(false)}
+        title="Manage Skills"
+        size="md"
+        overflow="visible"
+      >
+        <div className="space-y-4 min-h-[300px] flex flex-col justify-between">
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300">
+              Select or Search Skills
+            </label>
+            <SkillsMultiSelect
+              selectedOptions={editingSkills}
+              setSelectedOptions={setEditingSkills}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 mt-6 border-t border-gray-100 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={() => setSkillsModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSaveSkills(editingSkills)}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              <span>Save Skills</span>
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={certModalOpen}
+        onClose={() => setCertModalOpen(false)}
+        title="Add Certificate or Achievement"
+        size="md"
+      >
+        <form onSubmit={handleAddCertificateOrAchievement} className="space-y-4">
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-2">
+              Type
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setNewCertCategory("CERTIFICATE")}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                  newCertCategory === "CERTIFICATE"
+                    ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <Award className="w-4 h-4" />
+                <span>Certification</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setNewCertCategory("ACHIEVEMENT")}
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                  newCertCategory === "ACHIEVEMENT"
+                    ? "border-amber-600 bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-500"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <Trophy className="w-4 h-4" />
+                <span>Achievement</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              {newCertCategory === "CERTIFICATE" ? "Certificate Name" : "Achievement Title"}
+            </label>
+            <input
+              type="text"
+              value={newCertTitle}
+              onChange={(e) => setNewCertTitle(e.target.value)}
+              placeholder={
+                newCertCategory === "CERTIFICATE"
+                  ? "e.g. AWS Certified Solutions Architect Associate"
+                  : "e.g. 1st Place - Inter-University Hackathon 2025"
+              }
+              required
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={() => setCertModalOpen(false)}
+              className="px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving || !newCertTitle.trim()}
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors cursor-pointer"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+              <span>Add {newCertCategory === "CERTIFICATE" ? "Certificate" : "Achievement"}</span>
+            </button>
+          </div>
+        </form>
+      </Modal>
     </ProtectedRoute>
   )
 }

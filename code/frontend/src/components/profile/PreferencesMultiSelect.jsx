@@ -3,25 +3,61 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const ALL_OPTIONS = [
-  { id: 1, name: 'Web Development', value: 'web-development' },
-  { id: 2, name: 'Mobile App Development', value: 'mobile-app-development' },
-  { id: 3, name: 'AI & Machine Learning', value: 'ai-machine-learning' },
-  { id: 4, name: 'Cloud Computing & DevOps', value: 'cloud-devops' },
-  { id: 5, name: 'Cybersecurity & Networking', value: 'cybersecurity-networking' },
-  { id: 6, name: 'Game Development & AR/VR', value: 'game-dev-ar-vr' },
-  { id: 7, name: 'Competitive Programming', value: 'competitive-programming' },
-  { id: 8, name: 'Robotics & Embedded Systems', value: 'robotics-embedded' },
-  { id: 9, name: 'VLSI & Chip Design', value: 'vlsi-chip-design' },
-  { id: 10, name: 'Power & Renewable Energy', value: 'power-renewable-energy' },
-  { id: 11, name: 'Structural & Environmental Engineering', value: 'structural-environmental' },
-  { id: 12, name: 'Automotive & Aerospace Engineering', value: 'automotive-aerospace' },
-  { id: 13, name: 'Supply Chain & Manufacturing', value: 'supply-chain-manufacturing' },
-  { id: 14, name: 'Product Management', value: 'product-management' },
-  { id: 15, name: 'Data Analytics & Business Intelligence', value: 'data-analytics-bi' },
-  { id: 16, name: 'Tech Entrepreneurship & Startups', value: 'tech-startups' },
-  { id: 17, name: 'Finance & Investment Banking', value: 'finance-investment' },
-  { id: 18, name: 'Higher Studies Abroad', value: 'higher-studies-abroad' },
-  { id: 19, name: 'Academic Research & Publications', value: 'research-publications' }
+  // Software & Engineering Domains
+  { id: 1, name: 'Full Stack Web Development', value: 'full-stack-web' },
+  { id: 2, name: 'Frontend Web Development', value: 'frontend-web' },
+  { id: 3, name: 'Backend Systems & API Architecture', value: 'backend-systems' },
+  { id: 4, name: 'Mobile App Development', value: 'mobile-app-development' },
+  { id: 5, name: 'Software Architecture & System Design', value: 'system-design' },
+  { id: 6, name: 'Competitive Programming & Problem Solving', value: 'competitive-programming' },
+
+  // AI & Data
+  { id: 7, name: 'Artificial Intelligence & Deep Learning', value: 'ai-deep-learning' },
+  { id: 8, name: 'Machine Learning Engineering', value: 'machine-learning' },
+  { id: 9, name: 'Data Science & Big Data', value: 'data-science' },
+  { id: 10, name: 'Data Analytics & Business Intelligence', value: 'data-analytics' },
+  { id: 11, name: 'Natural Language Processing (NLP)', value: 'nlp' },
+  { id: 12, name: 'Computer Vision', value: 'computer-vision' },
+
+  // Cloud, Infrastructure & Security
+  { id: 13, name: 'Cloud Computing & Solutions Architecture', value: 'cloud-computing' },
+  { id: 14, name: 'DevOps & Site Reliability Engineering (SRE)', value: 'devops-sre' },
+  { id: 15, name: 'Cybersecurity & Ethical Hacking', value: 'cybersecurity' },
+  { id: 16, name: 'Computer Networking & Telecom', value: 'networking-telecom' },
+
+  // Gaming, Media & Design
+  { id: 17, name: 'Game Development', value: 'game-development' },
+  { id: 18, name: 'Augmented Reality (AR)', value: 'augmented-reality' },
+  { id: 19, name: 'Virtual Reality (VR)', value: 'virtual-reality' },
+  { id: 20, name: 'UI/UX Design & User Research', value: 'ui-ux-design' },
+  { id: 21, name: 'Product Management', value: 'product-management' },
+
+  // Hardware, Electronics & Robotics
+  { id: 22, name: 'Robotics & Automation', value: 'robotics-automation' },
+  { id: 23, name: 'Embedded Systems & Internet of Things (IoT)', value: 'embedded-iot' },
+  { id: 24, name: 'VLSI & Semiconductor Design', value: 'vlsi-design' },
+  { id: 25, name: 'Power Systems & Electrical Grid', value: 'power-systems' },
+  { id: 26, name: 'Renewable Energy & Sustainability', value: 'renewable-energy' },
+
+  // Mechanical, Aerospace & Civil
+  { id: 27, name: 'Automotive Engineering', value: 'automotive-engineering' },
+  { id: 28, name: 'Aerospace & Aviation Engineering', value: 'aerospace-engineering' },
+  { id: 29, name: 'Thermal & Fluid Engineering', value: 'thermal-fluid' },
+  { id: 30, name: 'Industrial & Manufacturing Engineering', value: 'manufacturing-engineering' },
+  { id: 31, name: 'Supply Chain Management & Logistics', value: 'supply-chain' },
+  { id: 32, name: 'Structural Engineering & Design', value: 'structural-engineering' },
+  { id: 33, name: 'Environmental Engineering & Water Resources', value: 'environmental-engineering' },
+  { id: 34, name: 'Transportation & Geotechnical Engineering', value: 'transportation-engineering' },
+  { id: 35, name: 'Construction Project Management', value: 'construction-management' },
+
+  // Business, Academia & Career Pathways
+  { id: 36, name: 'Tech Entrepreneurship & Startups', value: 'tech-startups' },
+  { id: 37, name: 'Corporate Business Development & Strategy', value: 'business-strategy' },
+  { id: 38, name: 'Fintech & Investment Banking', value: 'fintech-investment' },
+  { id: 39, name: 'Management Consulting', value: 'management-consulting' },
+  { id: 40, name: 'Higher Studies Abroad (Masters / PhD)', value: 'higher-studies' },
+  { id: 41, name: 'Academic Research & Scientific Publications', value: 'research-publications' },
+  { id: 42, name: 'Industry Mentorship & Career Guidance', value: 'mentorship-guidance' }
 ];
 
 const XIcon = () => (
