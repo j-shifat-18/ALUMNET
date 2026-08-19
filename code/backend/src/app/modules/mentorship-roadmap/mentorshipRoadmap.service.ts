@@ -154,6 +154,28 @@ const updateTask = async (
   return updated;
 };
 
+const deleteSession = async (uid: string, sessionId: number) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true },
+  });
+
+  if (!user) throw new AppError(404, "User not found");
+
+  const session = await prisma.mentorshipSession.findUnique({
+    where: { id: sessionId },
+    include: { mentorshipRequest: true },
+  });
+
+  if (!session) throw new AppError(404, "Session not found");
+
+  if (session.mentorshipRequest.alumniId !== user.id) {
+    throw new AppError(403, "Only the mentor can delete sessions");
+  }
+
+  await prisma.mentorshipSession.delete({ where: { id: sessionId } });
+};
+
 const deleteTask = async (uid: string, taskId: number) => {
   const user = await prisma.user.findUnique({
     where: { uid },
@@ -179,6 +201,7 @@ const deleteTask = async (uid: string, taskId: number) => {
 export const MentorshipRoadmapService = {
   createSession,
   getSessions,
+  deleteSession,
   createTask,
   updateTask,
   deleteTask,

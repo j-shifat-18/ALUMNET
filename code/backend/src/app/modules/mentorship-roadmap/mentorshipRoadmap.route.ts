@@ -23,6 +23,12 @@ router.get(
   MentorshipRoadmapController.getSessions
 );
 
+router.delete(
+  "/sessions/:sessionId",
+  auth,
+  MentorshipRoadmapController.deleteSession
+);
+
 router.post(
   "/sessions/:sessionId/tasks",
   auth,

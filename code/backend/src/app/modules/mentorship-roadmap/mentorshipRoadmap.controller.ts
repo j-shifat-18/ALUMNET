@@ -68,9 +68,22 @@ const deleteTask = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+const deleteSession = asyncHandler(async (req: Request, res: Response) => {
+  const uid = req.user.uid;
+  const sessionId = Number(req.params.sessionId);
+
+  await MentorshipRoadmapService.deleteSession(uid, sessionId);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Session deleted successfully",
+  });
+});
+
 export const MentorshipRoadmapController = {
   createSession,
   getSessions,
+  deleteSession,
   createTask,
   updateTask,
   deleteTask,
