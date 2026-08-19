@@ -32,6 +32,10 @@ import {
   Briefcase,
   X,
   Loader2,
+  MessageSquare,
+  Send,
+  MessageCircle,
+  Check,
 } from "lucide-react";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 
@@ -50,6 +54,12 @@ export default function MenteeTasksPage() {
   const [sessions, setSessions] = useState([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(true);
+
+  const [expandedTaskMessages, setExpandedTaskMessages] = useState({});
+  const [taskMessagesMap, setTaskMessagesMap] = useState({});
+  const [loadingTaskMessages, setLoadingTaskMessages] = useState({});
+  const [taskMessageInput, setTaskMessageInput] = useState({});
+  const [submittingTaskMessage, setSubmittingTaskMessage] = useState({});
 
   const [createSessionModalOpen, setCreateSessionModalOpen] = useState(false);
   const [sessionTitle, setSessionTitle] = useState("");
@@ -327,6 +337,141 @@ export default function MenteeTasksPage() {
         text: err.response?.data?.message || "Failed to delete task.",
         icon: "error",
       });
+    }
+  };
+
+  const handleDeleteSession = async (sessionId) => {
+    const confirm = await Swal.fire({
+      title: "Delete Milestone?",
+      text: "This will remove the milestone and all its associated tasks and discussions.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axiosInstance.delete(`/api/v1/mentorship/sessions/${sessionId}`);
+      fetchSessions();
+
+      Swal.fire({
+        title: "Deleted!",
+        text: "Milestone has been removed.",
+        icon: "success",
+        timer: 1400,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error deleting milestone:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to delete milestone.",
+        icon: "error",
+      });
+    }
+  };
+
+  const fetchTaskMessages = async (taskId) => {
+    setLoadingTaskMessages((prev) => ({ ...prev, [taskId]: true }));
+    try {
+      const res = await axiosInstance.get(`/api/v1/tasks/${taskId}/messages`, {
+        validateStatus: (s) => s < 500,
+      });
+      if (res.status === 200 && res.data?.data) {
+        const list = Array.isArray(res.data.data.messages) ? res.data.data.messages : [];
+        const seen = new Set();
+        const unique = list.filter((m) => {
+          if (m?.id && seen.has(m.id)) return false;
+          if (m?.id) seen.add(m.id);
+          return true;
+        });
+        setTaskMessagesMap((prev) => ({
+          ...prev,
+          [taskId]: unique,
+        }));
+      }
+    } catch (err) {
+      console.error("Error fetching task messages:", err);
+    } finally {
+      setLoadingTaskMessages((prev) => ({ ...prev, [taskId]: false }));
+    }
+  };
+
+  const toggleTaskMessages = (taskId) => {
+    setExpandedTaskMessages((prev) => {
+      const nextState = !prev[taskId];
+      if (nextState && !taskMessagesMap[taskId]) {
+        fetchTaskMessages(taskId);
+      }
+      return { ...prev, [taskId]: nextState };
+    });
+  };
+
+  const handleSendTaskMessage = async (taskId, actionType = "GENERAL") => {
+    const content = (taskMessageInput[taskId] || "").trim();
+    if (!content) {
+      Swal.fire({
+        title: "Empty Message",
+        text: "Please enter a message before sending.",
+        icon: "warning",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+      return;
+    }
+
+    setSubmittingTaskMessage((prev) => ({ ...prev, [taskId]: true }));
+    try {
+      let endpoint = `/api/v1/tasks/${taskId}/messages`;
+      let payload = { content, messageType: actionType };
+
+      if (actionType === "FEEDBACK") {
+        endpoint = `/api/v1/tasks/${taskId}/feedback`;
+        payload = { content };
+      }
+
+      const res = await axiosInstance.post(endpoint, payload);
+      if (res.status === 200 || res.status === 201) {
+        const newMsg = res.data?.data?.message || res.data?.data;
+        if (newMsg && newMsg.id) {
+          setTaskMessagesMap((prev) => {
+            const existing = prev[taskId] || [];
+            if (existing.some((m) => m.id === newMsg.id)) {
+              return prev;
+            }
+            return {
+              ...prev,
+              [taskId]: [...existing, newMsg],
+            };
+          });
+        } else {
+          fetchTaskMessages(taskId);
+        }
+
+        setTaskMessageInput((prev) => ({ ...prev, [taskId]: "" }));
+        Swal.fire({
+          title: "Sent!",
+          text:
+            actionType === "FEEDBACK"
+              ? "Feedback sent to mentee."
+              : "Message posted successfully.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    } catch (err) {
+      console.error("Error sending task message:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to send message.",
+        icon: "error",
+      });
+    } finally {
+      setSubmittingTaskMessage((prev) => ({ ...prev, [taskId]: false }));
     }
   };
 
@@ -615,17 +760,27 @@ export default function MenteeTasksPage() {
                       </div>
 
                       {isMentor && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setActiveSessionId(session.id);
-                            setCreateTaskModalOpen(true);
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
-                        >
-                          <Plus className="w-3.5 h-3.5" />
-                          <span>Add Task</span>
-                        </button>
+                        <div className="flex items-center gap-1.5 shrink-0 self-start sm:self-auto">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setActiveSessionId(session.id);
+                              setCreateTaskModalOpen(true);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white text-xs font-semibold transition-colors cursor-pointer"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>Add Task</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSession(session.id)}
+                            className="p-1.5 rounded-xl text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                            title="Delete Milestone"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -642,113 +797,296 @@ export default function MenteeTasksPage() {
                               !task.isCompleted &&
                               new Date(task.dueDate) < new Date();
 
-                            return (
-                              <div
+                            return (                              <div
                                 key={task.id}
-                                className={`p-4 rounded-xl border transition-all flex items-start justify-between gap-3 ${
+                                className={`rounded-xl border transition-all overflow-hidden ${
                                   task.isCompleted
-                                    ? "bg-gray-50/50 dark:bg-zinc-950/30 border-gray-100 dark:border-zinc-800/80 opacity-75"
+                                    ? "bg-gray-50/50 dark:bg-zinc-950/30 border-gray-100 dark:border-zinc-800/80"
                                     : isOverdue
                                     ? "bg-rose-50/30 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900/40"
                                     : "bg-white dark:bg-zinc-900 border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700"
                                 }`}
                               >
-                                <div className="flex items-start gap-3 min-w-0 flex-1">
-                                  {isMentor ? (
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleToggleTask(task.id, task.isCompleted)
-                                      }
-                                      className="mt-0.5 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
-                                      title={task.isCompleted ? "Mark incomplete" : "Mark as completed"}
-                                    >
-                                      {task.isCompleted ? (
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
-                                      ) : (
-                                        <Circle className="w-5 h-5" />
-                                      )}
-                                    </button>
-                                  ) : (
-                                    <div
-                                      className="mt-0.5 text-gray-400 shrink-0 cursor-default"
-                                      title={
-                                        task.isCompleted
-                                          ? "Completed (Verified by mentor)"
-                                          : "Pending completion by mentor"
-                                      }
-                                    >
-                                      {task.isCompleted ? (
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
-                                      ) : (
-                                        <Circle className="w-5 h-5 text-gray-300 dark:text-zinc-700" />
-                                      )}
-                                    </div>
-                                  )}
-
-                                  <div className="space-y-1 min-w-0 flex-1">
-                                    <p
-                                      className={`text-sm font-semibold leading-snug break-words ${
-                                        task.isCompleted
-                                          ? "line-through text-gray-400 dark:text-gray-500"
-                                          : "text-gray-900 dark:text-white"
-                                      }`}
-                                    >
-                                      {task.title}
-                                    </p>
-
-                                    {task.description && (
-                                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                                        {task.description}
-                                      </p>
-                                    )}
-
-                                    {task.dueDate && (
-                                      <div className="flex items-center gap-1 text-[11px] pt-0.5">
-                                        <Clock className="w-3 h-3 text-gray-400" />
-                                        <span
-                                          className={
-                                            task.isCompleted
-                                              ? "text-gray-400"
-                                              : isOverdue
-                                              ? "text-rose-600 dark:text-rose-400 font-bold"
-                                              : "text-gray-500 dark:text-gray-400"
-                                          }
-                                        >
-                                          Due:{" "}
-                                          {new Date(task.dueDate).toLocaleDateString("en-US", {
-                                            month: "short",
-                                            day: "numeric",
-                                            year: "numeric",
-                                          })}
-                                          {isOverdue && !task.isCompleted && " (Overdue)"}
-                                        </span>
+                                <div className="p-4 flex items-start justify-between gap-3">
+                                  <div className="flex items-start gap-3 min-w-0 flex-1">
+                                    {isMentor ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          handleToggleTask(task.id, task.isCompleted)
+                                        }
+                                        className="mt-0.5 text-gray-400 hover:text-emerald-600 transition-colors cursor-pointer shrink-0"
+                                        title={task.isCompleted ? "Mark incomplete" : "Mark as completed"}
+                                      >
+                                        {task.isCompleted ? (
+                                          <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                                        ) : (
+                                          <Circle className="w-5 h-5" />
+                                        )}
+                                      </button>
+                                    ) : (
+                                      <div
+                                        className="mt-0.5 text-gray-400 shrink-0 cursor-default"
+                                        title={
+                                          task.isCompleted
+                                            ? "Completed (Verified by mentor)"
+                                            : "Pending completion by mentor"
+                                        }
+                                      >
+                                        {task.isCompleted ? (
+                                          <CheckCircle2 className="w-5 h-5 text-emerald-600 fill-emerald-100 dark:fill-emerald-950" />
+                                        ) : (
+                                          <Circle className="w-5 h-5 text-gray-300 dark:text-zinc-700" />
+                                        )}
                                       </div>
                                     )}
+
+                                    <div className="space-y-1 min-w-0 flex-1">
+                                      <p
+                                        className={`text-sm font-semibold leading-snug break-words ${
+                                          task.isCompleted
+                                            ? "line-through text-gray-400 dark:text-gray-500"
+                                            : "text-gray-900 dark:text-white"
+                                        }`}
+                                      >
+                                        {task.title}
+                                      </p>
+
+                                      {task.description && (
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                                          {task.description}
+                                        </p>
+                                      )}
+
+                                      {task.dueDate && (
+                                        <div className="flex items-center gap-1 text-[11px] pt-0.5">
+                                          <Clock className="w-3 h-3 text-gray-400" />
+                                          <span
+                                            className={
+                                              task.isCompleted
+                                                ? "text-gray-400"
+                                                : isOverdue
+                                                ? "text-rose-600 dark:text-rose-400 font-bold"
+                                                : "text-gray-500 dark:text-gray-400"
+                                            }
+                                          >
+                                            Due:{" "}
+                                            {new Date(task.dueDate).toLocaleDateString("en-US", {
+                                              month: "short",
+                                              day: "numeric",
+                                              year: "numeric",
+                                            })}
+                                            {isOverdue && !task.isCompleted && " (Overdue)"}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {/* Task Messages / Submission Thread Toggle */}
+                                      <div className="pt-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => toggleTaskMessages(task.id)}
+                                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                                        >
+                                          <MessageSquare className="w-3.5 h-3.5" />
+                                          <span>
+                                            {expandedTaskMessages[task.id]
+                                              ? "Hide Messages"
+                                              : "Task Messages & Submissions"}
+                                          </span>
+                                          {taskMessagesMap[task.id]?.length > 0 && (
+                                            <span className="px-1.5 py-0.2 rounded-full bg-blue-200/80 dark:bg-blue-800 text-blue-800 dark:text-blue-200 text-[10px] font-bold">
+                                              {taskMessagesMap[task.id].length}
+                                            </span>
+                                          )}
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
+
+                                  {isMentor && (
+                                    <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => openEditTaskModal(task)}
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                                        title="Edit Task"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteTask(task.id)}
+                                        className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                        title="Delete Task"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
 
-                                {isMentor && (
-                                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
-                                    <button
-                                      type="button"
-                                      onClick={() => openEditTaskModal(task)}
-                                      className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-                                      title="Edit Task"
-                                    >
-                                      <Pencil className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={() => handleDeleteTask(task.id)}
-                                      className="p-1.5 rounded-lg text-gray-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                                      title="Delete Task"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
+                                {/* Expanded Message Discussion & Submission Area */}
+                                {expandedTaskMessages[task.id] && (
+                                  <div className="border-t border-gray-100 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-950/60 p-4 sm:p-5 space-y-3.5">
+                                    <div className="flex items-center justify-between">
+                                      <h5 className="text-xs font-bold uppercase tracking-wider text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                        <MessageCircle className="w-3.5 h-3.5 text-blue-500" />
+                                        <span>Task Discussion & Submission Notes</span>
+                                      </h5>
+                                      {loadingTaskMessages[task.id] && (
+                                        <span className="text-[11px] text-gray-400 flex items-center gap-1">
+                                          <Loader2 className="w-3 h-3 animate-spin" /> Loading...
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    {/* Messages list */}
+                                    <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                                      {!taskMessagesMap[task.id] ||
+                                      taskMessagesMap[task.id].length === 0 ? (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400 italic py-1">
+                                          No messages submitted for this task yet.
+                                        </p>
+                                      ) : (
+                                        taskMessagesMap[task.id].map((msg) => {
+                                          const isSenderMentor = msg.sender?.role === "ALUMNI";
+
+                                          return (
+                                            <div
+                                              key={msg.id}
+                                              className="p-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200/80 dark:border-zinc-800 shadow-2xs space-y-1.5"
+                                            >
+                                              <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2">
+                                                  <div className="w-5 h-5 rounded-full overflow-hidden relative bg-gray-200 shrink-0">
+                                                    <Image
+                                                      src={
+                                                        msg.sender?.profileImage ||
+                                                        user_placeholder
+                                                      }
+                                                      alt={msg.sender?.name || "User"}
+                                                      fill
+                                                      className="object-cover"
+                                                    />
+                                                  </div>
+                                                  <span className="text-xs font-semibold text-gray-900 dark:text-white">
+                                                    {msg.sender?.name ||
+                                                      (isSenderMentor ? "Mentor" : "Student")}
+                                                  </span>
+                                                  <span
+                                                    className={`text-[10px] font-bold px-1.5 py-0.2 rounded-md ${
+                                                      isSenderMentor
+                                                        ? "bg-purple-100 text-purple-700 dark:bg-purple-950/70 dark:text-purple-300"
+                                                        : "bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300"
+                                                    }`}
+                                                  >
+                                                    {isSenderMentor ? "Mentor" : "Student"}
+                                                  </span>
+                                                </div>
+
+                                                <div className="flex items-center gap-1.5">
+                                                  {msg.messageType === "COMPLETION" && (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-950/70 dark:text-emerald-300 flex items-center gap-1">
+                                                      <Check className="w-2.5 h-2.5" /> Submission
+                                                    </span>
+                                                  )}
+                                                  {msg.messageType === "FEEDBACK" && (
+                                                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100 text-amber-700 dark:bg-amber-950/70 dark:text-amber-300">
+                                                      Feedback
+                                                    </span>
+                                                  )}
+                                                  <span className="text-[10px] text-gray-400">
+                                                    {msg.createdAt
+                                                      ? new Date(msg.createdAt).toLocaleString(
+                                                          "en-US",
+                                                          {
+                                                            month: "short",
+                                                            day: "numeric",
+                                                            hour: "2-digit",
+                                                            minute: "2-digit",
+                                                          }
+                                                        )
+                                                      : ""}
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              <p className="text-xs text-gray-700 dark:text-gray-300 whitespace-pre-wrap pl-7">
+                                                {msg.content}
+                                              </p>
+                                            </div>
+                                          );
+                                        })
+                                      )}
+                                    </div>
+
+                                    {/* Message submission form */}
+                                    <div className="pt-2 border-t border-gray-200/60 dark:border-zinc-800 space-y-2">
+                                      <textarea
+                                        rows={2}
+                                        value={taskMessageInput[task.id] || ""}
+                                        onChange={(e) =>
+                                          setTaskMessageInput((prev) => ({
+                                            ...prev,
+                                            [task.id]: e.target.value,
+                                          }))
+                                        }
+                                        placeholder={
+                                          isStudent
+                                            ? "Submit your task progress, links, or notes for your mentor..."
+                                            : "Leave feedback or reply to mentee..."
+                                        }
+                                        className="w-full px-3 py-2 text-xs rounded-xl border border-gray-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                      />
+
+                                      <div className="flex items-center justify-end gap-2">
+                                        {isMentor && task.isCompleted && (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleSendTaskMessage(task.id, "FEEDBACK")
+                                            }
+                                            disabled={
+                                              submittingTaskMessage[task.id] ||
+                                              !(taskMessageInput[task.id] || "").trim()
+                                            }
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold disabled:opacity-50 transition-colors cursor-pointer"
+                                            title="Send mentor feedback"
+                                          >
+                                            {submittingTaskMessage[task.id] ? (
+                                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                              <Sparkles className="w-3.5 h-3.5" />
+                                            )}
+                                            <span>Send Feedback</span>
+                                          </button>
+                                        )}
+
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            handleSendTaskMessage(task.id, "GENERAL")
+                                          }
+                                          disabled={
+                                            submittingTaskMessage[task.id] ||
+                                            !(taskMessageInput[task.id] || "").trim()
+                                          }
+                                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 text-xs font-semibold disabled:opacity-50 transition-colors cursor-pointer"
+                                        >
+                                          {submittingTaskMessage[task.id] ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                          ) : (
+                                            <Send className="w-3.5 h-3.5" />
+                                          )}
+                                          <span>Send Message</span>
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
                                 )}
                               </div>
+
                             );
                           })}
                         </div>
