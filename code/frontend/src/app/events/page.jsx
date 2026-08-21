@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   ExternalLink,
   ChevronRight,
+  ChevronLeft,
+  ArrowRight,
   Sparkles,
   BookOpen,
   GraduationCap,
@@ -58,12 +60,11 @@ export default function EventsPage() {
 
   const [activeTab, setActiveTab] = useState("UPCOMING");
   const [selectedType, setSelectedType] = useState("ALL");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
 
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [registeringMap, setRegisteringMap] = useState({});
-  const [userRegisteredMap, setUserRegisteredMap] = useState({});
 
   const [eventModalOpen, setEventModalOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState(null);
@@ -96,6 +97,14 @@ export default function EventsPage() {
     }
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginationMeta, setPaginationMeta] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 1,
+  });
+
   const fetchEvents = useCallback(async () => {
     setLoading(true);
     try {
@@ -104,9 +113,12 @@ export default function EventsPage() {
           ? "/api/v1/events/upcoming"
           : "/api/v1/events";
 
-      const params = {};
+      const params = {
+        page: currentPage,
+        limit: 12,
+      };
       if (selectedType !== "ALL") params.type = selectedType;
-      if (searchQuery.trim()) params.searchTerm = searchQuery.trim();
+      if (activeSearch.trim()) params.searchTerm = activeSearch.trim();
 
       const res = await axiosInstance.get(endpoint, {
         params,
@@ -115,32 +127,8 @@ export default function EventsPage() {
 
       if (res.status === 200 && Array.isArray(res.data?.data)) {
         setEvents(res.data.data);
-
-        if (user) {
-          const statusPromises = res.data.data.map(async (ev) => {
-            try {
-              const stRes = await axiosInstance.get(
-                `/api/v1/events/${ev.id}/register/status`,
-                { validateStatus: (s) => s < 500 }
-              );
-              const isReg = Boolean(
-                stRes.data?.data?.registered || stRes.data?.data?.isRegistered
-              );
-              return {
-                id: ev.id,
-                isRegistered: isReg,
-              };
-            } catch {
-              return { id: ev.id, isRegistered: false };
-            }
-          });
-
-          const statuses = await Promise.all(statusPromises);
-          const map = {};
-          statuses.forEach((s) => {
-            map[s.id] = s.isRegistered;
-          });
-          setUserRegisteredMap(map);
+        if (res.data?.meta) {
+          setPaginationMeta(res.data.meta);
         }
       } else {
         setEvents([]);
@@ -151,7 +139,19 @@ export default function EventsPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, selectedType, searchQuery, user]);
+  }, [activeTab, selectedType, activeSearch, currentPage]);
+
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setActiveSearch(searchInput.trim());
+    setCurrentPage(1);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setActiveSearch("");
+    setCurrentPage(1);
+  };
 
   const filteredEvents = useMemo(() => {
     return events.filter((event) => {
@@ -159,7 +159,7 @@ export default function EventsPage() {
         selectedType === "ALL" ||
         event.type?.toLowerCase() === selectedType.toLowerCase();
 
-      const query = searchQuery.toLowerCase().trim();
+      const query = activeSearch.toLowerCase().trim();
       const matchesSearch =
         !query ||
         event.title?.toLowerCase().includes(query) ||
@@ -169,99 +169,12 @@ export default function EventsPage() {
 
       return matchesType && matchesSearch;
     });
-  }, [events, selectedType, searchQuery]);
+  }, [events, selectedType, activeSearch]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchEvents();
-    }, 200);
-    return () => clearTimeout(timer);
+    fetchEvents();
   }, [fetchEvents]);
 
-  const handleToggleRegister = async (eventId, eventTitle) => {
-    const isRegistered = !!userRegisteredMap[eventId];
-
-    if (isRegistered) {
-      const confirm = await Swal.fire({
-        text: `Are you sure you want to cancel your registration for "${eventTitle}"?`,
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#e11d48",
-        cancelButtonColor: "#4b5563",
-        confirmButtonText: "Yes, Cancel Registration",
-      });
-      if (!confirm.isConfirmed) return;
-    }
-
-    setRegisteringMap((prev) => ({ ...prev, [eventId]: true }));
-    try {
-      if (isRegistered) {
-        await axiosInstance.delete(`/api/v1/events/${eventId}/register`);
-        setUserRegisteredMap((prev) => ({ ...prev, [eventId]: false }));
-        setEvents((prev) =>
-          prev.map((e) =>
-            e.id === eventId
-              ? {
-                  ...e,
-                  _count: {
-                    attendees: Math.max(0, (e._count?.attendees || 1) - 1),
-                  },
-                }
-              : e
-          )
-        );
-        Swal.fire({
-          title: "Registration Cancelled",
-          text: "Your registration has been removed.",
-          icon: "info",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      } else {
-        await axiosInstance.post(`/api/v1/events/${eventId}/register`);
-        setUserRegisteredMap((prev) => ({ ...prev, [eventId]: true }));
-        setEvents((prev) =>
-          prev.map((e) =>
-            e.id === eventId
-              ? {
-                  ...e,
-                  _count: {
-                    attendees: (e._count?.attendees || 0) + 1,
-                  },
-                }
-              : e
-          )
-        );
-        Swal.fire({
-          title: "Registration Confirmed!",
-          text: `You have successfully registered for "${eventTitle}".`,
-          icon: "success",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      }
-    } catch (err) {
-      console.error("Error updating event registration:", err);
-      if (err.response?.status === 409) {
-        setUserRegisteredMap((prev) => ({ ...prev, [eventId]: true }));
-        Swal.fire({
-          title: "Already Registered",
-          text: "You are already registered for this event.",
-          icon: "info",
-          timer: 2000,
-          showConfirmButton: false,
-        });
-      } else {
-        Swal.fire({
-          title: "Registration Error",
-          text: err.response?.data?.message || "Could not update registration.",
-          icon: "error",
-        });
-      }
-    } finally {
-      setRegisteringMap((prev) => ({ ...prev, [eventId]: false }));
-    }
-  };
 
   const openCreateModal = () => {
     setEditingEventId(null);
@@ -450,7 +363,10 @@ export default function EventsPage() {
             <div className="flex items-center gap-2 pt-6 mt-6 border-t border-gray-100 dark:border-zinc-800/80">
               <button
                 type="button"
-                onClick={() => setActiveTab("UPCOMING")}
+                onClick={() => {
+                  setActiveTab("UPCOMING");
+                  setCurrentPage(1);
+                }}
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   activeTab === "UPCOMING"
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
@@ -461,7 +377,10 @@ export default function EventsPage() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTab("ALL")}
+                onClick={() => {
+                  setActiveTab("ALL");
+                  setCurrentPage(1);
+                }}
                 className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   activeTab === "ALL"
                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
@@ -474,16 +393,37 @@ export default function EventsPage() {
           </div>
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-            <div className="relative w-full md:max-w-md">
-              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search events by title or keywords..."
-                className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 shadow-2xs"
-              />
-            </div>
+            <form
+              onSubmit={handleSearchSubmit}
+              className="flex items-center gap-2 w-full md:max-w-md"
+            >
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  placeholder="Search events by title or keywords..."
+                  className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 shadow-2xs"
+                />
+                {searchInput && (
+                  <button
+                    type="button"
+                    onClick={handleClearSearch}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                    title="Clear search"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              <button
+                type="submit"
+                className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs sm:text-sm font-bold shadow-xs transition-colors shrink-0 cursor-pointer"
+              >
+                Search
+              </button>
+            </form>
 
             <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
               <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1 shrink-0">
@@ -493,7 +433,10 @@ export default function EventsPage() {
                 <button
                   key={type.value}
                   type="button"
-                  onClick={() => setSelectedType(type.value)}
+                  onClick={() => {
+                    setSelectedType(type.value);
+                    setCurrentPage(1);
+                  }}
                   className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                     selectedType === type.value
                       ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
@@ -521,7 +464,7 @@ export default function EventsPage() {
                   No events found
                 </h3>
                 <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-                  {searchQuery || selectedType !== "ALL"
+                  {activeSearch || selectedType !== "ALL"
                     ? "Try adjusting your search query or filter category to discover more events."
                     : activeTab === "UPCOMING"
                     ? "There are no upcoming events scheduled at this moment. Check back soon!"
@@ -547,8 +490,6 @@ export default function EventsPage() {
                     })
                   : "";
 
-                const isRegistered = !!userRegisteredMap[event.id];
-                const isRegistering = !!registeringMap[event.id];
                 const attendeesCount = event._count?.attendees || 0;
 
                 const isOrganizer =
@@ -562,7 +503,6 @@ export default function EventsPage() {
                     className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
                   >
                     <div className="space-y-4">
-                      {/* Date Badge, Event Type & Organizer Actions */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-3">
                           <div className="w-13 h-13 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex flex-col items-center justify-center shrink-0 shadow-xs">
@@ -612,11 +552,12 @@ export default function EventsPage() {
                         )}
                       </div>
 
-                      {/* Event Title & Description */}
                       <div className="space-y-1.5">
-                        <h3 className="font-bold text-base text-gray-900 dark:text-white leading-snug group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors line-clamp-2">
-                          {event.title}
-                        </h3>
+                        <Link href={`/events/${event.id}`} className="block group/title">
+                          <h3 className="font-bold text-base text-gray-900 dark:text-white leading-snug group-hover/title:text-blue-600 dark:group-hover/title:text-blue-400 transition-colors line-clamp-2">
+                            {event.title}
+                          </h3>
+                        </Link>
                         {event.description && (
                           <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 leading-relaxed">
                             {event.description}
@@ -686,36 +627,50 @@ export default function EventsPage() {
                         </Link>
                       )}
 
-                      <button
-                        type="button"
-                        disabled={isRegistering}
-                        onClick={() =>
-                          handleToggleRegister(event.id, event.title)
-                        }
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer ${
-                          isRegistered
-                            ? "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 hover:bg-rose-100 dark:hover:bg-rose-900/80"
-                            : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-                        }`}
+                      <Link
+                        href={`/events/${event.id}`}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs font-bold transition-all shadow-2xs shrink-0 cursor-pointer"
                       >
-                        {isRegistering ? (
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : isRegistered ? (
-                          <X className="w-3.5 h-3.5" />
-                        ) : (
-                          <Plus className="w-3.5 h-3.5" />
-                        )}
-                        <span>{isRegistered ? "Cancel Registration" : "Register"}</span>
-                      </button>
+                        <span>View Details</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </Link>
                     </div>
                   </div>
                 );
               })}
             </div>
           )}
+
+          {paginationMeta.totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200/80 dark:border-gray-800">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Showing page <span className="font-bold text-gray-900 dark:text-white">{currentPage}</span> of{" "}
+                <span className="font-bold text-gray-900 dark:text-white">{paginationMeta.totalPages}</span> ({paginationMeta.total} total events)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1 || loading}
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={currentPage >= paginationMeta.totalPages || loading}
+                  onClick={() => setCurrentPage((p) => Math.min(paginationMeta.totalPages, p + 1))}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Create / Edit Event Modal */}
         <Modal
           isOpen={eventModalOpen}
           onClose={() => setEventModalOpen(false)}
@@ -761,7 +716,7 @@ export default function EventsPage() {
 
               <div>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                  Physical Venue / Location (Optional)
+                  Location
                 </label>
                 <input
                   type="text"
@@ -808,7 +763,7 @@ export default function EventsPage() {
 
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-                Virtual Meeting Link / External URL (Optional)
+                Virtual Meeting Link (Optional)
               </label>
               <input
                 type="url"
@@ -861,7 +816,6 @@ export default function EventsPage() {
           </form>
         </Modal>
 
-        {/* Registered Participants Modal */}
         <Modal
           isOpen={attendeesModalOpen}
           onClose={() => setAttendeesModalOpen(false)}
