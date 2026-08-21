@@ -1,6 +1,6 @@
 # 🎓 ALUMNET — Frontend
 
-> **The exclusive community, mentorship, and networking platform uniting Islamic University of Technology (IUT) students, alumni, and faculty worldwide.**
+> **The exclusive community, mentorship, events, and networking platform uniting Islamic University of Technology (IUT) students, alumni, and faculty worldwide.**
 
 ---
 
@@ -14,11 +14,12 @@
 7. [Architecture & Key Modules](#-architecture--key-modules)
    - [Authentication & Institutional Verification](#1--authentication--institutional-verification)
    - [Profile Management, Skills & Credentials](#2--profile-management-skills--credentials)
-   - [Mentorship Discovery & Roadmap Portal](#3--mentorship-discovery--roadmap-portal)
-   - [Task Messaging & Milestone Tracking](#4--task-messaging--milestone-tracking)
-   - [Community Feed & Post Interactions](#5--community-feed--post-interactions)
-   - [Network Directory & Member Discovery](#6--network-directory--member-discovery)
-   - [Administration & Moderation](#7--administration--moderation)
+   - [Events & Campus Activities Portal](#3--events--campus-activities-portal)
+   - [Mentorship Discovery & Roadmap Portal](#4--mentorship-discovery--roadmap-portal)
+   - [Task Messaging & Milestone Tracking](#5--task-messaging--milestone-tracking)
+   - [Community Feed & Post Interactions](#6--community-feed--post-interactions)
+   - [Network Directory & Member Discovery](#7--network-directory--member-discovery)
+   - [Administration & Moderation](#8--administration--moderation)
 8. [API Integration Reference](#-api-integration-reference)
 9. [Deployment](#-deployment)
 
@@ -135,6 +136,10 @@ code/frontend/
     │   ├── (admin)/                # Administration route group
     │   │   └── dashboard/          # /dashboard - Member administration & moderation
     │   │
+    │   ├── events/                 # Events & Campus Activities module
+    │   │   ├── page.jsx            # /events - Discovery, category filters, search & pagination
+    │   │   └── [id]/page.jsx       # /events/:id - Event details, registration, attendees & agenda
+    │   │
     │   ├── network/                # /network - Alumni & Student discovery directory
     │   ├── profile-setup/          # /profile-setup - 6-step onboarding wizard
     │   ├── profile/
@@ -226,8 +231,25 @@ code/frontend/
 
 ---
 
-### 3. 🤝 Mentorship Discovery & Roadmap Portal
-- **Mentorship Discovery (`/mentorship`)**:
+### 3. 📅 Events & Campus Activities Portal (`/events` & `/events/:id`)
+- **Event Discovery & Filtering (`/events`)**:
+  - Filter by event type: *All, Workshop, Seminar, Webinar, Networking, Other*.
+  - Tabs for **Upcoming Events** (`date >= today`) vs **All Events** archive.
+  - Button-triggered backend search with database pagination and previous/next page navigation.
+- **Hosting Events**:
+  - Any authenticated student, alumni, or admin can host a new event via the **"Host New Event"** modal.
+  - Organizers can update or delete their hosted events with confirmation dialogues.
+  - Live attendee count badge with an organizer popup modal displaying the registered participant roster.
+- **Dedicated Event Details Page (`/events/:id`)**:
+  - Full breakdown with date/time, location/venue, virtual meeting links, and rich agenda description.
+  - 1-click **"Register for Event"** / **"Cancel Registration"** connected directly to the backend.
+  - Complete list of registered participants with avatars, roles, and registration dates.
+  - Direct profile navigation to the event organizer.
+
+---
+
+### 4. 🤝 Mentorship Discovery & Roadmap Portal (`/mentorship`)
+- **Mentorship Discovery**:
   - Searchable mentor directory displaying alumni with mentorship availability flags, career domains, company, and designation.
   - **Request Mentorship Modal** (`RequestMentorshipModal.jsx`): Allows students to propose a mentorship relationship with custom learning goals and domain focus.
   - Three dedicated tabs: **Find Mentors**, **My Mentors** (active & pending relations for students), and **My Mentees / Requests** (incoming requests and active mentees for alumni).
@@ -235,7 +257,7 @@ code/frontend/
 
 ---
 
-### 4. 📋 Task Messaging & Milestone Tracking (`/mentorship/:id`)
+### 5. 📋 Task Messaging & Milestone Tracking (`/mentorship/:id`)
 - **Milestones / Sessions**:
   - Mentors can create structured learning milestones (e.g., *"Resume & Portfolio Review"*, *"System Design & Architecture"*, *"Mock Interviews"*).
   - Overall progress bar dynamically calculating the completion percentage of all assigned tasks.
@@ -251,21 +273,21 @@ code/frontend/
 
 ---
 
-### 5. 📢 Community Feed & Post Interactions
+### 6. 📢 Community Feed & Post Interactions
 - Main home feed (`/`) displaying campus-wide posts with author profile info, timestamps, and media attachments.
 - **Post Creation**: Create posts with text and image uploads via ImgBB.
 - **Engagement**: Real-time like counts and comments system with nested comment creation, editing, and deletion.
 
 ---
 
-### 6. 🔍 Network Directory & Member Discovery
+### 7. 🔍 Network Directory & Member Discovery
 - Searchable university member directory (`/network`).
 - Multi-criteria filtering by role (`ALL`, `STUDENT`, `ALUMNI`), department, programme, and batch.
 - Member cards with academic tags and direct navigation to detailed user profiles.
 
 ---
 
-### 7. 🛡️ Administration & Moderation
+### 8. 🛡️ Administration & Moderation
 - Admin dashboard (`/dashboard`) accessible to accounts with `ADMIN` role.
 - Member analytics, role filtering, verification status, and moderation capabilities.
 
@@ -285,6 +307,15 @@ All API requests automatically include the Firebase JWT token via `axiosInstance
 | | `GET` | `/api/v1/credentials/achievements/:uid` | Fetch user achievements list |
 | | `POST` | `/api/v1/credentials/achievements` | Create new achievement record |
 | | `DELETE` | `/api/v1/credentials/achievements/:id` | Delete achievement by ID |
+| **Events** | `GET` | `/api/v1/events/upcoming` | Fetch upcoming events with pagination, type filter & search |
+| | `GET` | `/api/v1/events` | Fetch all events with pagination, type filter & search |
+| | `GET` | `/api/v1/events/:id` | Fetch single event details and registered attendee list |
+| | `POST` | `/api/v1/events` | Host a new campus / alumni event |
+| | `PATCH` | `/api/v1/events/:id` | Update event details (Organizer/Admin only) |
+| | `DELETE` | `/api/v1/events/:id` | Delete event (Organizer/Admin only) |
+| | `POST` | `/api/v1/events/:id/register` | Register for an event |
+| | `DELETE` | `/api/v1/events/:id/register` | Cancel registration for an event |
+| | `GET` | `/api/v1/events/:id/register/status` | Check user registration status for an event |
 | **Mentorship** | `GET` | `/api/v1/mentorship/mentors` | Retrieve available alumni mentors |
 | | `POST` | `/api/v1/mentorship/request` | Submit mentorship proposal request |
 | | `GET` | `/api/v1/mentorship/sent` | Fetch sent mentorship requests |
