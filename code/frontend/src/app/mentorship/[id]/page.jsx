@@ -31,15 +31,18 @@ import {
   Building2,
   Briefcase,
   X,
+  XCircle,
   Loader2,
   MessageSquare,
   Send,
   MessageCircle,
   Check,
+  CornerDownRight,
+  Info,
 } from "lucide-react";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 
-export default function MenteeTasksPage() {
+export default function MentorshipRoadmapPage() {
   const { id } = useParams();
   const searchParams = useSearchParams();
   const studentUidParam = searchParams.get("studentUid");
@@ -51,6 +54,8 @@ export default function MenteeTasksPage() {
   const isStudent = authDbUser?.role === "STUDENT";
 
   const [targetUser, setTargetUser] = useState(null);
+  const [mentorshipStatus, setMentorshipStatus] = useState("ACCEPTED");
+  const [isEndingMentorship, setIsEndingMentorship] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [loadingUser, setLoadingUser] = useState(true);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -374,6 +379,45 @@ export default function MenteeTasksPage() {
     }
   };
 
+  const handleEndMentorship = async () => {
+    if (mentorshipStatus === "COMPLETED") return;
+
+    const confirm = await Swal.fire({
+      title: "End Mentorship?",
+      text: `Are you sure you want to end mentorship with ${targetUser?.name || "this student"}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, End Mentorship",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    setIsEndingMentorship(true);
+    try {
+      await axiosInstance.patch(`/api/v1/mentorship/${id}/end`);
+      setMentorshipStatus("COMPLETED");
+
+      Swal.fire({
+        title: "Mentorship Concluded",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error ending mentorship:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to end mentorship. Please try again later.",
+        icon: "error",
+      });
+    } finally {
+      setIsEndingMentorship(false);
+    }
+  };
+
   const fetchTaskMessages = async (taskId) => {
     setLoadingTaskMessages((prev) => ({ ...prev, [taskId]: true }));
     try {
@@ -635,7 +679,7 @@ export default function MenteeTasksPage() {
                   </div>
                 </div>
 
-                <div className="shrink-0 pt-2 sm:pt-0">
+                <div className="shrink-0 flex items-center flex-wrap gap-2 pt-2 sm:pt-0">
                   <Link
                     href={`/profile/${targetUser.uid}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white transition-colors"
@@ -643,6 +687,29 @@ export default function MenteeTasksPage() {
                     <span>View Full Profile</span>
                     <ExternalLink className="w-3.5 h-3.5" />
                   </Link>
+
+                  {isMentor && (
+                    <button
+                      type="button"
+                      disabled={isEndingMentorship || mentorshipStatus === "COMPLETED"}
+                      onClick={handleEndMentorship}
+                      className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                        mentorshipStatus === "COMPLETED"
+                          ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 cursor-default"
+                          : "bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 shadow-2xs"
+                      }`}
+                      title={mentorshipStatus === "COMPLETED" ? "Mentorship concluded" : "End mentorship with this student"}
+                    >
+                      {isEndingMentorship ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : mentorshipStatus === "COMPLETED" ? (
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                      ) : (
+                        <XCircle className="w-3.5 h-3.5" />
+                      )}
+                      <span>{mentorshipStatus === "COMPLETED" ? "Mentorship Completed" : "End Mentorship"}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             ) : (

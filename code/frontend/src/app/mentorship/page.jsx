@@ -207,6 +207,50 @@ export default function MentorshipPage() {
     }
   };
 
+  const handleEndMentorship = async (requestId, studentName) => {
+    const confirmResult = await Swal.fire({
+      title: "End Mentorship?",
+      text: `Are you sure you want to conclude mentorship with ${studentName || "this student"}? All milestones, tasks, and discussion history will remain saved.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, End Mentorship",
+      cancelButtonText: "Cancel",
+    });
+
+    if (!confirmResult.isConfirmed) return;
+
+    try {
+      setProcessingIds((prev) => new Set(prev).add(requestId));
+      await axiosInstance.patch(`/api/v1/mentorship/${requestId}/end`);
+
+      fetchMentees();
+      fetchReceivedRequests();
+
+      Swal.fire({
+        title: "Mentorship Concluded",
+        text: "The mentorship has been concluded. All roadmap milestones and conversation records remain saved.",
+        icon: "success",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error ending mentorship:", err);
+      Swal.fire({
+        title: "Failed to End Mentorship",
+        text: err.response?.data?.message || "Failed to end mentorship. Please try again later.",
+        icon: "error",
+      });
+    } finally {
+      setProcessingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(requestId);
+        return next;
+      });
+    }
+  };
+
   const filteredReceivedRequests = useMemo(() => {
     return receivedRequests.filter((req) => {
       const studentName = req.student?.name?.toLowerCase() || "";
@@ -677,14 +721,24 @@ export default function MentorshipPage() {
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 flex flex-col gap-2">
+                      <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 flex items-center gap-2">
                         <Link
                           href={`/mentorship/${requestId}?studentUid=${mentee.uid}`}
-                          className="w-full inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 text-xs font-semibold transition-colors cursor-pointer"
+                          className="flex-1 inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-900 dark:text-white border border-gray-200 dark:border-zinc-700 text-xs font-semibold transition-colors cursor-pointer"
                         >
                           <ListTodo className="w-3.5 h-3.5" />
                           <span>Manage Tasks</span>
                         </Link>
+                        <button
+                          type="button"
+                          disabled={processingIds.has(requestId)}
+                          onClick={() => handleEndMentorship(requestId, mentee.name)}
+                          className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                          title="End mentorship with this student"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          <span>End</span>
+                        </button>
                       </div>
                     </div>
                   ))}
