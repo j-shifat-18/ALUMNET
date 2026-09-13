@@ -3,17 +3,18 @@
 import ProtectedRoute from '@/components/layout/ProtectedRoute';
 import LoadingScreen from '@/components/layout/LoadingScreen';
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import cover_placeholder from "../../../../public/cover_placeholder.jpg";
 import user_placeholder from "../../../../public/placeholder-user.jpg";
 import Image from 'next/image';
 import Navbar from '@/components/layout/Navbar';
 import { useAuth } from '@/context/AuthProvider';
+import { useChat } from '@/hooks/useChat';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, Award, Trophy, ExternalLink, Calendar, Building2, UploadCloud } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2 } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -33,8 +34,11 @@ export default function Profile() {
 
   const { user, dbUser: authDbUser, setDbUser: setAuthDbUser } = useAuth();
   const { id } = useParams();
+  const router = useRouter();
+  const { createOrGetConversation } = useChat();
   
   const [dbUser, setDbUser] = useState(() => (id ? profileCache.get(id) || null : null));
+  const [isMessaging, setIsMessaging] = useState(false);
   const [basicInfoDrawerOpen, setBasicInfoDrawerOpen] = useState(false);
   const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
@@ -199,6 +203,26 @@ export default function Profile() {
       }
     } finally {
       setTogglingProfileFollow(false);
+    }
+  };
+
+  const handleMessage = async () => {
+    if (!dbUser?.id || isMessaging) return;
+    try {
+      setIsMessaging(true);
+      const conv = await createOrGetConversation(dbUser.id);
+      if (conv?.id) {
+        router.push(`/chat/${conv.id}`);
+      }
+    } catch (err) {
+      console.error("Error creating or getting conversation:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err?.response?.data?.message || "Failed to start conversation",
+      });
+    } finally {
+      setIsMessaging(false);
     }
   };
   
@@ -1252,6 +1276,20 @@ export default function Profile() {
                                 <UserRoundPlus className="w-4 h-4" /> Follow
                               </>
                             )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleMessage}
+                            disabled={isMessaging || !dbUser?.id}
+                            className="px-4 py-1.5 border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-xl hover:cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50"
+                          >
+                            {isMessaging ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <MessageSquare className="w-4 h-4" />
+                            )}
+                            <span>Message</span>
                           </button>
 
                           {authDbUser?.role === "STUDENT" && dbUser?.role === "ALUMNI" && (

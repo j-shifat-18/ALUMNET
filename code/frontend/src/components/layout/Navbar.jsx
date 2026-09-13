@@ -1,10 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, House, Users, Calendar } from 'lucide-react';
+import { Menu, X, House, Users, MessageSquare , Calendar} from 'lucide-react';
 import logo from "../../../public/logo.png";
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
+import { useSocket } from '@/context/SocketProvider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import UserProfileDropdown from '@/components/profile/UserProfileDropdown';
@@ -14,6 +15,7 @@ const Navbar = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isScrolled, setIsScrolled] = useState(false);
     const { user } = useAuth();
+    const { totalUnread } = useSocket() ?? {};
     const pathname = usePathname();
 
     const handleHomeClick = (e, href) => {
@@ -48,10 +50,17 @@ const Navbar = () => {
         href: "/network",
         label: "My Network",
         icon: <Users />
-    }, {
+    },
+    {
         href: "/events",
         label: "Events",
         icon: <Calendar />
+    },
+     {
+        href: "/chat",
+        label: "Messages",
+        icon: <MessageSquare />,
+        badge: totalUnread > 0 ? (totalUnread > 99 ? "99+" : String(totalUnread)) : null,
     }];
 
     return (
@@ -68,6 +77,11 @@ const Navbar = () => {
                         {navLinks.map(link => (
                             <Link key={link.href} href={link.href} onClick={(e) => handleHomeClick(e, link.href)} className="relative group flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors">
                                 {link.icon}
+                                {link.badge && (
+                                    <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[9px] font-bold rounded-full flex items-center justify-center leading-none">
+                                        {link.badge}
+                                    </span>
+                                )}
                                 <span className="pointer-events-none absolute top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-100 px-2.5 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md">
                                     {link.label}
                                 </span>
@@ -104,6 +118,11 @@ const Navbar = () => {
                                 <Link key={link.href} href={link.href} onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm sm:text-base font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
                                     {link.icon}
                                     <span>{link.label}</span>
+                                    {link.badge && (
+                                        <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[10px] font-bold rounded-full flex items-center justify-center">
+                                            {link.badge}
+                                        </span>
+                                    )}
                                 </Link>
                             ))}
                             {!user && (
