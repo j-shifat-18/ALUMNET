@@ -3,48 +3,161 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 const ALL_OPTIONS = [
+  // Programming Languages
   { id: 1, name: 'Python', value: 'python' },
   { id: 2, name: 'JavaScript', value: 'javascript' },
   { id: 3, name: 'TypeScript', value: 'typescript' },
   { id: 4, name: 'C++', value: 'c-plus-plus' },
   { id: 5, name: 'C', value: 'c' },
-  { id: 6, name: 'Java', value: 'java' },
-  { id: 7, name: 'Go (Golang)', value: 'go' },
-  { id: 8, name: 'SQL', value: 'sql' },
-  { id: 9, name: 'HTML5 / CSS3', value: 'html5-css3' },
-  { id: 10, name: 'React.js', value: 'react' },
-  { id: 11, name: 'Next.js', value: 'nextjs' },
-  { id: 12, name: 'Node.js', value: 'nodejs' },
-  { id: 13, name: 'Express', value: 'express' },
-  { id: 14, name: 'Django', value: 'django' },
-  { id: 15, name: 'FastAPI', value: 'fastapi' },
-  { id: 16, name: 'Spring Boot', value: 'spring-boot' },
-  { id: 17, name: 'Flutter', value: 'flutter' },
-  { id: 18, name: 'React Native', value: 'react-native' },
-  { id: 19, name: 'REST APIs / GraphQL', value: 'apis-graphql' },
-  { id: 20, name: 'TensorFlow / PyTorch', value: 'tensorflow-pytorch' },
-  { id: 21, name: 'Pandas / NumPy', value: 'pandas-numpy' },
-  { id: 22, name: 'Data Analytics (Tableau/PowerBI)', value: 'data-analytics' },
-  { id: 23, name: 'Excel (Advanced)', value: 'excel' },
-  { id: 24, name: 'MATLAB / Simulink', value: 'matlab-simulink' },
-  { id: 25, name: 'Verilog / VHDL (VLSI)', value: 'verilog-vhdl' },
-  { id: 26, name: 'Arduino / Raspberry Pi', value: 'arduino-raspberrypi' },
-  { id: 27, name: 'PLC Programming', value: 'plc-programming' },
-  { id: 28, name: 'LabVIEW', value: 'labview' },
-  { id: 29, name: 'AutoCAD', value: 'autocad' },
-  { id: 30, name: 'SolidWorks', value: 'solidworks' },
-  { id: 31, name: 'Ansys (FEA / CFD)', value: 'ansys' },
-  { id: 32, name: 'Revit / ETABS', value: 'revit-etabs' },
-  { id: 33, name: '3D Printing / CAM', value: '3d-printing-cam' },
-  { id: 34, name: 'Git / GitHub', value: 'git-github' },
-  { id: 35, name: 'Docker / Kubernetes', value: 'docker-kubernetes' },
-  { id: 36, name: 'AWS / GCP', value: 'aws-gcp' },
-  { id: 37, name: 'Figma (UI/UX Design)', value: 'figma' },
-  { id: 38, name: 'System Architecture', value: 'system-architecture' },
-  { id: 39, name: 'Project Management (Agile/Scrum)', value: 'project-management' },
-  { id: 40, name: 'Public Speaking / Presentation', value: 'public-speaking' },
-  { id: 41, name: 'Technical Writing', value: 'technical-writing' },
-  { id: 42, name: 'Business Development & Strategy', value: 'business-development' }
+  { id: 6, name: 'C#', value: 'c-sharp' },
+  { id: 7, name: 'Java', value: 'java' },
+  { id: 8, name: 'Go (Golang)', value: 'go' },
+  { id: 9, name: 'Rust', value: 'rust' },
+  { id: 10, name: 'PHP', value: 'php' },
+  { id: 11, name: 'Kotlin', value: 'kotlin' },
+  { id: 12, name: 'Swift', value: 'swift' },
+  { id: 13, name: 'SQL', value: 'sql' },
+  { id: 14, name: 'R', value: 'r' },
+  { id: 15, name: 'MATLAB', value: 'matlab' },
+  { id: 16, name: 'Bash / Shell Scripting', value: 'bash' },
+
+  // Web & Frontend
+  { id: 17, name: 'HTML5', value: 'html5' },
+  { id: 18, name: 'CSS3', value: 'css3' },
+  { id: 19, name: 'Tailwind CSS', value: 'tailwind-css' },
+  { id: 20, name: 'React.js', value: 'react' },
+  { id: 21, name: 'Next.js', value: 'nextjs' },
+  { id: 22, name: 'Vue.js', value: 'vuejs' },
+  { id: 23, name: 'Angular', value: 'angular' },
+  { id: 24, name: 'Sass / SCSS', value: 'sass' },
+  { id: 25, name: 'Redux / Zustand', value: 'redux' },
+
+  // Backend & APIs
+  { id: 26, name: 'Node.js', value: 'nodejs' },
+  { id: 27, name: 'Express.js', value: 'express' },
+  { id: 28, name: 'NestJS', value: 'nestjs' },
+  { id: 29, name: 'Django', value: 'django' },
+  { id: 30, name: 'FastAPI', value: 'fastapi' },
+  { id: 31, name: 'Flask', value: 'flask' },
+  { id: 32, name: 'Spring Boot', value: 'spring-boot' },
+  { id: 33, name: 'ASP.NET Core', value: 'aspnet-core' },
+  { id: 34, name: 'REST APIs', value: 'rest-apis' },
+  { id: 35, name: 'GraphQL', value: 'graphql' },
+  { id: 36, name: 'gRPC', value: 'grpc' },
+  { id: 37, name: 'Microservices', value: 'microservices' },
+
+  // Databases & Storage
+  { id: 38, name: 'PostgreSQL', value: 'postgresql' },
+  { id: 39, name: 'MySQL', value: 'mysql' },
+  { id: 40, name: 'MongoDB', value: 'mongodb' },
+  { id: 41, name: 'Redis', value: 'redis' },
+  { id: 42, name: 'Firebase', value: 'firebase' },
+  { id: 43, name: 'Supabase', value: 'supabase' },
+  { id: 44, name: 'Prisma ORM', value: 'prisma' },
+
+  // Mobile App Development
+  { id: 45, name: 'Flutter', value: 'flutter' },
+  { id: 46, name: 'React Native', value: 'react-native' },
+  { id: 47, name: 'Android Development', value: 'android-dev' },
+  { id: 48, name: 'iOS Development', value: 'ios-dev' },
+
+  // Cloud, DevOps & Infrastructure
+  { id: 49, name: 'Git', value: 'git' },
+  { id: 50, name: 'GitHub', value: 'github' },
+  { id: 51, name: 'GitLab', value: 'gitlab' },
+  { id: 52, name: 'Docker', value: 'docker' },
+  { id: 53, name: 'Kubernetes', value: 'kubernetes' },
+  { id: 54, name: 'Amazon Web Services (AWS)', value: 'aws' },
+  { id: 55, name: 'Google Cloud Platform (GCP)', value: 'gcp' },
+  { id: 56, name: 'Microsoft Azure', value: 'azure' },
+  { id: 57, name: 'CI/CD Pipelines', value: 'ci-cd' },
+  { id: 58, name: 'Linux System Administration', value: 'linux' },
+  { id: 59, name: 'Terraform', value: 'terraform' },
+
+  // AI, Machine Learning & Data Science
+  { id: 60, name: 'Machine Learning', value: 'machine-learning' },
+  { id: 61, name: 'Deep Learning', value: 'deep-learning' },
+  { id: 62, name: 'TensorFlow', value: 'tensorflow' },
+  { id: 63, name: 'PyTorch', value: 'pytorch' },
+  { id: 64, name: 'Scikit-Learn', value: 'scikit-learn' },
+  { id: 65, name: 'Pandas', value: 'pandas' },
+  { id: 66, name: 'NumPy', value: 'numpy' },
+  { id: 67, name: 'Natural Language Processing (NLP)', value: 'nlp' },
+  { id: 68, name: 'Computer Vision', value: 'computer-vision' },
+  { id: 69, name: 'Generative AI & LLMs', value: 'gen-ai' },
+  { id: 70, name: 'Data Analytics', value: 'data-analytics' },
+  { id: 71, name: 'Tableau', value: 'tableau' },
+  { id: 72, name: 'Power BI', value: 'power-bi' },
+  { id: 73, name: 'Advanced Excel', value: 'excel' },
+
+  // EEE, Embedded Systems & Hardware
+  { id: 74, name: 'Arduino', value: 'arduino' },
+  { id: 75, name: 'Raspberry Pi', value: 'raspberry-pi' },
+  { id: 76, name: 'Embedded C / C++', value: 'embedded-c' },
+  { id: 77, name: 'Verilog', value: 'verilog' },
+  { id: 78, name: 'VHDL', value: 'vhdl' },
+  { id: 79, name: 'VLSI Design', value: 'vlsi' },
+  { id: 80, name: 'FPGA Programming', value: 'fpga' },
+  { id: 81, name: 'PCB Design & Layout', value: 'pcb-design' },
+  { id: 82, name: 'Circuit Simulation (Proteus / Multisim)', value: 'circuit-simulation' },
+  { id: 83, name: 'Simulink', value: 'simulink' },
+  { id: 84, name: 'PLC Programming', value: 'plc' },
+  { id: 85, name: 'SCADA Systems', value: 'scada' },
+  { id: 86, name: 'Power Systems Analysis', value: 'power-systems' },
+  { id: 87, name: 'Renewable Energy Systems', value: 'renewable-energy' },
+  { id: 88, name: 'LabVIEW', value: 'labview' },
+
+  // Mechanical & Manufacturing Engineering
+  { id: 89, name: 'AutoCAD', value: 'autocad' },
+  { id: 90, name: 'SolidWorks', value: 'solidworks' },
+  { id: 91, name: 'CATIA', value: 'catia' },
+  { id: 92, name: 'Ansys FEA', value: 'ansys-fea' },
+  { id: 93, name: 'Computational Fluid Dynamics (CFD)', value: 'cfd' },
+  { id: 94, name: 'Finite Element Analysis (FEA)', value: 'fea' },
+  { id: 95, name: '3D Printing', value: '3d-printing' },
+  { id: 96, name: 'Computer-Aided Manufacturing (CAM)', value: 'cam' },
+  { id: 97, name: 'Computer-Aided Design (CAD)', value: 'cad' },
+  { id: 98, name: 'Robotics & Automation', value: 'robotics' },
+  { id: 99, name: 'HVAC Design', value: 'hvac' },
+  { id: 100, name: 'Thermodynamics & Heat Transfer', value: 'thermodynamics' },
+
+  // Civil & Environmental Engineering
+  { id: 101, name: 'Autodesk Revit', value: 'revit' },
+  { id: 102, name: 'ETABS', value: 'etabs' },
+  { id: 103, name: 'STAAD Pro', value: 'staad-pro' },
+  { id: 104, name: 'AutoCAD Civil 3D', value: 'civil-3d' },
+  { id: 105, name: 'Structural Analysis & Design', value: 'structural-analysis' },
+  { id: 106, name: 'Geotechnical Engineering', value: 'geotechnical' },
+  { id: 107, name: 'GIS & Remote Sensing', value: 'gis' },
+  { id: 108, name: 'Environmental Impact Assessment', value: 'eia' },
+
+  // Design, Product & Architecture
+  { id: 109, name: 'Figma', value: 'figma' },
+  { id: 110, name: 'UI/UX Design', value: 'ui-ux' },
+  { id: 111, name: 'Wireframing & Prototyping', value: 'prototyping' },
+  { id: 112, name: 'Adobe XD', value: 'adobe-xd' },
+  { id: 113, name: 'System Architecture', value: 'system-architecture' },
+  { id: 114, name: 'Product Management', value: 'product-management' },
+  { id: 115, name: 'Agile Methodology', value: 'agile' },
+  { id: 116, name: 'Scrum', value: 'scrum' },
+  { id: 117, name: 'JIRA', value: 'jira' },
+
+  // Cybersecurity & Networking
+  { id: 118, name: 'Network Security', value: 'network-security' },
+  { id: 119, name: 'Penetration Testing & Ethical Hacking', value: 'penetration-testing' },
+  { id: 120, name: 'Cryptography', value: 'cryptography' },
+  { id: 121, name: 'Computer Networks (TCP/IP)', value: 'networking' },
+
+  // Business, Management & Professional Skills
+  { id: 122, name: 'Business Strategy', value: 'business-strategy' },
+  { id: 123, name: 'Business Development', value: 'business-development' },
+  { id: 124, name: 'Financial Modeling & Analysis', value: 'financial-modeling' },
+  { id: 125, name: 'Supply Chain Optimization', value: 'supply-chain' },
+  { id: 126, name: 'Project Management', value: 'project-management' },
+  { id: 127, name: 'Public Speaking', value: 'public-speaking' },
+  { id: 128, name: 'Technical Presentation', value: 'presentation-skills' },
+  { id: 129, name: 'Technical Writing', value: 'technical-writing' },
+  { id: 130, name: 'Tech Entrepreneurship', value: 'tech-entrepreneurship' }
 ];
 
 const XIcon = () => (
@@ -164,7 +277,7 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
         </div>
 
         {isOpen && (
-          <div className="absolute z-10 w-full mt-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-black rounded-md shadow-lg max-h-60 overflow-y-auto animate-popover-in">
+          <div className="absolute z-50 w-full mt-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-900 rounded-md shadow-2xl max-h-60 overflow-y-auto animate-popover-in">
             <ul className="p-1">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option, index) => (

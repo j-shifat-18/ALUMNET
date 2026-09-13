@@ -276,7 +276,25 @@ const ProfileSetupForm = () => {
         };
       }
 
-      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      if (!user?.uid) {
+        throw new Error("User session not found. Please log in or refresh the page.");
+      }
+
+      try {
+        await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+      } catch (patchErr) {
+        if (patchErr.response?.status === 404) {
+          await axiosInstance.post("/api/v1/users", {
+            uid: user.uid,
+            name: resolvedName,
+            email: user.email,
+            profileImage: user.photoURL || normalizeUrl(profileImageUrl),
+          });
+          await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
+        } else {
+          throw patchErr;
+        }
+      }
 
       setNotification({
         type: "success",
@@ -287,7 +305,7 @@ const ProfileSetupForm = () => {
 
       setTimeout(() => {
         router.push("/");
-      }, 2000);
+      }, 1500);
     } catch (err) {
       console.error("Profile setup error:", err.response?.data || err);
       const detailedMsg =
@@ -621,6 +639,17 @@ const ProfileSetupForm = () => {
                   setSelectedOptions={setSelectedSkills}
                 />
               </div>
+              <div className="space-y-2">
+                <label>Career Goal</label>
+                <input
+                  name="careerGoal"
+                  id="careerGoal"
+                  value={careerGoal}
+                  onChange={(e) => setCareerGoal(e.target.value)}
+                  placeholder="e.g. Aspiring Full Stack Engineer, ML Researcher, etc."
+                  className="signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200"
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleNext}
@@ -776,6 +805,7 @@ const ProfileSetupForm = () => {
                 <p>Gender: {selectedGender}</p>
                 <p>Location: {location ? `${location}` : "N\\A"}</p>
                 <p>Contact No: {contactNo ? `${contactNo}` : "N\\A"}</p>
+                <p>Career Goal: {careerGoal ? `${careerGoal}` : "N\\A"}</p>
                 <p>Job Place: {jobPlace ? `${jobPlace}` : "N\\A"}</p>
                 <p>Job Position: {jobPosition ? `${jobPosition}` : "N\\A"}</p>
                 <p>

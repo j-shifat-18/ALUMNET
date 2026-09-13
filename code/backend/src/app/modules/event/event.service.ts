@@ -30,9 +30,11 @@ interface UpdateEventInput {
   link?: string | null;
 }
 
-interface PaginationOptions {
+interface EventQueryOptions {
   page: number;
   limit: number;
+  type?: string;
+  searchTerm?: string;
 }
 
 const createEvent = async (uid: string, data: CreateEventInput) => {
@@ -63,13 +65,29 @@ const createEvent = async (uid: string, data: CreateEventInput) => {
   return event;
 };
 
-const getUpcomingEvents = async (options: PaginationOptions) => {
-  const { page, limit } = options;
+const getUpcomingEvents = async (options: EventQueryOptions) => {
+  const { page, limit, type, searchTerm } = options;
   const skip = (page - 1) * limit;
+
+  const where: any = {
+    date: { gte: new Date() },
+  };
+
+  if (type && type !== "ALL") {
+    where.type = type.toLowerCase();
+  }
+
+  if (searchTerm) {
+    where.OR = [
+      { title: { contains: searchTerm, mode: "insensitive" } },
+      { description: { contains: searchTerm, mode: "insensitive" } },
+      { location: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
 
   const [data, total] = await Promise.all([
     prisma.event.findMany({
-      where: { date: { gte: new Date() } },
+      where,
       skip,
       take: limit,
       include: {
@@ -78,7 +96,7 @@ const getUpcomingEvents = async (options: PaginationOptions) => {
       },
       orderBy: { date: "asc" },
     }),
-    prisma.event.count({ where: { date: { gte: new Date() } } }),
+    prisma.event.count({ where }),
   ]);
 
   return {
@@ -87,12 +105,27 @@ const getUpcomingEvents = async (options: PaginationOptions) => {
   };
 };
 
-const getAllEvents = async (options: PaginationOptions) => {
-  const { page, limit } = options;
+const getAllEvents = async (options: EventQueryOptions) => {
+  const { page, limit, type, searchTerm } = options;
   const skip = (page - 1) * limit;
+
+  const where: any = {};
+
+  if (type && type !== "ALL") {
+    where.type = type.toLowerCase();
+  }
+
+  if (searchTerm) {
+    where.OR = [
+      { title: { contains: searchTerm, mode: "insensitive" } },
+      { description: { contains: searchTerm, mode: "insensitive" } },
+      { location: { contains: searchTerm, mode: "insensitive" } },
+    ];
+  }
 
   const [data, total] = await Promise.all([
     prisma.event.findMany({
+      where,
       skip,
       take: limit,
       include: {
@@ -101,7 +134,7 @@ const getAllEvents = async (options: PaginationOptions) => {
       },
       orderBy: { date: "desc" },
     }),
-    prisma.event.count(),
+    prisma.event.count({ where }),
   ]);
 
   return {
