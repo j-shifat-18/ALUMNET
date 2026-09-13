@@ -58,14 +58,21 @@ export function SocketProvider({ children }) {
     }
 
     // ── Presence ───────────────────────────────────────────────────────────
+    // Seed the full online user list when we first connect.
+    // The server sends this immediately after authentication so we never
+    // start with a stale/empty set.
+    function onOnlineUsersList({ userIds }) {
+      setOnlineUsers(new Set(userIds.map(Number)));
+    }
+
     function onUserOnline({ userId }) {
-      setOnlineUsers((prev) => new Set([...prev, userId]));
+      setOnlineUsers((prev) => new Set([...prev, Number(userId)]));
     }
 
     function onUserOffline({ userId }) {
       setOnlineUsers((prev) => {
         const next = new Set(prev);
-        next.delete(userId);
+        next.delete(Number(userId));
         return next;
       });
     }
@@ -80,6 +87,7 @@ export function SocketProvider({ children }) {
     socket.on("connect", onConnect);
     socket.on("disconnect", onDisconnect);
     socket.on("connect_error", onConnectError);
+    socket.on("online_users_list", onOnlineUsersList);
     socket.on("user_online", onUserOnline);
     socket.on("user_offline", onUserOffline);
     socket.on("message_notification", onMessageNotification);
@@ -103,6 +111,7 @@ export function SocketProvider({ children }) {
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("connect_error", onConnectError);
+      socket.off("online_users_list", onOnlineUsersList);
       socket.off("user_online", onUserOnline);
       socket.off("user_offline", onUserOffline);
       socket.off("message_notification", onMessageNotification);

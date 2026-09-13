@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, MessageCircle, Sparkles } from "lucide-react";
 import MessageBubble from "./MessageBubble";
 import TypingIndicator from "./TypingIndicator";
 
@@ -17,6 +17,7 @@ import TypingIndicator from "./TypingIndicator";
  */
 
 function formatDateSeparator(dateStr) {
+  if (!dateStr) return "";
   const d = new Date(dateStr);
   const today = new Date();
   const yesterday = new Date();
@@ -48,7 +49,7 @@ export default function MessageList({
     if (!container) return;
 
     const isNearBottom =
-      container.scrollHeight - container.scrollTop - container.clientHeight < 120;
+      container.scrollHeight - container.scrollTop - container.clientHeight < 140;
 
     if (isNearBottom) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -88,8 +89,18 @@ export default function MessageList({
   // ── Loading skeleton ───────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="flex-1 flex flex-col justify-end p-6 gap-4 animate-pulse">
+        <div className="flex items-end gap-2.5 max-w-[60%]">
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0" />
+          <div className="h-10 bg-gray-200 dark:bg-gray-800 rounded-2xl rounded-bl-xs w-48" />
+        </div>
+        <div className="flex items-end gap-2.5 max-w-[60%] self-end flex-row-reverse">
+          <div className="h-12 bg-gray-200 dark:bg-gray-800 rounded-2xl rounded-br-xs w-56" />
+        </div>
+        <div className="flex items-end gap-2.5 max-w-[60%]">
+          <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-800 shrink-0" />
+          <div className="h-14 bg-gray-200 dark:bg-gray-800 rounded-2xl rounded-bl-xs w-64" />
+        </div>
       </div>
     );
   }
@@ -97,9 +108,18 @@ export default function MessageList({
   // ── Empty state ────────────────────────────────────────────────────────────
   if (messages.length === 0) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center gap-2 text-gray-400 dark:text-gray-600 select-none">
-        <span className="text-3xl">💬</span>
-        <p className="text-sm">No messages yet. Say hello!</p>
+      <div className="flex-1 flex flex-col items-center justify-center p-8 gap-3 text-center select-none">
+        <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-700/60 flex items-center justify-center text-gray-500 dark:text-gray-400 shadow-xs">
+          <MessageCircle className="w-7 h-7 stroke-[1.5]" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-sm text-gray-900 dark:text-white">
+            No messages yet
+          </h4>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 max-w-xs">
+            Send a friendly greeting or start collaborating with your fellow alumni or student!
+          </p>
+        </div>
       </div>
     );
   }
@@ -120,13 +140,16 @@ export default function MessageList({
       rendered.push(
         <div
           key={`sep-${msg.id}`}
-          className="flex items-center gap-3 my-3 px-4"
+          className="flex items-center justify-center my-4 px-4 select-none"
         >
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
-          <span className="text-xs text-gray-400 dark:text-gray-600 whitespace-nowrap">
-            {formatDateSeparator(msg.createdAt)}
-          </span>
-          <div className="flex-1 h-px bg-gray-200 dark:bg-gray-800" />
+          <div className="relative flex items-center justify-center w-full">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200/80 dark:border-gray-800" />
+            </div>
+            <span className="relative z-10 px-3 py-0.5 text-[11px] font-medium bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 rounded-full border border-gray-200/60 dark:border-gray-700/60 shadow-2xs">
+              {formatDateSeparator(msg.createdAt)}
+            </span>
+          </div>
         </div>,
       );
     }
@@ -145,12 +168,17 @@ export default function MessageList({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto py-4 flex flex-col gap-1 scroll-smooth"
+      className="flex-1 min-h-0 overflow-y-auto py-4 flex flex-col gap-0.5 overscroll-contain bg-gray-50/40 dark:bg-black/20"
     >
       {/* Top sentinel for infinite scroll */}
       {hasMore && (
-        <div ref={topSentinelRef} className="flex justify-center py-2">
-          {loadingMore && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+        <div ref={topSentinelRef} className="flex justify-center py-2 shrink-0">
+          {loadingMore && (
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700 text-xs text-gray-500 shadow-xs">
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <span>Loading older messages…</span>
+            </div>
+          )}
         </div>
       )}
 
@@ -164,3 +192,5 @@ export default function MessageList({
     </div>
   );
 }
+
+

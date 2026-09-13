@@ -32,6 +32,8 @@ export function useMessages({ conversationId, currentUserId }) {
   const messagesRef = useRef(messages);
   messagesRef.current = messages;
 
+  const typingTimeoutsRef = useRef(new Map());
+
   // ── Initial load ───────────────────────────────────────────────────────────
   useEffect(() => {
     if (!conversationId) return;
@@ -74,24 +76,50 @@ export function useMessages({ conversationId, currentUserId }) {
       }
 
       // Stop typing indicator for this sender
+      const senderNumId = Number(message.senderId);
+      if (typingTimeoutsRef.current.has(senderNumId)) {
+        clearTimeout(typingTimeoutsRef.current.get(senderNumId));
+        typingTimeoutsRef.current.delete(senderNumId);
+      }
       setTypingUsers((prev) => {
         const next = new Set(prev);
-        next.delete(message.senderId);
+        next.delete(senderNumId);
         return next;
       });
     }
 
     function onUserTyping({ userId, conversationId: cid }) {
       if (cid !== conversationId) return;
-      if (userId === currentUserId) return;
-      setTypingUsers((prev) => new Set([...prev, userId]));
+      const numId = Number(userId);
+      if (numId === Number(currentUserId)) return;
+
+      setTypingUsers((prev) => new Set([...prev, numId]));
+
+      // Auto-clear after 3.5s in case typing_stop isn't received
+      if (typingTimeoutsRef.current.has(numId)) {
+        clearTimeout(typingTimeoutsRef.current.get(numId));
+      }
+      const timer = setTimeout(() => {
+        setTypingUsers((prev) => {
+          const next = new Set(prev);
+          next.delete(numId);
+          return next;
+        });
+        typingTimeoutsRef.current.delete(numId);
+      }, 3500);
+      typingTimeoutsRef.current.set(numId, timer);
     }
 
     function onUserStoppedTyping({ userId, conversationId: cid }) {
       if (cid !== conversationId) return;
+      const numId = Number(userId);
+      if (typingTimeoutsRef.current.has(numId)) {
+        clearTimeout(typingTimeoutsRef.current.get(numId));
+        typingTimeoutsRef.current.delete(numId);
+      }
       setTypingUsers((prev) => {
         const next = new Set(prev);
-        next.delete(userId);
+        next.delete(numId);
         return next;
       });
     }
@@ -115,6 +143,8 @@ export function useMessages({ conversationId, currentUserId }) {
     socket.on("message_error", onMessageError);
 
     return () => {
+      typingTimeoutsRef.current.forEach((t) => clearTimeout(t));
+      typingTimeoutsRef.current.clear();
       socket.emit("leave_conversation", { conversationId });
       socket.off("new_message", onNewMessage);
       socket.off("user_typing", onUserTyping);

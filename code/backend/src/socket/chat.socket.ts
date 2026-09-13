@@ -5,6 +5,7 @@ import {
   userConnected,
   userDisconnected,
   isUserOnline,
+  getOnlineUserIds,
 } from "./presence.service.js";
 
 // ─── Rate limiter (sliding-window, in-memory) ─────────────────────────────────
@@ -50,9 +51,14 @@ export function registerChatHandlers(io: Server): void {
     // ── Presence: mark online ─────────────────────────────────────────────
     const justCameOnline = userConnected(userId, socket.id);
 
+    // Send the full list of currently online users to THIS socket so it can
+    // seed its local presence state immediately, without waiting for future
+    // user_online events. This fixes the "user shows offline even though
+    // they're already connected" problem.
+    socket.emit("online_users_list", { userIds: getOnlineUserIds() });
+
     if (justCameOnline) {
       // Broadcast to everyone else that this user is online.
-      // Clients who care about this user's status will listen for user_online.
       socket.broadcast.emit("user_online", { userId });
     }
 

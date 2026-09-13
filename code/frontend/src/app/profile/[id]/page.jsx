@@ -14,7 +14,7 @@ import { useChat } from '@/hooks/useChat';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2 } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
