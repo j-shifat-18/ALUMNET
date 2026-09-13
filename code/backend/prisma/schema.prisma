@@ -26,6 +26,27 @@ enum UserStatus {
   BANNED
 }
 
+enum ConversationType {
+  DIRECT
+  GROUP
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+enum NotificationType {
+  MESSAGE
+  MENTOR_REQUEST
+  MENTOR_REQUEST_ACCEPTED
+  POST_LIKE
+  POST_COMMENT
+  EVENT_CREATED
+  SYSTEM
+}
+
 model User {
   id Int @id @default(autoincrement())
 
@@ -82,6 +103,11 @@ model User {
   // Credentials
   certifications Certification[]
   achievements   Achievement[]
+
+  // Chat & Notifications
+  conversationMembers ConversationMember[]
+  sentMessages        Message[]
+  notifications       Notification[]
 
   @@index([email])
   @@index([role])
@@ -417,4 +443,75 @@ model Achievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// ─── Chat System ─────────────────────────────────────────────────────────────
+
+model Conversation {
+  id   String           @id @default(cuid())
+  type ConversationType @default(DIRECT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members  ConversationMember[]
+  messages Message[]
+}
+
+model ConversationMember {
+  id String @id @default(cuid())
+
+  conversationId String
+  userId         Int
+
+  joinedAt   DateTime  @default(now())
+  lastReadAt DateTime?
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+}
+
+model Message {
+  id String @id @default(cuid())
+
+  conversationId String
+  senderId       Int
+
+  content     String
+  messageType MessageType @default(TEXT)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id])
+
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+// ─── Notification System ──────────────────────────────────────────────────────
+
+model Notification {
+  id     String           @id @default(cuid())
+  userId Int
+  type   NotificationType
+
+  title   String
+  message String
+
+  data   Json?
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, isRead])
 }

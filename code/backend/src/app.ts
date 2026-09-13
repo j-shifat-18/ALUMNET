@@ -15,6 +15,7 @@ import { EventRoutes } from "./app/modules/event/event.route.js";
 import { MatchingRoutes } from "./app/modules/matching/matching.route.js";
 import { TaskMessageRoutes } from "./app/modules/task-message/taskMessage.route.js";
 import { CredentialRoutes } from "./app/modules/credential/credential.route.js";
+import { ChatRoutes } from "./app/modules/chat/chat.route.js";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler.js";
 
 const app = express();
@@ -48,6 +49,7 @@ app.use("/api/v1/events", EventRoutes);
 app.use("/api/v1/matching", MatchingRoutes);
 app.use("/api/v1/tasks", TaskMessageRoutes);
 app.use("/api/v1/credentials", CredentialRoutes);
+app.use("/api/v1/conversations", ChatRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");
