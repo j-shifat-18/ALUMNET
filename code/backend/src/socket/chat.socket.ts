@@ -233,7 +233,7 @@ export function registerChatHandlers(io: Server): void {
             NotificationService.createNotification({
               userId: member.userId,
               type: "MESSAGE",
-              title: `New message from ${message.sender.name}`,
+              title: `${message.sender.name} sent you a message`,
               message:
                 message.content.length > 60
                   ? message.content.slice(0, 60) + "…"

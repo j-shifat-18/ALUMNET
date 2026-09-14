@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import Navbar from "@/components/layout/Navbar";
 import { useAuth } from "@/context/AuthProvider";
@@ -33,10 +34,14 @@ import user_placeholder from "../../../public/placeholder-user.jpg";
 
 export default function MentorshipPage() {
   const { user, dbUser } = useAuth();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams?.get("tab");
   const isAlumni = dbUser?.role === "ALUMNI";
   const isStudent = dbUser?.role === "STUDENT";
 
-  const [activeTab, setActiveTab] = useState(isAlumni ? "REQUESTS" : "MENTORS");
+  const [activeTab, setActiveTab] = useState(
+    tabParam ? tabParam.toUpperCase() : isAlumni ? "REQUESTS" : "MENTORS"
+  );
 
   const [receivedRequests, setReceivedRequests] = useState([]);
   const [mentees, setMentees] = useState([]);
@@ -56,12 +61,16 @@ export default function MentorshipPage() {
   const [selectedMessage, setSelectedMessage] = useState(null);
 
   useEffect(() => {
+    if (tabParam) {
+      setActiveTab(tabParam.toUpperCase());
+      return;
+    }
     if (isAlumni && activeTab !== "REQUESTS" && activeTab !== "MENTEES") {
       setActiveTab("REQUESTS");
     } else if (isStudent && activeTab !== "MENTORS" && activeTab !== "SENT_REQUESTS") {
       setActiveTab("MENTORS");
     }
-  }, [isAlumni, isStudent, activeTab]);
+  }, [isAlumni, isStudent, activeTab, tabParam]);
 
   const fetchReceivedRequests = async () => {
     try {

@@ -47,11 +47,12 @@ const toggleLike = async (uid: string, postId: number) => {
       where: { id: user.id },
       select: { name: true },
     });
+    const likerName = liker?.name ?? "Someone";
     NotificationService.createNotification({
       userId: post.authorId,
       type: "POST_LIKE",
-      title: "Someone liked your post",
-      message: `${liker?.name ?? "Someone"} liked your post`,
+      title: `${likerName} liked your post`,
+      message: `${likerName} liked your post`,
       data: { postId, likerId: user.id },
     }).catch(() => {});
   }

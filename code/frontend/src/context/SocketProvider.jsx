@@ -52,9 +52,21 @@ export function SocketProvider({ children }) {
       setIsConnected(false);
     }
 
-    function onConnectError(err) {
+    async function onConnectError(err) {
       console.error("[socket] connect error:", err.message);
       setIsConnected(false);
+
+      if (err?.message?.toLowerCase().includes("auth") && user) {
+        try {
+          const freshToken = await user.getIdToken(true);
+          socket.auth = { token: freshToken };
+          if (!socket.connected) {
+            socket.connect();
+          }
+        } catch (refreshErr) {
+          console.error("[socket] token refresh on connect error failed:", refreshErr);
+        }
+      }
     }
 
     // ── Presence ───────────────────────────────────────────────────────────

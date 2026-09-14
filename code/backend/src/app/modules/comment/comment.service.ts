@@ -37,7 +37,7 @@ const addComment = async (uid: string, postId: number, content: string) => {
     NotificationService.createNotification({
       userId: post.authorId,
       type: "POST_COMMENT",
-      title: "New comment on your post",
+      title: `${comment.user.name} commented on your post`,
       message: `${comment.user.name} commented: "${
         content.length > 60 ? content.slice(0, 60) + "…" : content
       }"`,

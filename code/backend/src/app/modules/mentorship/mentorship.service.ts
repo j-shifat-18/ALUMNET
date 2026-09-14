@@ -65,7 +65,7 @@ const sendRequest = async (
   NotificationService.createNotification({
     userId: alumni.id,
     type: "MENTOR_REQUEST",
-    title: "New Mentorship Request",
+    title: `${result.student.name} sent a mentorship request`,
     message: `${result.student.name} sent you a mentorship request`,
     data: { requestId: result.id, senderId: student.id },
   }).catch(() => {});
@@ -146,7 +146,7 @@ const acceptRequest = async (id: number, uid: string) => {
   NotificationService.createNotification({
     userId: updated.studentId,
     type: "MENTOR_REQUEST_ACCEPTED",
-    title: "Mentorship Request Accepted",
+    title: `${updated.alumni.name} accepted your mentorship request`,
     message: `${updated.alumni.name} accepted your mentorship request`,
     data: { requestId: updated.id, alumniId: updated.alumniId },
   }).catch(() => {});

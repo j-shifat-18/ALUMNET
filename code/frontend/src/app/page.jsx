@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import LoadingScreen from "@/components/layout/LoadingScreen";
 import Navbar from "@/components/layout/Navbar";
@@ -16,6 +17,10 @@ import placeholderUser from "../../public/placeholder-user.jpg";
 
 export default function Home() {
   const { user, dbUser } = useAuth();
+  const searchParams = useSearchParams();
+  const targetPostId = searchParams?.get("postId");
+  const openComments = searchParams?.get("openComments") === "true";
+
   const [posts, setPosts] = useState([]);
   const [loadingPosts, setLoadingPosts] = useState(true);
   const [createPostModalOpen, setCreatePostModalOpen] = useState(false);
@@ -28,21 +33,29 @@ export default function Home() {
   const [followingUidsSet, setFollowingUidsSet] = useState(new Set());
   const [followingInProgress, setFollowingInProgress] = useState({});
 
-  const fetchPosts = () => {
+  const fetchPosts = async () => {
     setLoadingPosts(true);
-    axiosInstance
-      .get("/api/v1/posts")
-      .then((response) => {
-        if (response.data?.data) {
-          setPosts(response.data.data);
+    try {
+      const response = await axiosInstance.get("/api/v1/posts");
+      if (response.data?.data) {
+        let fetchedPosts = response.data.data;
+        if (targetPostId && !fetchedPosts.some((p) => Number(p.id) === Number(targetPostId))) {
+          try {
+            const singleRes = await axiosInstance.get(`/api/v1/posts/${targetPostId}`);
+            if (singleRes.data?.data) {
+              fetchedPosts = [singleRes.data.data, ...fetchedPosts];
+            }
+          } catch (err) {
+            console.error("Error fetching target single post:", err);
+          }
         }
-      })
-      .catch((err) => {
-        console.error("Error fetching feed posts:", err);
-      })
-      .finally(() => {
-        setLoadingPosts(false);
-      });
+        setPosts(fetchedPosts);
+      }
+    } catch (err) {
+      console.error("Error fetching feed posts:", err);
+    } finally {
+      setLoadingPosts(false);
+    }
   };
 
   const fetchRecentFollowing = () => {
@@ -115,7 +128,7 @@ export default function Home() {
     fetchPosts();
     fetchRecentFollowing();
     fetchRecentFollowers();
-  }, [user]);
+  }, [user, targetPostId]);
 
   useEffect(() => {
     const handleRefreshFeed = () => {
@@ -128,7 +141,20 @@ export default function Home() {
     return () => {
       window.removeEventListener("refresh-feed", handleRefreshFeed);
     };
-  }, []);
+  }, [targetPostId]);
+
+  // Auto-scroll to target post when navigating from notification
+  useEffect(() => {
+    if (!loadingPosts && targetPostId && posts.length > 0) {
+      const timer = setTimeout(() => {
+        const el = document.getElementById(`post-${targetPostId}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [loadingPosts, targetPostId, posts.length]);
 
   const activeDbUser = dbUser;
 
@@ -258,6 +284,10 @@ export default function Home() {
                           key={post.id}
                           post={post}
                           currentUser={user}
+                          isTargetPost={Number(targetPostId) === Number(post.id)}
+                          autoOpenComments={
+                            Number(targetPostId) === Number(post.id) && openComments
+                          }
                           onDelete={(deletedId) =>
                             setPosts((prev) =>
                               prev.filter((p) => p.id !== deletedId)
