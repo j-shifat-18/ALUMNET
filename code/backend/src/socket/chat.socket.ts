@@ -7,6 +7,7 @@ import {
   isUserOnline,
   getOnlineUserIds,
 } from "./presence.service.js";
+import { NotificationService } from "../app/modules/notification/notification.service.js";
 
 // ─── Rate limiter (sliding-window, in-memory) ─────────────────────────────────
 // Allows at most MAX_MESSAGES per WINDOW_MS per socket.
@@ -217,12 +218,6 @@ export function registerChatHandlers(io: Server): void {
           });
 
           for (const member of otherMembers) {
-            // Check if the recipient is currently in the conversation room.
-            // If they are, they already received new_message — no extra notification needed here.
-            // We still emit user_online status for UI purposes.
-            // Notification creation will be handled in Module 3's notification service.
-            // For now we emit a lightweight "message_notification" to their personal room
-            // so the frontend can update the unread badge without a full notification record.
             const recipientSockets = await io
               .in(userRoom(member.userId))
               .fetchSockets();
@@ -231,9 +226,30 @@ export function registerChatHandlers(io: Server): void {
               s.rooms.has(conversationRoom(conversationId)),
             );
 
+            // Always create a persistent notification record and emit it
+            // to the recipient's personal room. createNotification handles
+            // both DB write and the socket emit to `user:{userId}`.
+            // Fire-and-forget — don't let a notification failure break messaging.
+            NotificationService.createNotification({
+              userId: member.userId,
+              type: "MESSAGE",
+              title: `${message.sender.name} sent you a message`,
+              message:
+                message.content.length > 60
+                  ? message.content.slice(0, 60) + "…"
+                  : message.content,
+              data: {
+                conversationId,
+                senderId: userId,
+              },
+            }).catch((err) =>
+              console.error("[socket] notification create error:", err),
+            );
+
+            // Also emit the lightweight message_notification to the
+            // recipient's room so the frontend can update unread badges
+            // without waiting for the full notification fetch.
             if (!isInConversationRoom) {
-              // Recipient is online but NOT in the conversation view — send a ping
-              // to their personal room so the UI can show an unread badge.
               io.to(userRoom(member.userId)).emit("message_notification", {
                 conversationId,
                 message: {

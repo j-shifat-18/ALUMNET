@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../errors/AppError.js";
+import { NotificationService } from "../notification/notification.service.js";
 
 const toggleLike = async (uid: string, postId: number) => {
   const user = await prisma.user.findUnique({
@@ -39,6 +40,22 @@ const toggleLike = async (uid: string, postId: number) => {
       data: { likesCount: { increment: 1 } },
     }),
   ]);
+
+  // Notify the post author — skip self-like
+  if (post.authorId !== user.id) {
+    const liker = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { name: true },
+    });
+    const likerName = liker?.name ?? "Someone";
+    NotificationService.createNotification({
+      userId: post.authorId,
+      type: "POST_LIKE",
+      title: `${likerName} liked your post`,
+      message: `${likerName} liked your post`,
+      data: { postId, likerId: user.id },
+    }).catch(() => {});
+  }
 
   return { liked: true };
 };

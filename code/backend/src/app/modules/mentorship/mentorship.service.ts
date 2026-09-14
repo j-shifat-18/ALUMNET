@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../errors/AppError.js";
+import { NotificationService } from "../notification/notification.service.js";
 
 const userSelect = {
   id: true,
@@ -59,6 +60,15 @@ const sendRequest = async (
       alumni: { select: userSelect },
     },
   });
+
+  // Notify the alumni that a new mentorship request arrived
+  NotificationService.createNotification({
+    userId: alumni.id,
+    type: "MENTOR_REQUEST",
+    title: `${result.student.name} sent a mentorship request`,
+    message: `${result.student.name} sent you a mentorship request`,
+    data: { requestId: result.id, senderId: student.id },
+  }).catch(() => {});
 
   return result;
 };
@@ -131,6 +141,15 @@ const acceptRequest = async (id: number, uid: string) => {
       data: { totalMentees: { increment: 1 } },
     }),
   ]);
+
+  // Notify the student that their request was accepted
+  NotificationService.createNotification({
+    userId: updated.studentId,
+    type: "MENTOR_REQUEST_ACCEPTED",
+    title: `${updated.alumni.name} accepted your mentorship request`,
+    message: `${updated.alumni.name} accepted your mentorship request`,
+    data: { requestId: updated.id, alumniId: updated.alumniId },
+  }).catch(() => {});
 
   return updated;
 };

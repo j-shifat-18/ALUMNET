@@ -1,14 +1,16 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, House, Users, MessageSquare , Calendar} from 'lucide-react';
+import { Menu, X, House, Users, MessageSquare, Calendar, Bell } from 'lucide-react';
 import logo from "../../../public/logo.png";
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
 import { useSocket } from '@/context/SocketProvider';
+import { useNotifications } from '@/context/NotificationProvider';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import UserProfileDropdown from '@/components/profile/UserProfileDropdown';
+import NotificationDropdown from '@/components/notifications/NotificationDropdown';
 import ThemeToggle from '@/components/ui/ThemeToggle';
 
 const Navbar = () => {
@@ -16,6 +18,7 @@ const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const { user } = useAuth();
     const { totalUnread } = useSocket() ?? {};
+    const { unreadCount: notifUnreadCount } = useNotifications();
     const pathname = usePathname();
 
     const handleHomeClick = (e, href) => {
@@ -92,6 +95,7 @@ const Navbar = () => {
 
                     <div className="flex items-center space-x-1 sm:space-x-2">
                         <ThemeToggle />
+                        {user && <NotificationDropdown />}
                         {user ? (
                             <UserProfileDropdown />
                         ) : (
@@ -125,6 +129,17 @@ const Navbar = () => {
                                     )}
                                 </Link>
                             ))}
+                            {user && (
+                                <Link href="/notifications" onClick={() => setIsMenuOpen(false)} className="flex items-center gap-2 px-3 py-2.5 text-sm sm:text-base font-medium text-gray-600 dark:text-gray-300 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+                                    <Bell className="w-5 h-5" />
+                                    <span>Notifications</span>
+                                    {notifUnreadCount > 0 && (
+                                        <span className="ml-auto min-w-[18px] h-[18px] px-1 bg-blue-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                                            {notifUnreadCount > 99 ? "99+" : notifUnreadCount}
+                                        </span>
+                                    )}
+                                </Link>
+                            )}
                             {!user && (
                                 <div className="pt-4 mt-2 border-t border-gray-200 dark:border-gray-700 flex flex-col space-y-2">
                                     <Link href={"/login"} onClick={() => setIsMenuOpen(false)} className="flex items-center justify-center space-x-2 px-3 py-2.5 text-sm font-medium border border-gray-300 dark:border-gray-700 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">

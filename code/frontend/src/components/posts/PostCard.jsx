@@ -8,12 +8,22 @@ import placeholderUser from "../../../public/placeholder-user.jpg";
 import axiosInstance from "@/lib/axios";
 import Swal from "sweetalert2";
 
-export default function PostCard({ post, currentUser, onDelete }) {
+export default function PostCard({
+  post,
+  currentUser,
+  onDelete,
+  autoOpenComments = false,
+  isTargetPost = false,
+}) {
   const [isLiked, setIsLiked] = useState(post?.isLiked || false);
-  const [likesCount, setLikesCount] = useState(post?.likesCount || post?._count?.likes || 0);
-  const [commentsCount, setCommentsCount] = useState(post?.commentsCount || post?._count?.comments || 0);
+  const [likesCount, setLikesCount] = useState(
+    post?.likesCount ?? post?._count?.likes ?? post?.likes?.length ?? 0
+  );
+  const [commentsCount, setCommentsCount] = useState(
+    post?.commentsCount ?? post?._count?.comments ?? post?.comments?.length ?? 0
+  );
   
-  const [showComments, setShowComments] = useState(false);
+  const [showComments, setShowComments] = useState(autoOpenComments || false);
   const [comments, setComments] = useState(post?.comments || []);
   const [newComment, setNewComment] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -33,35 +43,78 @@ export default function PostCard({ post, currentUser, onDelete }) {
   const [editedContent, setEditedContent] = useState(post?.content || "");
   const [isSavingPost, setIsSavingPost] = useState(false);
 
-  useEffect(() => {
+  const fetchLikesStatus = async () => {
     if (!currentUser || !post?.id) return;
-    axiosInstance
-      .get(`/api/v1/posts/${post.id}/likes/status`, {
+    try {
+      const res = await axiosInstance.get(`/api/v1/posts/${post.id}/likes/status`, {
         validateStatus: (status) => status < 500,
-      })
-      .then((res) => {
-        if (res.status === 200 && res.data?.data) {
-          setIsLiked(res.data.data.liked);
-          setLikesCount(res.data.data.likesCount);
-        }
-      })
-      .catch(() => {});
+      });
+      if (res.status === 200 && res.data?.data) {
+        setIsLiked(res.data.data.liked);
+        setLikesCount(res.data.data.likesCount);
+      }
+    } catch (err) {
+      console.error("Error fetching like status:", err);
+    }
+  };
+
+  const fetchComments = async () => {
+    if (!post?.id) return;
+    setLoadingComments(true);
+    try {
+      const res = await axiosInstance.get(`/api/v1/posts/${post.id}/comments`, {
+        validateStatus: (status) => status < 500,
+      });
+      if (res.data?.data) {
+        setComments(res.data.data);
+        setCommentsCount(res.data.data.length);
+      }
+    } catch (err) {
+      console.error("Error fetching comments:", err);
+    } finally {
+      setLoadingComments(false);
+    }
+  };
+
+  // Synchronize state when post prop is updated (e.g. on feed refetch)
+  useEffect(() => {
+    if (!post) return;
+    setLikesCount(post?.likesCount ?? post?._count?.likes ?? post?.likes?.length ?? 0);
+    setCommentsCount(post?.commentsCount ?? post?._count?.comments ?? post?.comments?.length ?? 0);
+    if (post.isLiked !== undefined) {
+      setIsLiked(post.isLiked);
+    }
+    if (post.content && !isEditingPost) {
+      setEditedContent(post.content);
+    }
+    if (post.comments && Array.isArray(post.comments) && post.comments.length > 0) {
+      setComments(post.comments);
+    }
+  }, [post]);
+
+  // Fetch likes status on mount or user changes
+  useEffect(() => {
+    fetchLikesStatus();
   }, [currentUser, post?.id]);
 
+  // When post is targeted or comments are auto-opened via notification link
   useEffect(() => {
-    if (!post?.id || commentsCount === 0 || comments.length > 0) return;
-    axiosInstance
-      .get(`/api/v1/posts/${post.id}/comments`, {
-        validateStatus: (status) => status < 500,
-      })
-      .then((res) => {
-        if (res.status === 200 && res.data?.data) {
-          setComments(res.data.data);
-          setCommentsCount(res.data.data.length);
-        }
-      })
-      .catch(() => {});
-  }, [post?.id, commentsCount, comments.length]);
+    if (!post?.id) return;
+    if (isTargetPost || autoOpenComments) {
+      fetchLikesStatus();
+    }
+    if (autoOpenComments) {
+      setShowComments(true);
+      fetchComments();
+    }
+  }, [isTargetPost, autoOpenComments, post?.id]);
+
+  // Re-fetch comments whenever comments view is opened
+  useEffect(() => {
+    if (showComments && post?.id) {
+      fetchComments();
+    }
+  }, [showComments, post?.id]);
 
   const authorId = post.author?.uid || post.author?.id;
 
@@ -178,21 +231,6 @@ export default function PostCard({ post, currentUser, onDelete }) {
     }
   };
 
-  const fetchComments = async () => {
-    setLoadingComments(true);
-    try {
-      const res = await axiosInstance.get(`/api/v1/posts/${post.id}/comments`);
-      if (res.data?.data) {
-        setComments(res.data.data);
-        setCommentsCount(res.data.data.length);
-      }
-    } catch (err) {
-      console.error("Error fetching comments:", err);
-    } finally {
-      setLoadingComments(false);
-    }
-  };
-
   const handleToggleComments = () => {
     const nextShowState = !showComments;
     setShowComments(nextShowState);
@@ -295,7 +333,10 @@ export default function PostCard({ post, currentUser, onDelete }) {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4 overflow-hidden min-w-0">
+    <div
+      id={`post-${post.id}`}
+      className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm space-y-4 overflow-hidden min-w-0"
+    >
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           {authorId ? (

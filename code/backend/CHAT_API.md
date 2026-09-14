@@ -474,60 +474,113 @@ None.
 
 # Notifications
 
-> **Status:** Planned — Module 3 of the implementation roadmap.
->
-> The `Notification` table and enums are already in the database. The REST endpoints below will be implemented in Module 3.
+> **Status:** ✅ Implemented — Module 3
+
+All notification endpoints are live at `/api/v1/notifications`.
+
+Notifications are created automatically by the backend when:
+- A chat message is sent (`MESSAGE`)
+- A mentorship request is sent (`MENTOR_REQUEST`)
+- A mentorship request is accepted (`MENTOR_REQUEST_ACCEPTED`)
+- A post is liked (`POST_LIKE`)
+- A post receives a comment (`POST_COMMENT`)
+
+Real-time delivery happens via the `notification` Socket.IO event on the recipient's personal room.
 
 ---
 
-## GET `/api/v1/notifications` _(coming in Module 3)_
+## GET `/api/v1/notifications`
 
-Get all notifications for the authenticated user, ordered newest first.
+Get paginated notifications for the authenticated user, ordered newest first.
 
-**Planned response shape:**
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | ✅ | `Bearer <firebase_id_token>` |
+
+### Query Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `limit` | `number` | `20` | Items per page. Capped at `50`. |
+| `cursor` | `string` | — | Notification `id` to paginate from (exclusive). Pass `nextCursor` from the previous response. |
+
+### Success Response `200`
 
 ```json
 {
   "success": true,
   "message": "Notifications retrieved successfully",
-  "data": [
-    {
-      "id": "clx1notif1",
-      "userId": 1,
-      "type": "MESSAGE",
-      "title": "New Message",
-      "message": "Ahmed Rahman sent you a message",
-      "data": {
-        "conversationId": "clx1abc123",
-        "senderId": 42
+  "data": {
+    "notifications": [
+      {
+        "id": "clx1notif1",
+        "userId": 1,
+        "type": "MESSAGE",
+        "title": "New message from Ahmed Rahman",
+        "message": "Are you available for a call?",
+        "data": {
+          "conversationId": "clx1abc123",
+          "senderId": 42
+        },
+        "isRead": false,
+        "createdAt": "2026-09-14T12:35:00.000Z"
       },
-      "isRead": false,
-      "createdAt": "2026-09-14T12:35:00.000Z"
-    },
-    {
-      "id": "clx1notif2",
-      "userId": 1,
-      "type": "MENTOR_REQUEST",
-      "title": "New Mentorship Request",
-      "message": "Nusrat Jahan sent you a mentorship request",
-      "data": {
-        "requestId": 17,
-        "senderId": 7
+      {
+        "id": "clx1notif2",
+        "userId": 1,
+        "type": "MENTOR_REQUEST",
+        "title": "New Mentorship Request",
+        "message": "Nusrat Jahan sent you a mentorship request",
+        "data": {
+          "requestId": 17,
+          "senderId": 7
+        },
+        "isRead": true,
+        "createdAt": "2026-09-13T09:00:00.000Z"
       },
-      "isRead": true,
-      "createdAt": "2026-09-13T09:00:00.000Z"
-    }
-  ]
+      {
+        "id": "clx1notif3",
+        "userId": 1,
+        "type": "POST_LIKE",
+        "title": "Someone liked your post",
+        "message": "Rahim Hossain liked your post",
+        "data": {
+          "postId": 55,
+          "likerId": 9
+        },
+        "isRead": false,
+        "createdAt": "2026-09-13T08:00:00.000Z"
+      }
+    ],
+    "nextCursor": "clx1notif3",
+    "hasMore": true
+  }
 }
 ```
 
+> **`nextCursor`** — Pass as `?cursor=` to fetch the next (older) page. `null` when all notifications have been loaded.
+
+### Error Responses
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| `401` | `"Unauthorized Access"` | Missing or invalid token |
+
 ---
 
-## GET `/api/v1/notifications/unread-count` _(coming in Module 3)_
+## GET `/api/v1/notifications/unread-count`
 
-Get the total number of unread notifications for the authenticated user.
+Get the number of unread notifications for the authenticated user. Use this to drive the bell badge in the navbar.
 
-**Planned response shape:**
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | ✅ | `Bearer <firebase_id_token>` |
+
+### Success Response `200`
 
 ```json
 {
@@ -539,13 +592,35 @@ Get the total number of unread notifications for the authenticated user.
 }
 ```
 
+### Error Responses
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| `401` | `"Unauthorized Access"` | Missing or invalid token |
+
 ---
 
-## PATCH `/api/v1/notifications/:notificationId/read` _(coming in Module 3)_
+## PATCH `/api/v1/notifications/:notificationId/read`
 
-Mark a single notification as read.
+Mark a single notification as read. Only the notification's owner can mark it.
 
-**Planned response shape:**
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | ✅ | `Bearer <firebase_id_token>` |
+
+### URL Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `notificationId` | `string` (cuid) | ID of the notification to mark |
+
+### Request Body
+
+None.
+
+### Success Response `200`
 
 ```json
 {
@@ -553,18 +628,44 @@ Mark a single notification as read.
   "message": "Notification marked as read",
   "data": {
     "id": "clx1notif1",
-    "isRead": true
+    "userId": 1,
+    "type": "MESSAGE",
+    "title": "New message from Ahmed Rahman",
+    "message": "Are you available for a call?",
+    "data": { "conversationId": "clx1abc123", "senderId": 42 },
+    "isRead": true,
+    "createdAt": "2026-09-14T12:35:00.000Z"
   }
 }
 ```
 
+> If the notification is already read, the call is a no-op and the existing record is returned unchanged.
+
+### Error Responses
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| `401` | `"Unauthorized Access"` | Missing or invalid token |
+| `403` | `"You cannot modify this notification"` | Notification belongs to another user |
+| `404` | `"Notification not found"` | No notification with that ID exists |
+
 ---
 
-## PATCH `/api/v1/notifications/read-all` _(coming in Module 3)_
+## PATCH `/api/v1/notifications/read-all`
 
-Mark all notifications as read for the authenticated user.
+Mark all notifications as read for the authenticated user in a single call.
 
-**Planned response shape:**
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | ✅ | `Bearer <firebase_id_token>` |
+
+### Request Body
+
+None.
+
+### Success Response `200`
 
 ```json
 {
@@ -575,6 +676,92 @@ Mark all notifications as read for the authenticated user.
   }
 }
 ```
+
+> **`updatedCount`** — number of notifications that were changed from unread to read. `0` if all were already read.
+
+### Error Responses
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| `401` | `"Unauthorized Access"` | Missing or invalid token |
+
+---
+
+## DELETE `/api/v1/notifications/:notificationId`
+
+Delete a single notification permanently. Only the owner can delete it.
+
+### Headers
+
+| Header | Required | Value |
+|--------|----------|-------|
+| `Authorization` | ✅ | `Bearer <firebase_id_token>` |
+
+### URL Parameters
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `notificationId` | `string` (cuid) | ID of the notification to delete |
+
+### Success Response `200`
+
+```json
+{
+  "success": true,
+  "message": "Notification deleted",
+  "data": {
+    "deleted": true
+  }
+}
+```
+
+### Error Responses
+
+| Status | Message | Cause |
+|--------|---------|-------|
+| `401` | `"Unauthorized Access"` | Missing or invalid token |
+| `403` | `"You cannot delete this notification"` | Notification belongs to another user |
+| `404` | `"Notification not found"` | No notification with that ID exists |
+
+---
+
+## `notification` Socket Event (server → client)
+
+Sent in real time to the recipient's personal room (`user:{userId}`) when any notification is created. The payload is the full notification record.
+
+```js
+socket.on("notification", (notification) => {
+  // notification shape matches the GET /notifications response items
+  // Use notification.type to decide how to display it and where to navigate
+});
+```
+
+**Payload example:**
+
+```json
+{
+  "id": "clx1notif1",
+  "userId": 1,
+  "type": "MENTOR_REQUEST",
+  "title": "New Mentorship Request",
+  "message": "Nusrat Jahan sent you a mentorship request",
+  "data": { "requestId": 17, "senderId": 7 },
+  "isRead": false,
+  "createdAt": "2026-09-14T12:35:00.000Z"
+}
+```
+
+**`type` → navigation mapping for the frontend:**
+
+| Type | Navigate to |
+|------|-------------|
+| `MESSAGE` | `/chat/{data.conversationId}` |
+| `MENTOR_REQUEST` | `/mentorship` (received requests tab) |
+| `MENTOR_REQUEST_ACCEPTED` | `/mentorship` (your mentors tab) |
+| `POST_LIKE` | post detail or home feed |
+| `POST_COMMENT` | post detail or home feed |
+| `EVENT_CREATED` | `/events` |
+| `SYSTEM` | notifications page |
 
 ---
 

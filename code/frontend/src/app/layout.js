@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
 import { SocketProvider } from "@/context/SocketProvider";
+import { NotificationProvider } from "@/context/NotificationProvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +39,9 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <AuthProvider>
           <SocketProvider>
-            {children}
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
           </SocketProvider>
         </AuthProvider>
       </body>
