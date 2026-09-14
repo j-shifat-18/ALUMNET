@@ -1,5 +1,6 @@
 import { prisma } from "../../config/prisma.js";
 import { AppError } from "../../errors/AppError.js";
+import { NotificationService } from "../notification/notification.service.js";
 
 const userSelect = {
   id: true,
@@ -30,6 +31,19 @@ const addComment = async (uid: string, postId: number, content: string) => {
       data: { commentsCount: { increment: 1 } },
     }),
   ]);
+
+  // Notify the post author — skip self-comment
+  if (post.authorId !== user.id) {
+    NotificationService.createNotification({
+      userId: post.authorId,
+      type: "POST_COMMENT",
+      title: "New comment on your post",
+      message: `${comment.user.name} commented: "${
+        content.length > 60 ? content.slice(0, 60) + "…" : content
+      }"`,
+      data: { postId, commentId: comment.id, commenterId: user.id },
+    }).catch(() => {});
+  }
 
   return comment;
 };
