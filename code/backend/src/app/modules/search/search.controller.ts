@@ -11,6 +11,9 @@ const searchAlumni = asyncHandler(async (req: Request, res: Response) => {
     name: req.query.name as string | undefined,
     company: req.query.company as string | undefined,
     department: req.query.department as string | undefined,
+    jobPosition: (req.query.jobPosition ||
+      req.query.position ||
+      req.query.currentPosition) as string | undefined,
     industry: req.query.industry as string | undefined,
     skill: req.query.skill as string | undefined,
     domain: req.query.domain as string | undefined,
@@ -44,6 +47,9 @@ const searchUsers = asyncHandler(async (req: Request, res: Response) => {
     name: req.query.name as string | undefined,
     role: req.query.role as string | undefined,
     department: req.query.department as string | undefined,
+    jobPosition: (req.query.jobPosition ||
+      req.query.position ||
+      req.query.currentPosition) as string | undefined,
     page,
     limit,
   });
@@ -60,3 +66,4 @@ export const SearchController = {
   searchAlumni,
   searchUsers,
 };
+
