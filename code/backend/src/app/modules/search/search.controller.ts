@@ -9,13 +9,14 @@ const searchAlumni = asyncHandler(async (req: Request, res: Response) => {
 
   const result = await SearchService.searchAlumni({
     name: req.query.name as string | undefined,
-    company: req.query.company as string | undefined,
+    company: (req.query.company || req.query.currentCompany) as string | undefined,
     department: req.query.department as string | undefined,
     jobPosition: (req.query.jobPosition ||
       req.query.position ||
       req.query.currentPosition) as string | undefined,
+    location: req.query.location as string | undefined,
     industry: req.query.industry as string | undefined,
-    skill: req.query.skill as string | undefined,
+    skill: (req.query.skill || req.query.skills) as string | undefined,
     domain: req.query.domain as string | undefined,
     batch: req.query.batch as string | undefined,
     graduationYear: req.query.graduationYear
@@ -50,6 +51,9 @@ const searchUsers = asyncHandler(async (req: Request, res: Response) => {
     jobPosition: (req.query.jobPosition ||
       req.query.position ||
       req.query.currentPosition) as string | undefined,
+    company: (req.query.company || req.query.currentCompany) as string | undefined,
+    location: req.query.location as string | undefined,
+    skill: (req.query.skill || req.query.skills) as string | undefined,
     page,
     limit,
   });
@@ -66,4 +70,5 @@ export const SearchController = {
   searchAlumni,
   searchUsers,
 };
+
 

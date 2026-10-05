@@ -5,6 +5,7 @@ interface AlumniSearchParams {
   company?: string;
   department?: string;
   jobPosition?: string;
+  location?: string;
   industry?: string;
   skill?: string;
   domain?: string;
@@ -20,6 +21,9 @@ interface UserSearchParams {
   role?: string;
   department?: string;
   jobPosition?: string;
+  company?: string;
+  location?: string;
+  skill?: string;
   page: number;
   limit: number;
 }
@@ -48,6 +52,7 @@ const searchAlumni = async (params: AlumniSearchParams) => {
     company,
     department,
     jobPosition,
+    location,
     industry,
     skill,
     domain,
@@ -114,6 +119,9 @@ const searchAlumni = async (params: AlumniSearchParams) => {
     ...(name && {
       name: { contains: name, mode: "insensitive" as const },
     }),
+    ...(location && {
+      location: { contains: location, mode: "insensitive" as const },
+    }),
   };
 
   if (alumniProfileConditions.length === 1) {
@@ -136,6 +144,7 @@ const searchAlumni = async (params: AlumniSearchParams) => {
         username: true,
         profileImage: true,
         bio: true,
+        location: true,
         isVerified: true,
         isMentorAvailable: true,
         followersCount: true,
@@ -172,7 +181,7 @@ const searchAlumni = async (params: AlumniSearchParams) => {
 };
 
 const searchUsers = async (params: UserSearchParams) => {
-  const { name, role, department, jobPosition, page, limit } = params;
+  const { name, role, department, jobPosition, company, location, skill, page, limit } = params;
 
   const skip = (page - 1) * limit;
 
@@ -217,11 +226,48 @@ const searchUsers = async (params: UserSearchParams) => {
     });
   }
 
+  if (company) {
+    andConditions.push({
+      OR: [
+        {
+          studentProfile: {
+            currentCompany: { contains: company, mode: "insensitive" as const },
+          },
+        },
+        {
+          alumniProfile: {
+            currentCompany: { contains: company, mode: "insensitive" as const },
+          },
+        },
+      ],
+    });
+  }
+
+  if (skill) {
+    andConditions.push({
+      OR: [
+        {
+          studentProfile: {
+            skills: { has: skill },
+          },
+        },
+        {
+          alumniProfile: {
+            skills: { has: skill },
+          },
+        },
+      ],
+    });
+  }
+
   const where: any = {
     ...(name && {
       name: { contains: name, mode: "insensitive" as const },
     }),
     ...(role && { role: role as any }),
+    ...(location && {
+      location: { contains: location, mode: "insensitive" as const },
+    }),
   };
 
   if (andConditions.length > 0) {
@@ -240,6 +286,7 @@ const searchUsers = async (params: UserSearchParams) => {
         username: true,
         profileImage: true,
         bio: true,
+        location: true,
         role: true,
         isVerified: true,
         isMentorAvailable: true,
@@ -249,6 +296,7 @@ const searchUsers = async (params: UserSearchParams) => {
             department: true,
             batch: true,
             currentPosition: true,
+            currentCompany: true,
             skills: true,
           },
         },
@@ -282,4 +330,5 @@ export const SearchService = {
   searchAlumni,
   searchUsers,
 };
+
 
