@@ -1,0 +1,8 @@
+node_modules
+dist
+generated
+.env
+firebase/firebase-service-key.json
+npm-debug.log
+.git
+.vscode
