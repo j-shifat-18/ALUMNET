@@ -1,0 +1,26 @@
+# Environment variables
+.env
+.env*.local
+
+# Node modules & dependencies
+node_modules/
+code/backend/node_modules/
+code/frontend/node_modules/
+
+# Build outputs
+code/backend/dist/
+code/backend/generated/
+code/frontend/.next/
+code/frontend/out/
+code/frontend/build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+
+# OS / Editor files
+.DS_Store
+.vscode/
+.kiro/
+*.pem
