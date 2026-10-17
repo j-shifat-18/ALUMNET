@@ -226,41 +226,82 @@ export function registerChatHandlers(io: Server): void {
               s.rooms.has(conversationRoom(conversationId)),
             );
 
-            // Always create a persistent notification record and emit it
-            // to the recipient's personal room. createNotification handles
-            // both DB write and the socket emit to `user:{userId}`.
-            // Fire-and-forget — don't let a notification failure break messaging.
-            NotificationService.createNotification({
-              userId: member.userId,
-              type: "MESSAGE",
-              title: `${message.sender.name} sent you a message`,
-              message:
-                message.content.length > 60
-                  ? message.content.slice(0, 60) + "…"
-                  : message.content,
-              data: {
-                conversationId,
-                senderId: userId,
-              },
-            }).catch((err) =>
-              console.error("[socket] notification create error:", err),
-            );
-
-            // Also emit the lightweight message_notification to the
-            // recipient's room so the frontend can update unread badges
-            // without waiting for the full notification fetch.
-            if (!isInConversationRoom) {
-              io.to(userRoom(member.userId)).emit("message_notification", {
-                conversationId,
-                message: {
-                  id: message.id,
-                  content: message.content,
-                  senderId: message.senderId,
-                  createdAt: message.createdAt,
-                },
-                sender: message.sender,
-              });
+            // ── Rule 1: skip notification entirely if recipient is actively
+            //    viewing this conversation right now ─────────────────────────
+            if (isInConversationRoom) {
+              // They already see the message via new_message — no notification.
+              continue;
             }
+
+            // ── Rule 2: upsert — one unread notification per conversation
+            //    per sender. If an unread MESSAGE notification from this
+            //    sender in this conversation already exists, update its
+            //    message text and timestamp instead of creating a new one.
+            //    This way the bell shows "1 new message from Ahmed" even if
+            //    Ahmed sent 10 messages while the user was away. ────────────
+            const preview =
+              message.content.length > 60
+                ? message.content.slice(0, 60) + "…"
+                : message.content;
+
+            const existingNotification =
+              await prisma.notification.findFirst({
+                where: {
+                  userId: member.userId,
+                  type: "MESSAGE",
+                  isRead: false,
+                  data: {
+                    path: ["conversationId"],
+                    equals: conversationId,
+                  },
+                },
+                orderBy: { createdAt: "desc" },
+              });
+
+            if (existingNotification) {
+              // Update in place — refresh the text and bump the timestamp
+              const updated = await prisma.notification.update({
+                where: { id: existingNotification.id },
+                data: {
+                  title: `New message from ${message.sender.name}`,
+                  message: preview,
+                  createdAt: new Date(),
+                },
+              });
+              // Re-emit the updated notification to the recipient's room
+              try {
+                io.to(userRoom(member.userId)).emit("notification", updated);
+              } catch {
+                // socket not ready — ignore
+              }
+            } else {
+              // No existing unread notification — create a fresh one
+              NotificationService.createNotification({
+                userId: member.userId,
+                type: "MESSAGE",
+                title: `New message from ${message.sender.name}`,
+                message: preview,
+                data: {
+                  conversationId,
+                  senderId: userId,
+                },
+              }).catch((err) =>
+                console.error("[socket] notification create error:", err),
+              );
+            }
+
+            // Always emit the lightweight message_notification so the
+            // conversation list unread badge updates instantly.
+            io.to(userRoom(member.userId)).emit("message_notification", {
+              conversationId,
+              message: {
+                id: message.id,
+                content: message.content,
+                senderId: message.senderId,
+                createdAt: message.createdAt,
+              },
+              sender: message.sender,
+            });
           }
         } catch (err) {
           console.error("[socket] send_message error:", err);
@@ -315,6 +356,21 @@ export function registerChatHandlers(io: Server): void {
             conversationId_userId: { conversationId, userId },
           },
           data: { lastReadAt: readAt },
+        });
+
+        // Mark any unread MESSAGE notifications for this conversation as read
+        // so the bell clears when the user opens the conversation.
+        await prisma.notification.updateMany({
+          where: {
+            userId,
+            type: "MESSAGE",
+            isRead: false,
+            data: {
+              path: ["conversationId"],
+              equals: conversationId,
+            },
+          },
+          data: { isRead: true },
         });
 
         // Notify the other members in the conversation room

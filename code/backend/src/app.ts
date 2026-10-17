@@ -27,6 +27,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000",
+      "http://alumnet-frontend:3000",   // docker-compose service name
       "https://alumnet-frontend.vercel.app",
       "https://alumnet-production.up.railway.app",
     ],
