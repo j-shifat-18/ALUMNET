@@ -12,7 +12,16 @@ import CreatePostModal from "@/components/posts/CreatePostModal";
 import Divider from "@/components/ui/Divider";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
-import { Check, ImagePlus, Loader2, UserPlus } from "lucide-react";
+import {
+  ArrowRight,
+  Calendar,
+  Check,
+  ImagePlus,
+  Loader2,
+  MapPin,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import placeholderUser from "../../public/placeholder-user.jpg";
 
 export default function Home() {
@@ -32,6 +41,9 @@ export default function Home() {
   const [loadingFollowers, setLoadingFollowers] = useState(true);
   const [followingUidsSet, setFollowingUidsSet] = useState(new Set());
   const [followingInProgress, setFollowingInProgress] = useState({});
+
+  const [upcomingEvents, setUpcomingEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(true);
 
   const fetchPosts = async () => {
     setLoadingPosts(true);
@@ -96,6 +108,29 @@ export default function Home() {
       });
   };
 
+  const fetchUpcomingEvents = () => {
+    setLoadingEvents(true);
+    axiosInstance
+      .get("/api/v1/events/upcoming", {
+        params: { page: 1, limit: 3 },
+        validateStatus: (s) => s < 500,
+      })
+      .then((res) => {
+        if (res.data?.data && Array.isArray(res.data.data)) {
+          setUpcomingEvents(res.data.data);
+        } else {
+          setUpcomingEvents([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching upcoming events for sidebar:", err);
+        setUpcomingEvents([]);
+      })
+      .finally(() => {
+        setLoadingEvents(false);
+      });
+  };
+
   const handleFollowBack = async (e, targetUid) => {
     e.preventDefault();
     e.stopPropagation();
@@ -128,6 +163,7 @@ export default function Home() {
     fetchPosts();
     fetchRecentFollowing();
     fetchRecentFollowers();
+    fetchUpcomingEvents();
   }, [user, targetPostId]);
 
   useEffect(() => {
@@ -135,6 +171,7 @@ export default function Home() {
       fetchPosts();
       fetchRecentFollowing();
       fetchRecentFollowers();
+      fetchUpcomingEvents();
     };
 
     window.addEventListener("refresh-feed", handleRefreshFeed);
@@ -180,11 +217,11 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Sidebar - Profile Card */}
-              <div className="hidden lg:block lg:col-span-3">
+              {/* Left Sidebar - Profile & Upcoming Events */}
+              <div className="hidden lg:block lg:col-span-3 space-y-4 sticky top-24 self-start">
                 <Link
                   href={`/profile/${user?.uid}`}
-                  className="block sticky top-24 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm space-y-3 p-4 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md transition-all hover:cursor-pointer group"
+                  className="block bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm space-y-3 p-4 hover:border-gray-300 dark:hover:border-gray-700 hover:shadow-md transition-all hover:cursor-pointer group"
                 >
                   <div className="relative h-20 -mx-4 -mt-4 bg-linear-to-r from-zinc-800 to-zinc-900 overflow-hidden">
                     {activeDbUser?.coverImage && (
@@ -239,6 +276,103 @@ export default function Home() {
                     )}
                   </div>
                 </Link>
+
+                {/* Upcoming Events Card */}
+                <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 space-y-3">
+                  <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                        <Calendar className="w-3.5 h-3.5" />
+                      </div>
+                      <h3 className="font-bold text-sm text-gray-900 dark:text-white">
+                        Upcoming Events
+                      </h3>
+                    </div>
+                    <Link
+                      href="/events"
+                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      View All
+                    </Link>
+                  </div>
+
+                  {loadingEvents ? (
+                    <div className="flex items-center justify-center py-6 text-gray-400 text-xs">
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <span>Loading events...</span>
+                    </div>
+                  ) : upcomingEvents.length === 0 ? (
+                    <div className="text-center py-5 px-2 text-xs text-gray-500 dark:text-gray-400 space-y-2">
+                      <p>No upcoming events scheduled right now.</p>
+                      <Link
+                        href="/events"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        Explore Events Hub <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
+                      {upcomingEvents.map((event) => {
+                        const eventDate = event.date ? new Date(event.date) : null;
+                        const dateDay = eventDate
+                          ? eventDate.toLocaleDateString("en-US", { day: "numeric" })
+                          : "--";
+                        const dateMonth = eventDate
+                          ? eventDate.toLocaleDateString("en-US", { month: "short" })
+                          : "";
+
+                        return (
+                          <Link
+                            key={event.id}
+                            href={`/events/${event.id}`}
+                            className="flex items-start gap-3 py-2.5 px-1 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors group"
+                          >
+                            <div className="w-10 h-10 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex flex-col items-center justify-center shrink-0 shadow-2xs">
+                              <span className="text-[9px] font-bold uppercase tracking-wider leading-none opacity-80">
+                                {dateMonth}
+                              </span>
+                              <span className="text-sm font-extrabold leading-none mt-0.5">
+                                {dateDay}
+                              </span>
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <h4 className="text-xs font-bold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-tight">
+                                {event.title}
+                              </h4>
+                              <div className="flex items-center gap-1.5 mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                                {event.type && (
+                                  <span className="capitalize font-semibold text-blue-600 dark:text-blue-400">
+                                    {event.type}
+                                  </span>
+                                )}
+                                {event.location && (
+                                  <>
+                                    <span>•</span>
+                                    <span className="truncate max-w-[90px]">
+                                      {event.location}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <div className="pt-1">
+                    <Link
+                      href="/events"
+                      className="w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/60 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-100 dark:border-gray-800 cursor-pointer"
+                    >
+                      <span>Explore All Events</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  </div>
+                </div>
               </div>
 
               {/* Main Feed Column */}
@@ -361,13 +495,12 @@ export default function Home() {
                               </div>
                             </div>
                             <span
-                              className={`shrink-0 px-1.5 py-0.5 text-[9px] font-bold rounded tracking-wider uppercase ${
-                                account.role === "ALUMNI"
+                              className={`shrink-0 px-1.5 py-0.5 text-[9px] font-bold rounded tracking-wider uppercase ${account.role === "ALUMNI"
                                   ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                                   : account.role === "STUDENT"
-                                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
-                                  : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
-                              }`}
+                                    ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                                    : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                                }`}
                             >
                               {account.role || "USER"}
                             </span>
@@ -429,13 +562,12 @@ export default function Home() {
                                   </p>
                                   <div className="flex items-center gap-1.5 mt-0.5">
                                     <span
-                                      className={`px-1.5 py-0.2 text-[9px] font-bold rounded tracking-wider uppercase ${
-                                        account.role === "ALUMNI"
+                                      className={`px-1.5 py-0.2 text-[9px] font-bold rounded tracking-wider uppercase ${account.role === "ALUMNI"
                                           ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60"
                                           : account.role === "STUDENT"
-                                          ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
-                                          : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
-                                      }`}
+                                            ? "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60"
+                                            : "bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60"
+                                        }`}
                                     >
                                       {account.role || "USER"}
                                     </span>
