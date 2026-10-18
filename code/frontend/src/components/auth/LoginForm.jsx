@@ -74,18 +74,18 @@ export default function LoginForm() {
     try {
       const loggedUser = await signInUser(email, password);
 
-      if (!loggedUser.emailVerified) {
-        setNotification({
-          type: "warning",
-          title: "Email Not Verified",
-          message: "Verify your email first to continue.",
-          duration: 3000
-        });
-        setTimeout(() => {
-          router.push("/verify-email");
-        }, 1500);
-        return;
-      }
+      // if (!loggedUser.emailVerified) {
+      //   setNotification({
+      //     type: "warning",
+      //     title: "Email Not Verified",
+      //     message: "Verify your email first to continue.",
+      //     duration: 3000
+      //   });
+      //   setTimeout(() => {
+      //     router.push("/verify-email");
+      //   }, 1500);
+      //   return;
+      // }
 
       setNotification({
         type: "success",
