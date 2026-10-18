@@ -28,23 +28,36 @@ const GoogleSignInButton = ({ disabled = false }) => {
       }
 
       let userExists = false;
+      let existingProfile = null;
       try {
-        const res = await axiosInstance.get("/api/v1/users");
-        const users = res.data.data || [];
-        userExists = users.some(
-          (u) => u.email === user.email || u.uid === user.uid
-        );
+        const res = await axiosInstance.get(`/api/v1/profiles/${user.uid}`, {
+          validateStatus: (s) => s < 500,
+        });
+        if (res.status === 200 && res.data?.data) {
+          userExists = true;
+          existingProfile = res.data.data;
+        }
       } catch (dbError) {
-        console.error("Failed to check existing users:", dbError);
+        console.error("Failed to check existing profile:", dbError);
       }
 
       if (!userExists) {
-        await axiosInstance.post("/api/v1/users", {
+        const payload = {
           uid: user.uid,
-          name: user.displayName,
+          name: user.displayName || user.email?.split("@")[0] || "IUTian",
           email: user.email,
-          profileImage: user.photoURL
-        });
+        };
+        if (user.photoURL) {
+          payload.profileImage = user.photoURL;
+        }
+
+        try {
+          await axiosInstance.post("/api/v1/users", payload, {
+            validateStatus: (s) => s < 500,
+          });
+        } catch (createError) {
+          console.warn("User create notice (may already exist):", createError);
+        }
 
         setNotification({
           type: "success",
@@ -64,8 +77,13 @@ const GoogleSignInButton = ({ disabled = false }) => {
           duration: 2000,
         });
 
+        const hasCompletedProfile =
+          existingProfile?.role !== "USER" &&
+          (Boolean(existingProfile?.studentProfile) ||
+            Boolean(existingProfile?.alumniProfile));
+
         setTimeout(() => {
-          router.push("/");
+          router.push(hasCompletedProfile ? "/" : "/profile-setup");
         }, 1000);
       }
     } catch (err) {

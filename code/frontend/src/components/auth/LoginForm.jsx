@@ -81,7 +81,7 @@ export default function LoginForm() {
       //     message: "Verify your email first to continue.",
       //     duration: 3000
       //   });
-      //   setTimeout(() => {
+      //   setTimeout(() => {j
       //     router.push("/verify-email");
       //   }, 1500);
       //   return;
