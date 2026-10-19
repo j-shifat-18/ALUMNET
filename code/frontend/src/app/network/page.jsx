@@ -18,6 +18,7 @@ import {
   Briefcase,
   Loader2,
   ExternalLink,
+  X,
 } from "lucide-react";
 
 export default function NetworkPage() {
@@ -102,7 +103,7 @@ export default function NetworkPage() {
                 );
               }
             })
-            .catch(() => {});
+            .catch(() => { });
         });
       })
       .catch((err) => {
@@ -159,7 +160,7 @@ export default function NetworkPage() {
                   );
                 }
               })
-              .catch(() => {});
+              .catch(() => { });
           });
         })
         .catch((err) => {
@@ -171,24 +172,65 @@ export default function NetworkPage() {
       const params = { limit: 100 };
       if (roleFilter !== "ALL") params.role = roleFilter;
 
-      const requests = q
-        ? [
-            axiosInstance.get("/api/v1/search/users", { params: { ...params, name: q } }),
-            axiosInstance.get("/api/v1/search/users", { params: { ...params, department: q } }),
-          ]
-        : [axiosInstance.get("/api/v1/search/users", { params })];
+      let requests = [];
+      if (!q) {
+        requests = [axiosInstance.get("/api/v1/search/users", { params })];
+      } else {
+        // Multi-category search: search across all backend-supported fields
+        requests = [
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, name: q } }),
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, department: q } }),
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, company: q } }),
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, jobPosition: q } }),
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, location: q } }),
+          axiosInstance.get("/api/v1/search/users", { params: { ...params, skill: q } }),
+        ];
 
-      Promise.all(requests)
+        // Also test common skill casing variations (e.g. "react" -> "React", "python" -> "Python")
+        const capitalizedQ = q.charAt(0).toUpperCase() + q.slice(1);
+        if (capitalizedQ !== q) {
+          requests.push(
+            axiosInstance.get("/api/v1/search/users", { params: { ...params, skill: capitalizedQ } })
+          );
+        }
+        const upperQ = q.toUpperCase();
+        if (upperQ !== q && upperQ !== capitalizedQ) {
+          requests.push(
+            axiosInstance.get("/api/v1/search/users", { params: { ...params, skill: upperQ } })
+          );
+        }
+
+        // Search alumni-specific fields if searching all or alumni
+        if (roleFilter === "ALL" || roleFilter === "ALUMNI") {
+          requests.push(
+            axiosInstance.get("/api/v1/search/alumni", { params: { limit: 100, batch: q } }),
+            axiosInstance.get("/api/v1/search/alumni", { params: { limit: 100, industry: q } }),
+            axiosInstance.get("/api/v1/search/alumni", { params: { limit: 100, domain: q } })
+          );
+          if (/^\d{4}$/.test(q)) {
+            requests.push(
+              axiosInstance.get("/api/v1/search/alumni", { params: { limit: 100, graduationYear: q } })
+            );
+          }
+        }
+      }
+
+      Promise.allSettled(requests)
         .then((responses) => {
           let combinedRaw = [];
           responses.forEach((res) => {
-            const list = res.data?.data?.data || res.data?.data || [];
-            combinedRaw = combinedRaw.concat(list);
+            if (res.status === "fulfilled") {
+              const list = res.value.data?.data?.data || res.value.data?.data || [];
+              combinedRaw = combinedRaw.concat(list);
+            }
           });
 
           const uniqueMap = new Map();
           combinedRaw.forEach((u) => {
-            if (u.uid && u.uid !== user.uid) {
+            if (u && u.uid && u.uid !== user?.uid) {
+              if (!u.role && u.alumniProfile) {
+                u.role = "ALUMNI";
+              }
               uniqueMap.set(u.uid, u);
             }
           });
@@ -210,7 +252,7 @@ export default function NetworkPage() {
                   }));
                 }
               })
-              .catch(() => {});
+              .catch(() => { });
 
             axiosInstance
               .get(`/api/v1/users/${otherUser.uid}`, {
@@ -229,7 +271,7 @@ export default function NetworkPage() {
                   );
                 }
               })
-              .catch(() => {});
+              .catch(() => { });
           });
         })
         .catch((err) => {
@@ -243,6 +285,12 @@ export default function NetworkPage() {
   const handleSearchSubmit = (e) => {
     if (e) e.preventDefault();
     setActiveSearchQuery(searchInput);
+    setLoading(true);
+  };
+
+  const handleClearSearch = () => {
+    setSearchInput("");
+    setActiveSearchQuery("");
     setLoading(true);
   };
 
@@ -304,6 +352,7 @@ export default function NetworkPage() {
     const currentCompany = item.currentCompany || profile?.currentCompany;
     const department = profile?.department || item.department;
     const batch = profile?.batch || item.batch;
+    const skills = (profile?.skills || item.skills || []).filter(Boolean);
 
     return (
       <div
@@ -331,11 +380,10 @@ export default function NetworkPage() {
 
               {item.role && (
                 <span
-                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase border ${
-                    item.role.toUpperCase() === "ALUMNI"
+                  className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold tracking-wider uppercase border ${item.role.toUpperCase() === "ALUMNI"
                       ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
                       : "bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800"
-                  }`}
+                    }`}
                 >
                   {item.role}
                 </span>
@@ -383,10 +431,22 @@ export default function NetworkPage() {
                 </p>
               )}
 
-              {item.bio && (
-                <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 pt-0.5 leading-relaxed">
-                  {item.bio}
-                </p>
+              {skills && skills.length > 0 && (
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {skills.slice(0, 3).map((sk, idx) => (
+                    <span
+                      key={idx}
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium"
+                    >
+                      {sk}
+                    </span>
+                  ))}
+                  {skills.length > 3 && (
+                    <span className="text-[10px] px-1 py-0.5 text-gray-400">
+                      +{skills.length - 3}
+                    </span>
+                  )}
+                </div>
               )}
 
               {item.followsYouBack && (
@@ -404,13 +464,12 @@ export default function NetworkPage() {
               type="button"
               onClick={() => handleToggleFollow(item.uid)}
               disabled={isToggling}
-              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors hover:cursor-pointer disabled:opacity-50 ${
-                isFollowing
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors hover:cursor-pointer disabled:opacity-50 ${isFollowing
                   ? "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-700"
                   : isFollower
-                  ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white hover:bg-blue-700 dark:hover:bg-blue-600"
-                  : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
-              }`}
+                    ? "bg-blue-600 text-white dark:bg-blue-500 dark:text-white hover:bg-blue-700 dark:hover:bg-blue-600"
+                    : "bg-gray-900 text-white dark:bg-white dark:text-gray-900 hover:bg-gray-800 dark:hover:bg-gray-200"
+                }`}
             >
               {isToggling ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -458,11 +517,10 @@ export default function NetworkPage() {
                 <button
                   type="button"
                   onClick={() => setActiveTab("EXPLORE")}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
-                    activeTab === "EXPLORE"
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${activeTab === "EXPLORE"
                       ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <Users className="w-4 h-4" />
@@ -476,11 +534,10 @@ export default function NetworkPage() {
                     setActiveTab("CONNECTIONS");
                     fetchConnections();
                   }}
-                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
-                    activeTab === "CONNECTIONS"
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${activeTab === "CONNECTIONS"
                       ? "bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
                       : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2.5">
                     <UserCheck className="w-4 h-4" />
@@ -508,14 +565,24 @@ export default function NetworkPage() {
                           value={searchInput}
                           onChange={(e) => setSearchInput(e.target.value)}
                           placeholder="Search"
-                          className="w-full pl-9 pr-4 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-gray-100"
+                          className="w-full pl-9 pr-9 py-2 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-900 dark:focus:ring-gray-100"
                         />
+                        {searchInput && (
+                          <button
+                            type="button"
+                            onClick={handleClearSearch}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded-full hover:cursor-pointer"
+                            title="Clear search"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                       <button
                         type="submit"
                         className="px-4 py-2 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity hover:cursor-pointer shrink-0"
                       >
-                        Search
+                        <Search className="w-4 h-4" />
                       </button>
                     </form>
 
@@ -528,11 +595,10 @@ export default function NetworkPage() {
                             setRoleFilter(role);
                             setLoading(true);
                           }}
-                          className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer whitespace-nowrap ${
-                            roleFilter === role
+                          className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer whitespace-nowrap ${roleFilter === role
                               ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                               : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                          }`}
+                            }`}
                         >
                           {role === "ALL"
                             ? "All People"
@@ -542,25 +608,44 @@ export default function NetworkPage() {
                     </div>
                   </div>
 
-                  {loading ? (
-                    <div className="flex flex-col items-center justify-center py-20">
-                      <Loader2 className="w-8 h-8 animate-spin text-gray-500 mb-3" />
-                      <p className="text-sm text-gray-500">Finding People...</p>
-                    </div>
-                  ) : usersList.filter((item) => !followingMap[item.uid]).length === 0 ? (
-                    <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 space-y-3">
-                      <Users className="w-12 h-12 text-gray-400 mx-auto" />
-                      <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                        No people found
-                      </h3>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                      {usersList
-                        .filter((item) => !followingMap[item.uid])
-                        .map((item) => renderMemberCard(item))}
-                    </div>
-                  )}
+                  {(() => {
+                    const displayedUsers = activeSearchQuery.trim()
+                      ? usersList
+                      : usersList.filter((item) => !followingMap[item.uid]);
+
+                    if (loading) {
+                      return (
+                        <div className="flex flex-col items-center justify-center py-20">
+                          <Loader2 className="w-8 h-8 animate-spin text-gray-500 mb-3" />
+                          <p className="text-sm text-gray-500">Finding People...</p>
+                        </div>
+                      );
+                    }
+
+                    if (displayedUsers.length === 0) {
+                      return (
+                        <div className="text-center py-16 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-8 space-y-3">
+                          <Users className="w-12 h-12 text-gray-400 mx-auto" />
+                          <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                            {activeSearchQuery.trim()
+                              ? `No people found for "${activeSearchQuery}"`
+                              : "No people found"}
+                          </h3>
+                          {activeSearchQuery.trim() && (
+                            <p className="text-xs text-gray-500">
+                              Try searching by name, department (e.g. CSE), company, position, or skill.
+                            </p>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                        {displayedUsers.map((item) => renderMemberCard(item))}
+                      </div>
+                    );
+                  })()}
                 </>
               ) : (
                 <>
@@ -568,22 +653,20 @@ export default function NetworkPage() {
                     <button
                       type="button"
                       onClick={() => setConnectionSubTab("FOLLOWING")}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${
-                        connectionSubTab === "FOLLOWING"
+                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${connectionSubTab === "FOLLOWING"
                           ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       Following ({followingList.length})
                     </button>
                     <button
                       type="button"
                       onClick={() => setConnectionSubTab("FOLLOWERS")}
-                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${
-                        connectionSubTab === "FOLLOWERS"
+                      className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-colors hover:cursor-pointer ${connectionSubTab === "FOLLOWERS"
                           ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                           : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
-                      }`}
+                        }`}
                     >
                       Followers ({followersList.length})
                     </button>
