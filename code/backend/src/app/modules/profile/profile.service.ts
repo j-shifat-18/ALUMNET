@@ -67,6 +67,9 @@ const getProfile = async (uid: string) => {
       studentProfile: true,
       alumniProfile: true,
       adminProfile: true,
+      experiences: {
+        orderBy: { startDate: "desc" },
+      },
     },
   });
 
