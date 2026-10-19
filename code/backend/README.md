@@ -917,9 +917,84 @@ Check if the currently authenticated user follows a given user.
 
 ### Mentorship Module (`/api/v1/mentorship`)
 
+#### `PATCH /api/v1/mentorship/availability` — Update Mentorship Availability
+
+Only alumni can update their mentorship availability. Allows setting `isMentorAvailable` (`true` / `false`) or `availability` (`"Available"` / `"Unavailable"`).
+
+**Auth Required:** Yes (Alumni only)
+
+**Request Body:**
+```json
+{
+  "isMentorAvailable": true
+}
+```
+*or*
+```json
+{
+  "availability": "Available"
+}
+```
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `isMentorAvailable` | boolean | Optional* | `true` for Available, `false` for Unavailable |
+| `availability` | string | Optional* | `"Available"` or `"Unavailable"` |
+
+*\*At least one of `isMentorAvailable` or `availability` must be provided.*
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentorship availability updated successfully",
+  "data": {
+    "isMentorAvailable": true,
+    "availability": "Available",
+    "user": {
+      "id": 5,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "...",
+      "role": "ALUMNI",
+      "isVerified": true,
+      "isMentorAvailable": true
+    }
+  }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "Only alumni can update mentorship availability" }
+```
+
+---
+
+#### `GET /api/v1/mentorship/availability` / `GET /api/v1/mentorship/availability/:uid` — Get Mentorship Availability
+
+Returns the mentorship availability status for the authenticated user or target alumnus.
+
+**Auth Required:** Yes
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Mentorship availability retrieved successfully",
+  "data": {
+    "isMentorAvailable": true,
+    "availability": "Available"
+  }
+}
+```
+
+---
+
 #### `POST /api/v1/mentorship/request` — Send Mentorship Request
 
-Only users with role `STUDENT` can send requests. Target must have role `ALUMNI`.
+Only users with role `STUDENT` can send requests. Target must have role `ALUMNI` and `isMentorAvailable` must be `true` (Available).
 
 **Auth Required:** Yes
 
@@ -948,10 +1023,15 @@ Only users with role `STUDENT` can send requests. Target must have role `ALUMNI`
     "message": "I would love guidance on breaking into backend engineering.",
     "status": "PENDING",
     "createdAt": "2026-07-01T10:00:00.000Z",
-    "student": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT" },
-    "alumni": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI" }
+    "student": { "id": 2, "uid": "...", "name": "John Doe", "profileImage": "...", "role": "STUDENT", "isMentorAvailable": false },
+    "alumni": { "id": 5, "uid": "...", "name": "Jane Smith", "profileImage": "...", "role": "ALUMNI", "isMentorAvailable": true }
   }
 }
+```
+
+**Error (400):**
+```json
+{ "success": false, "message": "This alumnus is currently not available for mentorship" }
 ```
 
 **Error (403):**

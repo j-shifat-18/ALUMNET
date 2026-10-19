@@ -90,6 +90,36 @@ const getMentees = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+const updateAvailability = asyncHandler(async (req: Request, res: Response) => {
+  const uid = req.user.uid;
+  const { isMentorAvailable, availability } = req.body;
+
+  const isAvailable =
+    isMentorAvailable !== undefined
+      ? Boolean(isMentorAvailable)
+      : availability === "Available";
+
+  const result = await MentorshipService.updateAvailability(uid, isAvailable);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Mentorship availability updated successfully",
+    data: result,
+  });
+});
+
+const getAvailability = asyncHandler(async (req: Request, res: Response) => {
+  const targetUid = (req.params.uid as string) || req.user.uid;
+
+  const result = await MentorshipService.getAvailability(targetUid);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Mentorship availability retrieved successfully",
+    data: result,
+  });
+});
+
 export const MentorshipController = {
   sendRequest,
   getSentRequests,
@@ -98,4 +128,7 @@ export const MentorshipController = {
   rejectRequest,
   getMentors,
   getMentees,
+  updateAvailability,
+  getAvailability,
 };
+

@@ -10,6 +10,7 @@ const userSelect = {
   profileImage: true,
   role: true,
   isVerified: true,
+  isMentorAvailable: true,
 } as const;
 
 const sendRequest = async (
@@ -24,7 +25,7 @@ const sendRequest = async (
     }),
     prisma.user.findUnique({
       where: { uid: alumniUid },
-      select: { id: true, role: true },
+      select: { id: true, role: true, isMentorAvailable: true },
     }),
   ]);
 
@@ -37,6 +38,10 @@ const sendRequest = async (
 
   if (alumni.role !== "ALUMNI") {
     throw new AppError(400, "Mentorship requests can only be sent to alumni");
+  }
+
+  if (!alumni.isMentorAvailable) {
+    throw new AppError(400, "This alumnus is currently not available for mentorship");
   }
 
   const existing = await prisma.mentorshipRequest.findUnique({
@@ -248,6 +253,49 @@ const getMentees = async (uid: string) => {
   return requests.map((r) => ({ requestId: r.id, mentee: r.student }));
 };
 
+const updateAvailability = async (uid: string, isAvailable: boolean) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true, role: true },
+  });
+
+  if (!user) throw new AppError(404, "User not found");
+
+  if (user.role !== "ALUMNI") {
+    throw new AppError(403, "Only alumni can update mentorship availability");
+  }
+
+  const updated = await prisma.user.update({
+    where: { uid },
+    data: { isMentorAvailable: isAvailable },
+    select: userSelect,
+  });
+
+  return {
+    isMentorAvailable: updated.isMentorAvailable,
+    availability: updated.isMentorAvailable ? "Available" : "Unavailable",
+    user: updated,
+  };
+};
+
+const getAvailability = async (uid: string) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true, role: true, isMentorAvailable: true },
+  });
+
+  if (!user) throw new AppError(404, "User not found");
+
+  if (user.role !== "ALUMNI") {
+    throw new AppError(400, "Mentorship availability is only applicable for alumni");
+  }
+
+  return {
+    isMentorAvailable: user.isMentorAvailable,
+    availability: user.isMentorAvailable ? "Available" : "Unavailable",
+  };
+};
+
 export const MentorshipService = {
   sendRequest,
   getSentRequests,
@@ -256,4 +304,6 @@ export const MentorshipService = {
   rejectRequest,
   getMentors,
   getMentees,
+  updateAvailability,
+  getAvailability,
 };

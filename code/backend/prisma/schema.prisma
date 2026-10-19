@@ -72,7 +72,7 @@ model User {
   followingCount Int @default(0)
 
   isVerified        Boolean @default(false)
-  isMentorAvailable Boolean @default(false)
+  isMentorAvailable Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
