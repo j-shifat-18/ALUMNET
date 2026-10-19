@@ -14,7 +14,7 @@ import { useChat } from '@/hooks/useChat';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2, ChevronDown } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2, ChevronDown, MapPin } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -26,6 +26,7 @@ import PostCard from '@/components/posts/PostCard';
 import { GithubIcon as Github } from '@/components/ui/Icons';
 import IUTLogo from "../../../../public/IUT.png";
 import SkillsMultiSelect from '@/components/profile/SkillsMultiSelect';
+import MonthYearPicker from '@/components/ui/MonthYearPicker';
 
 const profileCache = new Map();
 const postsCache = new Map();
@@ -44,6 +45,19 @@ export default function Profile() {
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
   const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
   const [jobDrawerOpen, setJobDrawerOpen] = useState(false);
+  const [experienceList, setExperienceList] = useState([]);
+  const [loadingExperiences, setLoadingExperiences] = useState(false);
+  const [showAllExperiences, setShowAllExperiences] = useState(false);
+  const [editingExperience, setEditingExperience] = useState(null);
+  const [expPosition, setExpPosition] = useState("");
+  const [expCompany, setExpCompany] = useState("");
+  const [expWorkMode, setExpWorkMode] = useState("IN_PERSON");
+  const [expWorkplaceName, setExpWorkplaceName] = useState("");
+  const [expCurrentlyWorking, setExpCurrentlyWorking] = useState(true);
+  const [expStartDate, setExpStartDate] = useState("");
+  const [expEndDate, setExpEndDate] = useState("");
+  const [expDescription, setExpDescription] = useState("");
+  const [expFormError, setExpFormError] = useState("");
   const [skillsModalOpen, setSkillsModalOpen] = useState(false);
   const [editingSkills, setEditingSkills] = useState([]);
   const [certModalOpen, setCertModalOpen] = useState(false);
@@ -294,6 +308,10 @@ export default function Profile() {
         setResumeUrl(userProfile?.resumeUrl || "");
         setCurrentCompany(userProfile?.currentCompany || "");
         setCurrentPosition(userProfile?.currentPosition || "");
+
+        if (Array.isArray(data?.experiences)) {
+          setExperienceList(data.experiences);
+        }
       })
       .catch(err => {
         console.error("Error fetching profile:", err.response?.data || err.message);
@@ -491,90 +509,246 @@ export default function Profile() {
     }
   };
 
-  const openJobModal = () => {
-    const isStudent = dbUser?.role === "STUDENT";
-    const subProf = isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile;
+  const fetchExperiences = useCallback(async (targetUid) => {
+    if (!targetUid) return;
+    setLoadingExperiences(true);
+    try {
+      const res = await axiosInstance.get(`/api/v1/experiences/user/${targetUid}`, {
+        validateStatus: (s) => s < 500,
+      });
+      if (res.status === 200 && Array.isArray(res.data?.data)) {
+        setExperienceList(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error fetching experiences:", err);
+    } finally {
+      setLoadingExperiences(false);
+    }
+  }, []);
 
-    setCurrentCompany(subProf?.currentCompany || "");
-    setCurrentPosition(subProf?.currentPosition || "");
+  useEffect(() => {
+    if (id) {
+      fetchExperiences(id);
+    }
+  }, [id, fetchExperiences]);
+
+  const formatDateRange = (exp) => {
+    if (!exp?.startDate) {
+      return exp?.currentlyWorking ? "Present" : "";
+    }
+    const start = new Date(exp.startDate).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    if (exp.currentlyWorking) {
+      return `${start} - Present`;
+    }
+    if (!exp.endDate) {
+      return start;
+    }
+    const end = new Date(exp.endDate).toLocaleDateString("en-US", {
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    });
+    return `${start} - ${end}`;
+  };
+
+  const getDuration = (startDate, endDate, currentlyWorking) => {
+    if (!startDate) return null;
+    const start = new Date(startDate);
+    const end = currentlyWorking || !endDate ? new Date() : new Date(endDate);
+    let totalMonths = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    if (totalMonths < 0) totalMonths = 0;
+    totalMonths += 1;
+    const years = Math.floor(totalMonths / 12);
+    const months = totalMonths % 12;
+    const parts = [];
+    if (years > 0) parts.push(`${years} yr${years > 1 ? "s" : ""}`);
+    if (months > 0) parts.push(`${months} mo${months > 1 ? "s" : ""}`);
+    return parts.length > 0 ? parts.join(" ") : "1 mo";
+  };
+
+  const formatDateForInput = (dateStr) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      const year = d.getUTCFullYear();
+      const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+      return `${year}-${month}`;
+    } catch {
+      return "";
+    }
+  };
+
+  const openAddJobModal = () => {
+    setEditingExperience(null);
+    setExpPosition("");
+    setExpCompany("");
+    setExpWorkMode("IN_PERSON");
+    setExpWorkplaceName("");
+    setExpCurrentlyWorking(true);
+    setExpStartDate("");
+    setExpEndDate("");
+    setExpDescription("");
+    setExpFormError("");
     setJobDrawerOpen(true);
   };
 
-  const handleEditJobInfo = async () => {
+  const openJobModal = () => openAddJobModal();
+
+  const openEditJobModal = (exp) => {
+    setEditingExperience(exp);
+    setExpPosition(exp.position || "");
+    setExpCompany(exp.company || "");
+    const mode = exp.workMode ? exp.workMode.toUpperCase().replace("-", "_") : "IN_PERSON";
+    setExpWorkMode(mode === "REMOTE" ? "REMOTE" : "IN_PERSON");
+    setExpWorkplaceName(exp.workplaceName || "");
+    setExpCurrentlyWorking(Boolean(exp.currentlyWorking));
+    setExpStartDate(formatDateForInput(exp.startDate));
+    setExpEndDate(formatDateForInput(exp.endDate));
+    setExpDescription(exp.description || "");
+    setExpFormError("");
+    setJobDrawerOpen(true);
+  };
+
+  const handleSaveExperience = async (e) => {
+    if (e) e.preventDefault();
+    setExpFormError("");
+
+    if (!expPosition?.trim()) {
+      setExpFormError("Job position is required.");
+      return;
+    }
+    if (!expCompany?.trim()) {
+      setExpFormError("Company / Workplace is required.");
+      return;
+    }
+    if (!expStartDate) {
+      setExpFormError("Start date (Month & Year) is required.");
+      return;
+    }
+    if (expWorkMode === "IN_PERSON" && !expWorkplaceName?.trim()) {
+      setExpFormError("Workplace location is required for in-person jobs.");
+      return;
+    }
+    if (!expCurrentlyWorking) {
+      if (!expEndDate) {
+        setExpFormError("End date (Month & Year) is required when not currently working.");
+        return;
+      }
+      if (expEndDate < expStartDate) {
+        setExpFormError("End date cannot be earlier than start date.");
+        return;
+      }
+    }
+
     try {
       setIsSaving(true);
-      const isStudent = dbUser?.role === "STUDENT";
-      const existing = (isStudent ? dbUser?.studentProfile : dbUser?.alumniProfile) || {};
-
-      let subProfile = {};
-      if (isStudent) {
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          careerGoal: existing.careerGoal || null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          currentCompany: currentCompany?.trim() || null,
-          currentPosition: currentPosition?.trim() || null,
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          certifications: existing.certifications || [],
-          achievements: existing.achievements || [],
-        };
-      } else {
-        const gradYear = existing.graduationYear
-          ? parseInt(existing.graduationYear)
-          : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
-
-        subProfile = {
-          department: existing.department || "General",
-          program: existing.program || "General",
-          batch: existing.batch || "1",
-          graduationYear: gradYear,
-          currentCompany: currentCompany?.trim() || null,
-          currentPosition: currentPosition?.trim() || null,
-          industry: existing.industry || null,
-          experienceYears: existing.experienceYears ? parseInt(existing.experienceYears) : null,
-          interestedDomains: existing.interestedDomains || [],
-          skills: existing.skills || [],
-          expertiseAreas: existing.expertiseAreas || [],
-          education: existing.education || null,
-          certifications: existing.certifications || [],
-          achievements: existing.achievements || [],
-          resumeUrl: normalizeUrl(existing.resumeUrl),
-          githubUrl: normalizeUrl(existing.githubUrl),
-          portfolioUrl: normalizeUrl(existing.portfolioUrl),
-          personalWebsite: normalizeUrl(existing.personalWebsite),
-          mentorshipDomains: existing.mentorshipDomains || [],
-        };
-      }
-
-      const role = dbUser?.role || (isStudent ? "STUDENT" : "ALUMNI");
-      const profileKey = isStudent ? "studentProfile" : "alumniProfile";
-      const payload = {
-        role,
-        [profileKey]: subProfile,
+      const toIsoMonth = (val) => {
+        if (!val) return null;
+        if (val.length === 7) return new Date(`${val}-01T00:00:00.000Z`).toISOString();
+        return new Date(val).toISOString();
       };
 
-      const res = await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, payload);
-      if (res.data?.data) {
-        updateUserProfileState(res.data.data);
+      const payload = {
+        company: expCompany.trim(),
+        position: expPosition.trim(),
+        workMode: expWorkMode,
+        workplaceName: expWorkMode === "IN_PERSON" ? expWorkplaceName.trim() : null,
+        startDate: toIsoMonth(expStartDate),
+        currentlyWorking: expCurrentlyWorking,
+        endDate: expCurrentlyWorking || !expEndDate ? null : toIsoMonth(expEndDate),
+        description: expDescription.trim() || null,
+      };
+
+      if (editingExperience?.id && !editingExperience.isLegacy) {
+        const res = await axiosInstance.patch(`/api/v1/experiences/${editingExperience.id}`, payload);
+        if (res.data?.data) {
+          setExperienceList(prev => prev.map(item => item.id === editingExperience.id ? res.data.data : item));
+        } else {
+          await fetchExperiences(id || user?.uid);
+        }
+        Swal.fire({
+          title: "Updated!",
+          text: "Job experience updated successfully.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
       } else {
-        updateUserProfileState((prev) => ({
+        const res = await axiosInstance.post("/api/v1/experiences", payload);
+        if (res.data?.data) {
+          setExperienceList(prev => [res.data.data, ...prev]);
+        } else {
+          await fetchExperiences(id || user?.uid);
+        }
+        Swal.fire({
+          title: "Added!",
+          text: "Job experience added successfully.",
+          icon: "success",
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+
+      if (expCurrentlyWorking) {
+        const profileKey = dbUser?.role === "STUDENT" ? "studentProfile" : "alumniProfile";
+        setDbUser(prev => ({
           ...prev,
           [profileKey]: {
             ...(prev?.[profileKey] || {}),
-            ...subProfile,
-          },
+            currentCompany: expCompany.trim(),
+            currentPosition: expPosition.trim(),
+          }
         }));
+        setCurrentCompany(expCompany.trim());
+        setCurrentPosition(expPosition.trim());
       }
+
       setJobDrawerOpen(false);
     } catch (err) {
-      console.error("Error updating job info:", err.response?.data || err);
+      console.error("Error saving experience:", err.response?.data || err);
+      const msg = err.response?.data?.message || err.response?.data?.error || "Failed to save experience.";
+      setExpFormError(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDeleteExperience = async (expId) => {
+    const result = await Swal.fire({
+      title: "Delete Job Experience?",
+      text: "Are you sure you want to remove this experience from your profile?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, delete",
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      setIsSaving(true);
+      await axiosInstance.delete(`/api/v1/experiences/${expId}`);
+      setExperienceList(prev => prev.filter(e => e.id !== expId));
+      Swal.fire({
+        title: "Deleted!",
+        text: "Job experience has been removed.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error deleting experience:", err.response?.data || err);
+      Swal.fire({
+        title: "Error!",
+        text: err.response?.data?.message || "Failed to delete job experience.",
+        icon: "error",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -1544,22 +1718,41 @@ export default function Profile() {
             </div>
 
             {(() => {
-              const hasJob = Boolean(profile?.currentCompany || profile?.currentPosition);
-              if (!hasJob && !isOwner) return null;
+              const allExperiences = experienceList.length > 0
+                ? experienceList
+                : (profile?.currentCompany || profile?.currentPosition)
+                  ? [{
+                      id: 'legacy',
+                      position: profile.currentPosition || 'Position',
+                      company: profile.currentCompany || 'Company',
+                      currentlyWorking: true,
+                      workMode: 'IN_PERSON',
+                      workplaceName: null,
+                      startDate: null,
+                      endDate: null,
+                      description: null,
+                      isLegacy: true,
+                    }]
+                  : [];
+
+              if (allExperiences.length === 0 && !isOwner) return null;
+
+              const INITIAL_EXP_COUNT = 2;
+              const displayedExperiences = showAllExperiences
+                ? allExperiences
+                : allExperiences.slice(0, INITIAL_EXP_COUNT);
 
               return (
                 <div className="">
                   <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 overflow-hidden shadow-sm">
                     <div className='flex justify-between items-center'>
-                      <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Experience</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className='text-2xl font-bold text-gray-900 dark:text-white'>Experience</h4>
+                      </div>
                       {isOwner ? (
                         <button
                           type="button"
-                          onClick={() => {
-                            setCurrentCompany("");
-                            setCurrentPosition("");
-                            setJobDrawerOpen(true);
-                          }}
+                          onClick={openAddJobModal}
                           className="btn btn-secondary text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-white transition-colors cursor-pointer"
                           title="Add Job Experience"
                         >
@@ -1568,46 +1761,108 @@ export default function Profile() {
                       ) : <></>}
                     </div>
                     <Divider className='mt-2 mb-4' />
-                    {hasJob ? (
-                      <div className='flex items-start justify-between gap-4'>
-                        <div className='flex items-start gap-4 min-w-0'>
-                          <div className='p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 flex-shrink-0'>
-                            <Briefcase className='w-6 h-6' />
-                          </div>
-                          <div className='space-y-1 min-w-0'>
-                            {profile?.currentPosition && (
-                              <p className='font-bold text-lg text-gray-900 dark:text-white leading-snug'>
-                                {profile.currentPosition}
-                              </p>
-                            )}
-                            {profile?.currentCompany && (
-                              <p className='text-base font-medium text-gray-700 dark:text-gray-300'>
-                                {profile.currentCompany}
-                              </p>
-                            )}
-                          </div>
-                        </div>
 
-                        {isOwner && (
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={openJobModal}
-                              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-                              title="Edit Job Experience"
-                            >
-                              <PencilLine className='w-4 h-4' />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={handleDeleteJobInfo}
-                              disabled={isSaving}
-                              className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
-                              title="Delete Job Experience"
-                            >
-                              <Trash2 className='w-4 h-4' />
-                            </button>
-                          </div>
+                    {allExperiences.length > 0 ? (
+                      <div className="space-y-4">
+                        {displayedExperiences.map((exp, idx) => {
+                          const isRemote = exp.workMode === 'REMOTE';
+                          const dateRangeStr = formatDateRange(exp);
+                          const durationStr = exp.startDate ? getDuration(exp.startDate, exp.endDate, exp.currentlyWorking) : null;
+
+                          return (
+                            <React.Fragment key={exp.id || idx}>
+                              <div className='flex items-start justify-between gap-4'>
+                                <div className='flex items-start gap-4 min-w-0 flex-1'>
+                                  <div className='p-3 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 shrink-0 mt-0.5'>
+                                    <Briefcase className='w-6 h-6' />
+                                  </div>
+                                  <div className='space-y-1.5 min-w-0 flex-1'>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <h5 className='font-bold text-base md:text-lg text-gray-900 dark:text-white leading-snug'>
+                                        {exp.position}
+                                      </h5>
+                                      {exp.currentlyWorking && (
+                                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                                          Current
+                                        </span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex items-center gap-2 flex-wrap text-sm text-gray-700 dark:text-gray-300 font-medium">
+                                      <span className="text-gray-900 dark:text-gray-100 font-semibold">{exp.company}</span>
+                                      
+                                      {isRemote ? (
+                                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                          <Globe className="w-3 h-3" /> Remote
+                                        </span>
+                                      ) : exp.workplaceName ? (
+                                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+                                          <MapPin className="w-3 h-3 text-gray-400" /> {exp.workplaceName}
+                                        </span>
+                                      ) : null}
+                                    </div>
+
+                                    {(dateRangeStr || durationStr) && (
+                                      <p className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                        <Calendar className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+                                        <span>
+                                          {dateRangeStr}
+                                          {durationStr && ` · ${durationStr}`}
+                                        </span>
+                                      </p>
+                                    )}
+
+                                    {exp.description && (
+                                      <p className="text-xs md:text-sm text-gray-600 dark:text-gray-400 pt-1 leading-relaxed whitespace-pre-line">
+                                        {exp.description}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {isOwner && (
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => openEditJobModal(exp)}
+                                      className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+                                      title="Edit Job Experience"
+                                    >
+                                      <PencilLine className='w-4 h-4' />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => exp.isLegacy ? handleDeleteJobInfo() : handleDeleteExperience(exp.id)}
+                                      disabled={isSaving}
+                                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors cursor-pointer"
+                                      title="Delete Job Experience"
+                                    >
+                                      <Trash2 className='w-4 h-4' />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                              {idx < displayedExperiences.length - 1 && <Divider className='my-3' />}
+                            </React.Fragment>
+                          );
+                        })}
+
+                        {allExperiences.length > INITIAL_EXP_COUNT && (
+                          <button
+                            type='button'
+                            onClick={() => setShowAllExperiences(prev => !prev)}
+                            className='mt-3 text-md font-semibold text-gray-700 dark:text-gray-300 border-t border-gray-200 dark:border-gray-800 hover:cursor-pointer w-full transition-colors pt-3 flex items-center justify-center gap-2'
+                          >
+                            {showAllExperiences ? (
+                              <>
+                                <span>Show Less</span> <ListChevronsDownUp className="w-4 h-4" />
+                              </>
+                            ) : (
+                              <>
+                                <span>See More</span> <ListChevronsUpDown className="w-4 h-4" />
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     ) : (
@@ -1615,11 +1870,7 @@ export default function Profile() {
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">No job experience added yet.</p>
                         <button
                           type="button"
-                          onClick={() => {
-                            setCurrentCompany("");
-                            setCurrentPosition("");
-                            setJobDrawerOpen(true);
-                          }}
+                          onClick={openAddJobModal}
                           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
                         >
                           <Plus className="w-4 h-4" /> Add Job
@@ -2187,45 +2438,178 @@ export default function Profile() {
       <Modal
         isOpen={jobDrawerOpen}
         onClose={() => setJobDrawerOpen(false)}
-        title={Boolean(profile?.currentCompany || profile?.currentPosition) ? "Edit Job Experience" : "Add Job Experience"}
-        size="md"
+        title={editingExperience ? "Edit Job Experience" : "Add Job Experience"}
+        size="lg"
+        overflow="visible"
       >
-        <div className="space-y-4 py-2">
+        <form onSubmit={handleSaveExperience} className="space-y-4 py-2">
+          {expFormError && (
+            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-medium flex items-center gap-2">
+              <X className="w-4 h-4 shrink-0" />
+              <span>{expFormError}</span>
+            </div>
+          )}
+
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Job Position <span className="text-xs text-red-500">*</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Job Position <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={currentPosition}
-              onChange={(e) => setCurrentPosition(e.target.value)}
-              placeholder="e.g. Software Engineer, Product Designer, Intern"
-              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+              value={expPosition}
+              onChange={(e) => setExpPosition(e.target.value)}
+              placeholder="e.g. Senior Software Engineer, Product Designer"
+              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+              required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Jobplace / Company <span className="text-xs text-red-500">*</span>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Company / Workplace <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              value={currentCompany}
-              onChange={(e) => setCurrentCompany(e.target.value)}
-              placeholder="e.g. Google, Brain Station 23, IUT"
-              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+              value={expCompany}
+              onChange={(e) => setExpCompany(e.target.value)}
+              placeholder="e.g. Google, Brain Station 23, Microsoft"
+              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+              required
             />
           </div>
 
-          <div className="flex justify-end gap-2 pt-4 border-t border-gray-100 dark:border-gray-800">
-            <Button variant="outline" onClick={() => setJobDrawerOpen(false)}>
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Work Mode <span className="text-red-500">*</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setExpWorkMode("IN_PERSON")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                  expWorkMode === "IN_PERSON"
+                    ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <Building2 className="w-4 h-4" />
+                <span>In-Person</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setExpWorkMode("REMOTE")}
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
+                  expWorkMode === "REMOTE"
+                    ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
+                    : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
+                }`}
+              >
+                <Globe className="w-4 h-4" />
+                <span>Remote</span>
+              </button>
+            </div>
+          </div>
+
+          {expWorkMode === "IN_PERSON" && (
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                Workplace Location / City <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  value={expWorkplaceName}
+                  onChange={(e) => setExpWorkplaceName(e.target.value)}
+                  placeholder="e.g. Dhaka Office, Gazipur, Bangladesh"
+                  className="signin-input w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all"
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2.5 pt-1">
+            <input
+              type="checkbox"
+              id="currentlyWorkingCheck"
+              checked={expCurrentlyWorking}
+              onChange={(e) => setExpCurrentlyWorking(e.target.checked)}
+              className="w-4 h-4 text-blue-600 rounded-md border-gray-300 dark:border-gray-700 focus:ring-blue-500 cursor-pointer"
+            />
+            <label
+              htmlFor="currentlyWorkingCheck"
+              className="text-sm font-medium text-gray-800 dark:text-gray-200 cursor-pointer select-none"
+            >
+              I am currently working in this role
+            </label>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                Start Month & Year <span className="text-red-500">*</span>
+              </label>
+              <MonthYearPicker
+                value={expStartDate}
+                onChange={(val) => setExpStartDate(val)}
+                placeholder="Select start date"
+              />
+            </div>
+
+            {!expCurrentlyWorking ? (
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+                  End Month & Year <span className="text-red-500">*</span>
+                </label>
+                <MonthYearPicker
+                  value={expEndDate}
+                  onChange={(val) => setExpEndDate(val)}
+                  placeholder="Select end date"
+                  minDate={expStartDate || null}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col justify-end">
+                <div className="py-2.5 px-3.5 bg-gray-50 dark:bg-gray-800/40 border border-dashed border-gray-200 dark:border-gray-700/60 rounded-xl text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-500" />
+                  <span>Present (Ongoing)</span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
+              Description <span className="text-gray-400 text-[11px] normal-case">(Optional)</span>
+            </label>
+            <textarea
+              rows={3}
+              value={expDescription}
+              onChange={(e) => setExpDescription(e.target.value)}
+              placeholder="Key responsibilities, achievements, technologies, projects worked on..."
+              className="signin-input w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 transition-all resize-y"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
+            <button
+              type="button"
+              onClick={() => setJobDrawerOpen(false)}
+              className="px-4 py-2 text-sm font-medium rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+            >
               Cancel
-            </Button>
-            <Button onClick={handleEditJobInfo} disabled={isSaving || (!currentPosition?.trim() && !currentCompany?.trim())}>
-              {isSaving ? "Saving..." : "Save Experience"}
-            </Button>
+            </button>
+            <button
+              type="submit"
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 px-5 py-2 text-sm font-bold rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 transition-colors cursor-pointer shadow-sm"
+            >
+              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+              <span>{editingExperience ? "Update Experience" : "Save Experience"}</span>
+            </button>
           </div>
-        </div>
+        </form>
       </Modal>
 
       <CreatePostModal
