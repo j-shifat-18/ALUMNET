@@ -2395,6 +2395,245 @@ All fields optional.
 
 ---
 
+### Experience Module (`/api/v1/experiences`)
+
+Manages multiple job experiences for alumni and students. Supports Remote and In-person work modes with custom conditional validations.
+
+#### Data Model (`Experience`)
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | integer | Auto | Primary key |
+| `userId` | integer | Foreign key | Associated `User.id` (cascades on delete) |
+| `company` | string | Yes | Company or organization name |
+| `position` | string | Yes | Job title or designation |
+| `startDate` | ISO Date string | Yes | Employment start date |
+| `currentlyWorking` | boolean | Yes | Whether the user is currently employed in this role |
+| `endDate` | ISO Date string | Conditional | Employment end date. **Required** when `currentlyWorking` is `false`. Must be `>= startDate`. Automatically set to `null` if `currentlyWorking` is `true`. |
+| `workMode` | `REMOTE` \| `IN_PERSON` | Yes (Default: `IN_PERSON`) | Work mode. Accepts `"REMOTE"`, `"IN_PERSON"`, `"Remote"`, or `"In-person"`. |
+| `workplaceName` | string | Conditional | Office / campus name (e.g. "Google NYC", "Headquarters"). **Required** when `workMode` is `IN_PERSON`. |
+| `description` | string | No | Optional job description, responsibilities, or highlights |
+
+#### Migration Instructions
+
+To apply the database migration for `Experience` and `WorkMode`:
+```bash
+# Apply pending migrations
+npm run prisma:migrate
+# or in production:
+npx prisma migrate deploy
+```
+
+---
+
+#### `POST /api/v1/experiences` — Add Job Experience
+
+Adds a new job experience for the authenticated user. If `currentlyWorking` is `true`, automatically syncs `currentCompany` and `currentPosition` in the user's profile.
+
+**Auth Required:** Yes  
+
+**Request Body (In-Person Example):**
+```json
+{
+  "company": "Google",
+  "position": "Software Engineer",
+  "startDate": "2024-01-15T00:00:00.000Z",
+  "currentlyWorking": true,
+  "workMode": "IN_PERSON",
+  "workplaceName": "Mountain View HQ",
+  "description": "Working on distributed systems and backend infrastructure."
+}
+```
+
+**Request Body (Past Remote Role Example):**
+```json
+{
+  "company": "Automattic",
+  "position": "Backend Developer",
+  "startDate": "2022-06-01T00:00:00.000Z",
+  "currentlyWorking": false,
+  "endDate": "2023-12-31T00:00:00.000Z",
+  "workMode": "REMOTE",
+  "description": "Maintained open-source APIs and plugin ecosystems."
+}
+```
+
+**Response (201):**
+```json
+{
+  "success": true,
+  "message": "Experience added successfully",
+  "data": {
+    "id": 1,
+    "userId": 5,
+    "company": "Google",
+    "position": "Software Engineer",
+    "startDate": "2024-01-15T00:00:00.000Z",
+    "currentlyWorking": true,
+    "endDate": null,
+    "workMode": "IN_PERSON",
+    "workplaceName": "Mountain View HQ",
+    "description": "Working on distributed systems and backend infrastructure.",
+    "createdAt": "2026-10-19T11:00:00.000Z",
+    "updatedAt": "2026-10-19T11:00:00.000Z"
+  }
+}
+```
+
+**Validation Errors (400):**
+```json
+{
+  "success": false,
+  "message": "Validation Error",
+  "errors": [
+    { "field": "endDate", "message": "End date is required when not currently working" },
+    { "field": "workplaceName", "message": "Workplace name is required for in-person jobs" }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/experiences` — Get My Experiences
+
+Returns all job experiences for the authenticated user, sorted in reverse chronological order (`startDate: desc`).
+
+**Auth Required:** Yes  
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Experiences retrieved successfully",
+  "data": [
+    {
+      "id": 1,
+      "userId": 5,
+      "company": "Google",
+      "position": "Software Engineer",
+      "startDate": "2024-01-15T00:00:00.000Z",
+      "currentlyWorking": true,
+      "endDate": null,
+      "workMode": "IN_PERSON",
+      "workplaceName": "Mountain View HQ",
+      "description": "Working on distributed systems and backend infrastructure."
+    }
+  ]
+}
+```
+
+---
+
+#### `GET /api/v1/experiences/user/:uid` — Get Experiences by User UID
+
+Returns all job experiences for any user by their Firebase UID, sorted by `startDate: desc`.
+
+**Auth Required:** No  
+**Params:** `uid` — Target user's Firebase UID
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "User experiences retrieved successfully",
+  "data": [ ... ]
+}
+```
+
+---
+
+#### `GET /api/v1/experiences/:id` — Get Experience by ID
+
+Returns a specific job experience along with user summary.
+
+**Auth Required:** No  
+**Params:** `id` — Experience ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Experience retrieved successfully",
+  "data": {
+    "id": 1,
+    "userId": 5,
+    "company": "Google",
+    "position": "Software Engineer",
+    "startDate": "2024-01-15T00:00:00.000Z",
+    "currentlyWorking": true,
+    "endDate": null,
+    "workMode": "IN_PERSON",
+    "workplaceName": "Mountain View HQ",
+    "description": "Working on distributed systems...",
+    "user": {
+      "id": 5,
+      "uid": "firebase_uid",
+      "name": "Jane Smith",
+      "username": "janesmith",
+      "profileImage": "https://example.com/photo.jpg",
+      "role": "ALUMNI"
+    }
+  }
+}
+```
+
+---
+
+#### `PATCH /api/v1/experiences/:id` — Update Job Experience
+
+Updates an existing job experience. Only the experience owner can update. All fields are optional, with cross-field conditional validations enforced.
+
+**Auth Required:** Yes (Owner only)  
+**Params:** `id` — Experience ID (integer)
+
+**Request Body:**
+```json
+{
+  "position": "Senior Software Engineer",
+  "currentlyWorking": false,
+  "endDate": "2026-09-30T00:00:00.000Z"
+}
+```
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Experience updated successfully",
+  "data": { ... }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "You can only edit your own experiences" }
+```
+
+---
+
+#### `DELETE /api/v1/experiences/:id` — Delete Job Experience
+
+Deletes a job experience. Only the experience owner can delete.
+
+**Auth Required:** Yes (Owner only)  
+**Params:** `id` — Experience ID (integer)
+
+**Response (200):**
+```json
+{
+  "success": true,
+  "message": "Experience deleted successfully",
+  "data": { "message": "Experience deleted successfully" }
+}
+```
+
+**Error (403):**
+```json
+{ "success": false, "message": "You can only delete your own experiences" }
+```
+
+---
+
 ## Project Structure
 
 ```
@@ -2484,11 +2723,16 @@ backend/
 │           │   ├── taskMessage.controller.ts
 │           │   ├── taskMessage.service.ts
 │           │   └── taskMessage.validation.ts
-│           └── credential/
-│               ├── credential.route.ts
-│               ├── credential.controller.ts
-│               ├── credential.service.ts
-│               └── credential.validation.ts
+│           ├── credential/
+│           │   ├── credential.route.ts
+│           │   ├── credential.controller.ts
+│           │   ├── credential.service.ts
+│           │   └── credential.validation.ts
+│           └── experience/
+│               ├── experience.route.ts
+│               ├── experience.controller.ts
+│               ├── experience.service.ts
+│               └── experience.validation.ts
 ├── tsconfig.json
 └── prisma.config.ts
 ```
@@ -2510,4 +2754,5 @@ backend/
 Role: USER | STUDENT | ALUMNI | ADMIN
 UserStatus: ACTIVE | SUSPENDED | BANNED
 RequestStatus: PENDING | ACCEPTED | REJECTED
+WorkMode: REMOTE | IN_PERSON
 ```
