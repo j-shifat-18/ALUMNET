@@ -47,6 +47,11 @@ enum NotificationType {
   SYSTEM
 }
 
+enum WorkMode {
+  REMOTE
+  IN_PERSON
+}
+
 model User {
   id Int @id @default(autoincrement())
 
@@ -103,6 +108,9 @@ model User {
   // Credentials
   certifications Certification[]
   achievements   Achievement[]
+
+  // Experiences
+  experiences Experience[]
 
   // Chat & Notifications
   conversationMembers ConversationMember[]
@@ -443,6 +451,29 @@ model Achievement {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model Experience {
+  id Int @id @default(autoincrement())
+
+  userId Int
+
+  company          String
+  position         String
+  startDate        DateTime
+  currentlyWorking Boolean   @default(false)
+  endDate          DateTime?
+  workMode         WorkMode  @default(IN_PERSON)
+  workplaceName    String?
+  description      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([company])
 }
 
 // ─── Chat System ─────────────────────────────────────────────────────────────
