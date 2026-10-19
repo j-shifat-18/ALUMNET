@@ -14,7 +14,7 @@ import { useChat } from '@/hooks/useChat';
 import axiosInstance from '@/lib/axios';
 import Divider from '@/components/ui/Divider';
 import Swal from 'sweetalert2';
-import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2 } from 'lucide-react';
+import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2, ChevronDown } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
 import GenderDropdown from '@/components/profile/GenderDropdown';
@@ -97,6 +97,7 @@ export default function Profile() {
   const [connectionsModalOpen, setConnectionsModalOpen] = useState(false);
   const [connectionsModalTab, setConnectionsModalTab] = useState("FOLLOWING");
   const [loadingProfileConnections, setLoadingProfileConnections] = useState(false);
+  const [isUpdatingAvailability, setIsUpdatingAvailability] = useState(false);
 
   const fetchProfileConnections = useCallback(async () => {
     if (!id) return;
@@ -223,6 +224,47 @@ export default function Profile() {
       });
     } finally {
       setIsMessaging(false);
+    }
+  };
+
+  const isMentorAvailable = dbUser?.isMentorAvailable !== false;
+
+  const handleAvailabilityChange = async (newAvailable) => {
+    try {
+      setIsUpdatingAvailability(true);
+      const res = await axiosInstance.patch("/api/v1/mentorship/availability", {
+        isMentorAvailable: newAvailable,
+        availability: newAvailable ? "Available" : "Unavailable",
+      });
+
+      if (res.status === 200 || res.status === 201) {
+        setDbUser((prev) => ({
+          ...prev,
+          isMentorAvailable: newAvailable,
+        }));
+        if (setAuthDbUser) {
+          setAuthDbUser((prev) => ({
+            ...prev,
+            isMentorAvailable: newAvailable,
+          }));
+        }
+        Swal.fire({
+          icon: "success",
+          title: "Status Updated",
+          text: `Availability status set to ${newAvailable ? "Available" : "Unavailable"}.`,
+          timer: 1500,
+          showConfirmButton: false,
+        });
+      }
+    } catch (err) {
+      console.error("Error updating mentorship availability:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: err?.response?.data?.message || "Failed to update availability status",
+      });
+    } finally {
+      setIsUpdatingAvailability(false);
     }
   };
   
@@ -1191,19 +1233,76 @@ export default function Profile() {
                       </button>
                     )}
                   </div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-                    {dbUser?.name}
-                  </h1>
-                  {dbUser?.bio && (
-                    <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
-                      {dbUser.bio}
-                    </p>
-                  )}
-                  {dbUser?.location && (
-                    <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
-                      {dbUser.location}
-                    </p>
-                  )}
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                        {dbUser?.name}
+                      </h1>
+
+                      {dbUser?.bio && (
+                        <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mt-1 leading-relaxed">
+                          {dbUser.bio}
+                        </p>
+                      )}
+                      {dbUser?.location && (
+                        <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-1">
+                          {dbUser.location}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* RIGHT SIDE: Availability Status */}
+                    {dbUser?.role === "ALUMNI" && (
+                      <div className="sm:self-start shrink-0">
+                        {isOwner ? (
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border bg-gray-50/70 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700/80 shadow-xs">
+                            <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                              Mentorship:
+                            </span>
+                            <div className="relative inline-flex items-center">
+                              <select
+                                value={isMentorAvailable ? "AVAILABLE" : "UNAVAILABLE"}
+                                onChange={(e) => handleAvailabilityChange(e.target.value === "AVAILABLE")}
+                                disabled={isUpdatingAvailability}
+                                className={`text-xs font-semibold py-1 pl-6 pr-6 rounded-xl border appearance-none transition-colors cursor-pointer focus:outline-none focus:ring-1 ${
+                                  isMentorAvailable
+                                    ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800 focus:ring-emerald-500"
+                                    : "bg-white text-gray-700 border-gray-300 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:ring-gray-500"
+                                }`}
+                              >
+                                <option value="AVAILABLE">Available</option>
+                                <option value="UNAVAILABLE">Unavailable</option>
+                              </select>
+                              <span
+                                className={`w-2 h-2 rounded-full absolute left-2 pointer-events-none ${
+                                  isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                                }`}
+                              />
+                              <ChevronDown className="w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-60 text-gray-600 dark:text-gray-300" />
+                            </div>
+                            {isUpdatingAvailability && (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400" />
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs font-semibold shadow-xs ${
+                              isMentorAvailable
+                                ? "bg-emerald-50/80 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
+                                : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800/80 dark:text-gray-400 dark:border-gray-700"
+                            }`}
+                          >
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                              }`}
+                            />
+                            <span>{isMentorAvailable ? "Available for Mentorship" : "Currently Unavailable"}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-3">
                     <div className="flex items-center gap-4 text-xs sm:text-sm">
@@ -1296,20 +1395,32 @@ export default function Profile() {
                             <button
                               type="button"
                               onClick={() => {
+                                if (!isMentorAvailable) return;
                                 if (!mentorshipRequestStatus || mentorshipRequestStatus === "REJECTED") {
                                   setRequestMentorshipModalOpen(true);
                                 }
                               }}
-                              disabled={mentorshipRequestStatus === "PENDING" || mentorshipRequestStatus === "ACCEPTED"}
-                              className={`px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors ${
+                              disabled={
+                                !isMentorAvailable ||
+                                mentorshipRequestStatus === "PENDING" ||
                                 mentorshipRequestStatus === "ACCEPTED"
+                              }
+                              className={`px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors ${
+                                !isMentorAvailable
+                                  ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
+                                  : mentorshipRequestStatus === "ACCEPTED"
                                   ? "bg-emerald-600 text-white cursor-default"
                                   : mentorshipRequestStatus === "PENDING"
                                   ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-default"
                                   : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer"
                               }`}
                             >
-                              {mentorshipRequestStatus === "ACCEPTED" ? (
+                              {!isMentorAvailable ? (
+                                <>
+                                  <Clock className="w-4 h-4" />
+                                  <span>Currently Unavailable</span>
+                                </>
+                              ) : mentorshipRequestStatus === "ACCEPTED" ? (
                                 <>
                                   <Check className="w-4 h-4" />
                                   <span>Your Mentor</span>
