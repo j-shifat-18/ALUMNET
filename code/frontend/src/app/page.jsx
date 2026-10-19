@@ -288,12 +288,6 @@ export default function Home() {
                         Upcoming Events
                       </h3>
                     </div>
-                    <Link
-                      href="/events"
-                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      View All
-                    </Link>
                   </div>
 
                   {loadingEvents ? (
@@ -304,12 +298,6 @@ export default function Home() {
                   ) : upcomingEvents.length === 0 ? (
                     <div className="text-center py-5 px-2 text-xs text-gray-500 dark:text-gray-400 space-y-2">
                       <p>No upcoming events scheduled right now.</p>
-                      <Link
-                        href="/events"
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        Explore Events Hub <ArrowRight className="w-3 h-3" />
-                      </Link>
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-100 dark:divide-gray-800/60">
