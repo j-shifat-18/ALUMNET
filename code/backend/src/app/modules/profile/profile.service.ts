@@ -93,6 +93,13 @@ const updateProfile = async (uid: string, requestingUid: string, payload: Update
 
   const { role, studentProfile, alumniProfile, adminProfile, ...userData } = payload;
 
+  if (userData.isMentorAvailable !== undefined) {
+    const effectiveRole = role || user.role;
+    if (effectiveRole !== "ALUMNI") {
+      throw new AppError(400, "Only alumni can configure mentorship availability");
+    }
+  }
+
   const updateData: Record<string, unknown> = { ...userData };
 
   if (role === "STUDENT" && studentProfile) {
