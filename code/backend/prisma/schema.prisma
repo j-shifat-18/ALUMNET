@@ -45,12 +45,26 @@ enum NotificationType {
   POST_COMMENT
   EVENT_CREATED
   SYSTEM
+  JOB_POSTED
+  JOB_COMMENT
 }
 
 enum WorkMode {
   REMOTE
   IN_PERSON
+  HYBRID
 }
+
+enum JobType {
+  FULL_TIME
+  PART_TIME
+  INTERNSHIP
+  RESEARCH
+  REFERRAL
+  CONTRACT
+}
+
+
 
 model User {
   id Int @id @default(autoincrement())
@@ -111,6 +125,10 @@ model User {
 
   // Experiences
   experiences Experience[]
+
+  // Job Board
+  postedJobs  JobPost[]    @relation("UserPostedJobs")
+  jobComments JobComment[] @relation("UserJobComments")
 
   // Chat & Notifications
   conversationMembers ConversationMember[]
@@ -546,3 +564,53 @@ model Notification {
   @@index([userId, createdAt])
   @@index([userId, isRead])
 }
+
+// ─── Job Board System ─────────────────────────────────────────────────────────
+
+model JobPost {
+  id           Int       @id @default(autoincrement())
+  posterId     Int
+  poster       User      @relation("UserPostedJobs", fields: [posterId], references: [id], onDelete: Cascade)
+
+  title        String
+  company      String
+  location     String?
+  workMode     WorkMode  @default(IN_PERSON)
+  jobType      JobType   @default(FULL_TIME)
+
+  department   String?
+  skills       String[]
+  description  String
+  requirements String?
+
+  salaryRange    String?
+  applicationUrl String?
+  deadline       DateTime?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  comments     JobComment[]
+
+  @@index([posterId])
+  @@index([department])
+  @@index([jobType])
+  @@index([createdAt])
+}
+
+model JobComment {
+  id        Int      @id @default(autoincrement())
+  jobId     Int
+  job       JobPost  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation("UserJobComments", fields: [userId], references: [id], onDelete: Cascade)
+
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([jobId])
+  @@index([userId])
+}
+
+
