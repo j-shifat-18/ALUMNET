@@ -12,7 +12,9 @@ type NotificationType =
   | "POST_LIKE"
   | "POST_COMMENT"
   | "EVENT_CREATED"
-  | "SYSTEM";
+  | "SYSTEM"
+  | "JOB_POSTED"
+  | "JOB_COMMENT";
 
 interface CreateNotificationInput {
   userId: number;           // recipient DB id
