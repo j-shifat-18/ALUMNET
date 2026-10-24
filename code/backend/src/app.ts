@@ -20,6 +20,7 @@ import { CredentialRoutes } from "./app/modules/credential/credential.route.js";
 import { ExperienceRoutes } from "./app/modules/experience/experience.route.js";
 import { ChatRoutes } from "./app/modules/chat/chat.route.js";
 import { NotificationRoutes } from "./app/modules/notification/notification.route.js";
+import { JobRoutes } from "./app/modules/job/job.route.js";
 import { globalErrorHandler } from "./app/middlewares/globalErrorHandler.js";
 
 const app = express();
@@ -60,6 +61,7 @@ app.use("/api/v1/credentials", CredentialRoutes);
 app.use("/api/v1/experiences", ExperienceRoutes);
 app.use("/api/v1/conversations", ChatRoutes);
 app.use("/api/v1/notifications", NotificationRoutes);
+app.use("/api/v1/jobs", JobRoutes);
 
 app.get("/", (req, res) => {
   res.send("ALUMNET Server Running");

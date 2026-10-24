@@ -2728,11 +2728,17 @@ backend/
 │           │   ├── credential.controller.ts
 │           │   ├── credential.service.ts
 │           │   └── credential.validation.ts
-│           └── experience/
-│               ├── experience.route.ts
-│               ├── experience.controller.ts
-│               ├── experience.service.ts
-│               └── experience.validation.ts
+│           ├── experience/
+│           │   ├── experience.route.ts
+│           │   ├── experience.controller.ts
+│           │   ├── experience.service.ts
+│           │   └── experience.validation.ts
+│           └── job/
+│               ├── job.route.ts
+│               ├── job.controller.ts
+│               ├── job.service.ts
+│               ├── job.validation.ts
+│               └── job.interface.ts
 ├── tsconfig.json
 └── prisma.config.ts
 ```
@@ -2754,5 +2760,6 @@ backend/
 Role: USER | STUDENT | ALUMNI | ADMIN
 UserStatus: ACTIVE | SUSPENDED | BANNED
 RequestStatus: PENDING | ACCEPTED | REJECTED
-WorkMode: REMOTE | IN_PERSON
+WorkMode: REMOTE | IN_PERSON | HYBRID
+JobType: FULL_TIME | PART_TIME | INTERNSHIP | RESEARCH | REFERRAL | CONTRACT
 ```
