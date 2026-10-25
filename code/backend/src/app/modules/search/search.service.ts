@@ -27,24 +27,7 @@ interface UserSearchParams {
   page: number;
   limit: number;
 }
-
-const getDepartmentTerms = (department: string): string[] => {
-  const trimmed = department.trim();
-  const lower = trimmed.toLowerCase();
-
-  const acronymMap: Record<string, string[]> = {
-    cse: ["Computer Science and Engineering", "Computer Science & Engineering", "Computer Science", "CSE"],
-    swe: ["Software Engineering", "Software", "SWE"],
-    eee: ["Electrical and Electronic Engineering", "Electrical & Electronic Engineering", "Electrical Engineering", "EEE"],
-    me: ["Mechanical Engineering", "ME"],
-    mce: ["Mechanical and Chemical Engineering", "Mechanical & Chemical Engineering", "MCE"],
-    cee: ["Civil and Environmental Engineering", "Civil & Environmental Engineering", "Civil Engineering", "CEE", "CE"],
-    btm: ["Business Technology Management", "BTM"],
-    bba: ["Business Administration", "BBA"],
-  };
-
-  return acronymMap[lower] || [trimmed];
-};
+import { getDepartmentTerms } from "../../utils/departmentHelper.js";
 
 const searchAlumni = async (params: AlumniSearchParams) => {
   const {
