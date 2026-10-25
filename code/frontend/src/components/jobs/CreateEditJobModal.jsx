@@ -2,9 +2,10 @@
 
 import React, { useState } from "react";
 import Modal from "@/components/ui/Modal";
+import DatePicker from "@/components/ui/DatePicker";
 import axiosInstance from "@/lib/axios";
 import Swal from "sweetalert2";
-import { Loader2, X, Briefcase, Building2, MapPin, DollarSign, Calendar, GraduationCap, Link as LinkIcon, Check } from "lucide-react";
+import { Loader2, X, Briefcase, Building2, MapPin, Banknote, Calendar, GraduationCap, Link as LinkIcon, Check } from "lucide-react";
 
 const JOB_TYPES = [
   { value: "FULL_TIME", label: "Full-Time" },
@@ -25,11 +26,11 @@ const DEPARTMENTS = [
   "All Departments",
   "CSE (Computer Science & Engineering)",
   "SWE (Software Engineering)",
-  "EEE (Electrical & Electronic)",
+  "EEE (Electrical & Electronic Engineering)",
   "ME (Mechanical Engineering)",
-  "CEE (Civil & Environmental)",
-  "MCE (Mechanical & Chemical)",
-  "BTM (Business Technology Management)",
+  "CEE (Civil & Environmental Engineering)",
+  "IPE (Industrial & Production Engineering)",
+  "BTM (BBA in Technology Management)",
 ];
 
 function JobFormContent({ jobToEdit, onClose, onSuccess }) {
@@ -268,7 +269,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
             Salary / Compensation <span className="text-gray-400 normal-case">(Optional)</span>
           </label>
           <div className="relative">
-            <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <Banknote className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
               type="text"
               value={salaryRange}
@@ -283,15 +284,12 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
             Application Deadline <span className="text-gray-400 normal-case">(Optional)</span>
           </label>
-          <div className="relative">
-            <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="date"
-              value={deadline}
-              onChange={(e) => setDeadline(e.target.value)}
-              className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all cursor-pointer"
-            />
-          </div>
+          <DatePicker
+            value={deadline}
+            onChange={(val) => setDeadline(val)}
+            placeholder="Select deadline date"
+            minDate={new Date().toISOString().split("T")[0]}
+          />
         </div>
       </div>
 

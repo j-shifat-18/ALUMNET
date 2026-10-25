@@ -1,12 +1,23 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import Link from "next/link";
+import Image from "next/image";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
 import Navbar from "@/components/layout/Navbar";
-import JobCard from "@/components/jobs/JobCard";
+import Modal from "@/components/ui/Modal";
+import JobCard, {
+  getJobTypeBadgeStyle,
+  formatJobTypeLabel,
+  formatWorkModeLabel,
+  formatDeadline,
+  isDeadlinePassed,
+} from "@/components/jobs/JobCard";
 import CreateEditJobModal from "@/components/jobs/CreateEditJobModal";
+import JobCommentsSection from "@/components/jobs/JobCommentsSection";
 import { useAuth } from "@/context/AuthProvider";
 import axiosInstance from "@/lib/axios";
+import Swal from "sweetalert2";
 import {
   Briefcase,
   Search,
@@ -14,106 +25,138 @@ import {
   Filter,
   X,
   Loader2,
-  Sparkles,
+  Calendar,
   Building2,
+  MapPin,
+  Banknote,
   GraduationCap,
-  Globe,
-  Layers,
-  ArrowRight,
-  TrendingUp,
+  ExternalLink,
+  Mail,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
+import user_placeholder from "../../../public/placeholder-user.jpg";
 
-const JOB_TYPE_FILTERS = [
-  { label: "All Opportunities", value: "ALL" },
+const JOB_TYPES = [
+  { label: "All Types", value: "ALL" },
   { label: "Full-Time", value: "FULL_TIME" },
-  { label: "Internships", value: "INTERNSHIP" },
-  { label: "Alumni Referrals", value: "REFERRAL" },
+  { label: "Internship", value: "INTERNSHIP" },
+  { label: "Alumni Referral", value: "REFERRAL" },
   { label: "Research", value: "RESEARCH" },
   { label: "Part-Time", value: "PART_TIME" },
   { label: "Contract", value: "CONTRACT" },
 ];
 
-const WORK_MODE_FILTERS = [
-  { label: "All Work Modes", value: "ALL" },
+const WORK_MODES = [
+  { label: "Work Modes", value: "ALL" },
   { label: "Remote", value: "REMOTE" },
   { label: "In-Person", value: "IN_PERSON" },
   { label: "Hybrid", value: "HYBRID" },
 ];
 
 const DEPARTMENTS = [
-  { label: "All Departments", value: "ALL" },
+  { label: "Departments", value: "ALL" },
   { label: "CSE", value: "CSE" },
   { label: "SWE", value: "SWE" },
   { label: "EEE", value: "EEE" },
   { label: "ME", value: "ME" },
   { label: "CEE", value: "CEE" },
-  { label: "MCE", value: "MCE" },
+  { label: "IPE", value: "IPE" },
   { label: "BTM", value: "BTM" },
 ];
 
 export default function JobsPage() {
   const { user, dbUser } = useAuth();
+  const canPostOpportunity = Boolean(dbUser);
 
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("ALL"); // "ALL" | "MY_POSTS"
-  const [myJobsCount, setMyJobsCount] = useState(0);
-
-  // Filters state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [activeTab, setActiveTab] = useState("ALL");
   const [selectedType, setSelectedType] = useState("ALL");
   const [selectedWorkMode, setSelectedWorkMode] = useState("ALL");
   const [selectedDept, setSelectedDept] = useState("ALL");
+  const [searchInput, setSearchInput] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [myJobsCount, setMyJobsCount] = useState(0);
+
   const [currentPage, setCurrentPage] = useState(1);
-  const [meta, setMeta] = useState({ page: 1, limit: 10, total: 0, totalPages: 1 });
+  const [paginationMeta, setPaginationMeta] = useState({
+    page: 1,
+    limit: 12,
+    total: 0,
+    totalPages: 1,
+  });
+
+  // Modal States
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [jobToEdit, setJobToEdit] = useState(null);
+
+  // Job Details / Discussion Modal
+  const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
+  const [detailsComments, setDetailsComments] = useState([]);
+  const [loadingDetailsComments, setLoadingDetailsComments] = useState(false);
 
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Modal State
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [jobToEdit, setJobToEdit] = useState(null);
+  const refetch = useCallback(() => {
+    setRefreshKey((k) => k + 1);
+  }, []);
 
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchQuery.trim());
-      setCurrentPage(1);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
-  // Fetch jobs from backend
   useEffect(() => {
     let isCancelled = false;
-    const load = async () => {
+
+    const loadJobs = async () => {
       try {
         if (activeTab === "MY_POSTS") {
-          const res = await axiosInstance.get("/api/v1/jobs/my");
-          if (!isCancelled && Array.isArray(res.data?.data)) {
-            setJobs(res.data.data);
-            setMyJobsCount(res.data.data.length);
-            setMeta({ page: 1, limit: res.data.data.length, total: res.data.data.length, totalPages: 1 });
+          const res = await axiosInstance.get("/api/v1/jobs/my", {
+            validateStatus: (s) => s < 500,
+          });
+          if (!isCancelled) {
+            if (res.status === 200 && Array.isArray(res.data?.data)) {
+              setJobs(res.data.data);
+              setMyJobsCount(res.data.data.length);
+              setPaginationMeta({
+                page: 1,
+                limit: res.data.data.length,
+                total: res.data.data.length,
+                totalPages: 1,
+              });
+            } else {
+              setJobs([]);
+            }
           }
         } else {
           const params = {
             page: currentPage,
-            limit: 10,
+            limit: 12,
           };
 
-          if (debouncedSearch) params.search = debouncedSearch;
+          if (activeSearch.trim()) params.search = activeSearch.trim();
           if (selectedType !== "ALL") params.jobType = selectedType;
           if (selectedWorkMode !== "ALL") params.workMode = selectedWorkMode;
           if (selectedDept !== "ALL") params.department = selectedDept;
 
-          const res = await axiosInstance.get("/api/v1/jobs", { params });
-          if (!isCancelled && res.data?.data) {
-            setJobs(res.data.data);
-            setMeta(res.data.meta || { page: 1, limit: 10, total: res.data.data.length, totalPages: 1 });
+          const res = await axiosInstance.get("/api/v1/jobs", {
+            params,
+            validateStatus: (s) => s < 500,
+          });
+
+          if (!isCancelled) {
+            if (res.status === 200 && res.data?.data) {
+              setJobs(res.data.data);
+              if (res.data?.meta) {
+                setPaginationMeta(res.data.meta);
+              }
+            } else {
+              setJobs([]);
+            }
           }
         }
       } catch (err) {
         console.error("Error fetching jobs:", err);
+        if (!isCancelled) setJobs([]);
       } finally {
         if (!isCancelled) {
           setLoading(false);
@@ -121,19 +164,28 @@ export default function JobsPage() {
       }
     };
 
-    load();
+    loadJobs();
+
     return () => {
       isCancelled = true;
     };
-  }, [activeTab, debouncedSearch, selectedType, selectedWorkMode, selectedDept, currentPage, refreshKey]);
+  }, [
+    activeTab,
+    selectedType,
+    selectedWorkMode,
+    selectedDept,
+    activeSearch,
+    currentPage,
+    refreshKey,
+  ]);
 
-  // Fetch count of user's own jobs for tab badge
+  // Fetch count of current user's posts
   useEffect(() => {
     if (user?.uid) {
       axiosInstance
-        .get("/api/v1/jobs/my")
+        .get("/api/v1/jobs/my", { validateStatus: (s) => s < 500 })
         .then((res) => {
-          if (Array.isArray(res.data?.data)) {
+          if (res.status === 200 && Array.isArray(res.data?.data)) {
             setMyJobsCount(res.data.data.length);
           }
         })
@@ -141,29 +193,24 @@ export default function JobsPage() {
     }
   }, [user]);
 
-  const handleOpenCreateModal = () => {
-    setJobToEdit(null);
-    setIsModalOpen(true);
-  };
-
-  const handleOpenEditModal = (job) => {
-    setJobToEdit(job);
-    setIsModalOpen(true);
-  };
-
-  const handleJobCreatedOrUpdated = (savedJob) => {
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
     setLoading(true);
-    setRefreshKey((k) => k + 1);
+    setActiveSearch(searchInput.trim());
+    setCurrentPage(1);
   };
 
-  const handleJobDeleted = (deletedId) => {
-    setJobs((prev) => prev.filter((j) => j.id !== deletedId));
-    setMyJobsCount((prev) => Math.max(0, prev - 1));
+  const handleClearSearch = () => {
+    setLoading(true);
+    setSearchInput("");
+    setActiveSearch("");
+    setCurrentPage(1);
   };
 
   const clearAllFilters = () => {
-    setSearchQuery("");
-    setDebouncedSearch("");
+    setLoading(true);
+    setSearchInput("");
+    setActiveSearch("");
     setSelectedType("ALL");
     setSelectedWorkMode("ALL");
     setSelectedDept("ALL");
@@ -171,85 +218,234 @@ export default function JobsPage() {
   };
 
   const hasActiveFilters =
-    Boolean(searchQuery.trim()) ||
+    Boolean(activeSearch.trim()) ||
     selectedType !== "ALL" ||
     selectedWorkMode !== "ALL" ||
     selectedDept !== "ALL";
 
+  // Filtered in-memory list for tab or quick filter responsiveness
+  const displayedJobs = useMemo(() => {
+    if (activeTab === "MY_POSTS") {
+      return jobs.filter((job) => {
+        const matchesType =
+          selectedType === "ALL" || job.jobType === selectedType;
+        const matchesWorkMode =
+          selectedWorkMode === "ALL" || job.workMode === selectedWorkMode;
+        const matchesDept =
+          selectedDept === "ALL" ||
+          (job.department &&
+            job.department.toLowerCase().includes(selectedDept.toLowerCase()));
+        const query = activeSearch.toLowerCase().trim();
+        const matchesSearch =
+          !query ||
+          job.title?.toLowerCase().includes(query) ||
+          job.company?.toLowerCase().includes(query) ||
+          job.description?.toLowerCase().includes(query) ||
+          job.skills?.some((s) => s.toLowerCase().includes(query));
+
+        return matchesType && matchesWorkMode && matchesDept && matchesSearch;
+      });
+    }
+    return jobs;
+  }, [jobs, activeTab, selectedType, selectedWorkMode, selectedDept, activeSearch]);
+
+  const openCreateModal = () => {
+    setJobToEdit(null);
+    setCreateModalOpen(true);
+  };
+
+  const openEditModal = (job) => {
+    setJobToEdit(job);
+    setCreateModalOpen(true);
+  };
+
+  const handleDeleteJob = async (jobId, jobTitle) => {
+    const confirm = await Swal.fire({
+      title: "Delete Opportunity?",
+      text: `Are you sure you want to remove "${jobTitle}"? This will delete the post and all comments.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#e11d48",
+      cancelButtonColor: "#4b5563",
+      confirmButtonText: "Yes, Delete",
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+      await axiosInstance.delete(`/api/v1/jobs/${jobId}`);
+      setJobs((prev) => prev.filter((j) => j.id !== jobId));
+      setMyJobsCount((prev) => Math.max(0, prev - 1));
+      if (selectedJobForDetails?.id === jobId) {
+        setSelectedJobForDetails(null);
+      }
+      Swal.fire({
+        title: "Opportunity Deleted",
+        text: "The job opportunity has been removed.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      console.error("Error deleting job opportunity:", err);
+      Swal.fire({
+        title: "Error",
+        text: err.response?.data?.message || "Failed to delete opportunity.",
+        icon: "error",
+      });
+    }
+  };
+
+  // Open Details Modal and fetch full comments
+  const openJobDetailsModal = async (job) => {
+    setSelectedJobForDetails(job);
+    setDetailsComments(job.comments || []);
+    setLoadingDetailsComments(true);
+    try {
+      const res = await axiosInstance.get(`/api/v1/jobs/${job.id}`, {
+        validateStatus: (s) => s < 500,
+      });
+      if (res.status === 200 && res.data?.data) {
+        setDetailsComments(res.data.data.comments || []);
+        setSelectedJobForDetails(res.data.data);
+      }
+    } catch (err) {
+      console.error("Error loading job details:", err);
+    } finally {
+      setLoadingDetailsComments(false);
+    }
+  };
+
+  const handleModalCommentAdded = (newComment) => {
+    setDetailsComments((prev) => [...prev, newComment]);
+    // update count in main jobs list
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.id === selectedJobForDetails?.id
+          ? {
+              ...j,
+              _count: {
+                ...j._count,
+                comments: (j._count?.comments || 0) + 1,
+              },
+            }
+          : j
+      )
+    );
+  };
+
+  const handleModalCommentDeleted = (commentId) => {
+    setDetailsComments((prev) => prev.filter((c) => c.id !== commentId));
+    // update count in main jobs list
+    setJobs((prev) =>
+      prev.map((j) =>
+        j.id === selectedJobForDetails?.id
+          ? {
+              ...j,
+              _count: {
+                ...j._count,
+                comments: Math.max(0, (j._count?.comments || 1) - 1),
+              },
+            }
+          : j
+      )
+    );
+  };
+
+  const isEmailApp =
+    selectedJobForDetails?.applicationUrl &&
+    selectedJobForDetails.applicationUrl.includes("@") &&
+    !selectedJobForDetails.applicationUrl.startsWith("http");
+
+  const appHref = isEmailApp
+    ? `mailto:${selectedJobForDetails.applicationUrl}?subject=Application for ${encodeURIComponent(
+        selectedJobForDetails.title || ""
+      )}`
+    : selectedJobForDetails?.applicationUrl?.startsWith("http")
+    ? selectedJobForDetails.applicationUrl
+    : `https://${selectedJobForDetails?.applicationUrl || ""}`;
+
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50/60 dark:bg-black text-gray-900 dark:text-gray-100 flex flex-col font-sans transition-colors duration-200">
+      <div className="min-h-screen bg-gray-50 dark:bg-zinc-950 font-sans">
         <Navbar />
 
-        <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-          {/* Hero Header Banner */}
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-900 via-indigo-900 to-slate-900 text-white p-6 sm:p-8 md:p-10 shadow-xl border border-blue-800/40">
-            <div className="relative z-10 max-w-2xl space-y-3">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-200 text-xs font-bold tracking-wider uppercase">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>AlumNet Career Hub</span>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
+          {/* Header Banner */}
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 p-6 sm:p-8 shadow-xs mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="space-y-2 max-w-2xl">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 text-xs font-bold border border-blue-200 dark:border-blue-900/40">
+                  <Briefcase className="w-3.5 h-3.5" />
+                  <span>Career & Opportunities Board</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+                  Discover Jobs, Internships & Referrals
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400">
+                  Connect directly with alumni hiring teams, explore verified
+                  internships, full-time positions, research roles, and request
+                  internal referrals.
+                </p>
               </div>
-              <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-white leading-tight">
-                Opportunities & Referral Board
-              </h1>
-              <p className="text-sm sm:text-base text-blue-100/90 leading-relaxed">
-                Connect directly with alumni hiring teams, explore verified internships, full-time positions, research roles, and request direct referrals.
-              </p>
+
+              {canPostOpportunity && (
+                <div className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={openCreateModal}
+                    className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Post Opportunity</span>
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="mt-6 flex items-center gap-3 relative z-10">
-              <button
-                type="button"
-                onClick={handleOpenCreateModal}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-white text-gray-900 hover:bg-gray-100 transition-all shadow-lg hover:shadow-xl cursor-pointer"
-              >
-                <Plus className="w-4 h-4 text-blue-600" />
-                <span>Post Opportunity</span>
-              </button>
-            </div>
-
-            {/* Decorative Background Elements */}
-            <div className="absolute -right-10 -bottom-10 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
-            <div className="absolute right-12 top-6 opacity-10 pointer-events-none">
-              <Briefcase className="w-56 h-56 text-white" />
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
-            <div className="flex items-center gap-2">
+            {/* Navigation Tabs */}
+            <div className="flex items-center gap-2 pt-6 mt-6 border-t border-gray-100 dark:border-zinc-800/80">
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab("ALL");
-                  setCurrentPage(1);
+                  if (activeTab !== "ALL") {
+                    setLoading(true);
+                    setActiveTab("ALL");
+                    setCurrentPage(1);
+                  }
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   activeTab === "ALL"
-                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
                 }`}
               >
-                <Layers className="w-4 h-4" />
+                {activeTab === "ALL" && loading && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                )}
                 <span>All Opportunities</span>
               </button>
-
               <button
                 type="button"
                 onClick={() => {
-                  setActiveTab("MY_POSTS");
-                  setCurrentPage(1);
+                  if (activeTab !== "MY_POSTS") {
+                    setLoading(true);
+                    setActiveTab("MY_POSTS");
+                    setCurrentPage(1);
+                  }
                 }}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                   activeTab === "MY_POSTS"
-                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900 shadow-sm"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800"
                 }`}
               >
-                <Briefcase className="w-4 h-4" />
+                {activeTab === "MY_POSTS" && loading && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                )}
                 <span>My Postings</span>
                 {myJobsCount > 0 && (
-                  <span className="ml-1 px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white">
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-blue-600 text-white">
                     {myJobsCount}
                   </span>
                 )}
@@ -257,206 +453,439 @@ export default function JobsPage() {
             </div>
           </div>
 
-          {/* Search & Filter Controls (only active on "ALL" tab) */}
-          {activeTab === "ALL" && (
-            <div className="space-y-3 bg-white dark:bg-gray-900 p-4 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs">
-              {/* Keyword Search */}
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by role title, company, skills (e.g. React, Python), or keywords..."
-                  className="w-full pl-10 pr-10 py-2.5 bg-gray-50 dark:bg-gray-800/60 border border-gray-200 dark:border-gray-700 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 cursor-pointer"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                )}
-              </div>
-
-              {/* Filter Pills & Dropdowns */}
-              <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {/* Work Mode Dropdown */}
-                  <select
-                    value={selectedWorkMode}
-                    onChange={(e) => {
-                      setSelectedWorkMode(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    {WORK_MODE_FILTERS.map((m) => (
-                      <option key={m.value} value={m.value}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Department Dropdown */}
-                  <select
-                    value={selectedDept}
-                    onChange={(e) => {
-                      setSelectedDept(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs font-semibold text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                  >
-                    {DEPARTMENTS.map((dept) => (
-                      <option key={dept.value} value={dept.value}>
-                        {dept.label}
-                      </option>
-                    ))}
-                  </select>
+          {/* Search & Filter Toolbar */}
+          <div className="space-y-4 mb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="flex items-center gap-2 w-full md:max-w-md"
+              >
+                <div className="relative flex-1">
+                  <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    placeholder="Search by title, company, skills..."
+                    className="w-full pl-10 pr-9 py-2.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 shadow-2xs"
+                  />
+                  {searchInput && (
+                    <button
+                      type="button"
+                      onClick={handleClearSearch}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5"
+                      title="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
-
-                {hasActiveFilters && (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="inline-flex items-center gap-1 text-xs font-bold text-red-500 hover:text-red-600 transition-colors cursor-pointer"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Clear Filters</span>
-                  </button>
-                )}
-              </div>
+                <button
+                  type="submit"
+                  className="px-4 py-2.5 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-xs sm:text-sm font-bold shadow-xs transition-colors shrink-0 cursor-pointer"
+                >
+                  Search
+                </button>
+              </form>
 
               {/* Job Type Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 scrollbar-none">
-                {JOB_TYPE_FILTERS.map((t) => {
-                  const isActive = selectedType === t.value;
+              <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1 shrink-0">
+                  <Filter className="w-3.5 h-3.5" /> Type:
+                </span>
+                {JOB_TYPES.map((type) => {
+                  const isActive = selectedType === type.value;
+                  const isCurrentFilterLoading = isActive && loading;
                   return (
                     <button
-                      key={t.value}
+                      key={type.value}
                       type="button"
                       onClick={() => {
-                        setSelectedType(t.value);
-                        setCurrentPage(1);
+                        if (selectedType !== type.value) {
+                          setLoading(true);
+                          setSelectedType(type.value);
+                          setCurrentPage(1);
+                        }
                       }}
-                      className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer shrink-0 ${
                         isActive
-                          ? "bg-blue-600 text-white shadow-xs shadow-blue-500/20"
-                          : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
+                          ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-xs"
+                          : "bg-white dark:bg-zinc-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-zinc-800 border border-gray-200/80 dark:border-gray-800"
                       }`}
                     >
-                      {t.label}
+                      {isCurrentFilterLoading && (
+                        <Loader2 className="w-3 h-3 animate-spin text-current" />
+                      )}
+                      <span>{type.label}</span>
                     </button>
                   );
                 })}
               </div>
             </div>
-          )}
 
-          {/* Job Feed */}
+            {/* Secondary Filters: Work Mode & Department */}
+            <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={selectedWorkMode}
+                    onChange={(e) => {
+                      setLoading(true);
+                      setSelectedWorkMode(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="appearance-none pl-3.5 pr-7 py-2 rounded-2xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 shadow-2xs cursor-pointer"
+                  >
+                    {WORK_MODES.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                </div>
+
+                <div className="relative inline-flex items-center">
+                  <select
+                    value={selectedDept}
+                    onChange={(e) => {
+                      setLoading(true);
+                      setSelectedDept(e.target.value);
+                      setCurrentPage(1);
+                    }}
+                    className="appearance-none pl-3.5 pr-7 py-2 rounded-2xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-bold text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-100 shadow-2xs cursor-pointer"
+                  >
+                    {DEPARTMENTS.map((d) => (
+                      <option key={d.value} value={d.value}>
+                        {d.label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
+                </div>
+              </div>
+
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Reset All Filters</span>
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Opportunities Feed / Grid */}
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 space-y-3">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                Loading opportunities...
+            <div className="p-16 text-center text-gray-500 dark:text-gray-400 space-y-3 bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xs">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
+              <p className="text-sm font-semibold">
+                Loading career opportunities...
               </p>
             </div>
-          ) : jobs.length === 0 ? (
-            <div className="bg-white dark:bg-gray-900 rounded-3xl border border-gray-200 dark:border-gray-800 p-10 text-center space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
+          ) : displayedJobs.length === 0 ? (
+            <div className="p-16 text-center space-y-4 bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xs">
+              <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto">
                 <Briefcase className="w-8 h-8" />
               </div>
-              <div className="max-w-md mx-auto space-y-1">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-                  {activeTab === "MY_POSTS"
-                    ? "You haven't posted any opportunities yet"
-                    : hasActiveFilters
-                    ? "No opportunities match your filters"
-                    : "No opportunities posted yet"}
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg text-gray-900 dark:text-white">
+                  No opportunities found
                 </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {activeTab === "MY_POSTS"
-                    ? "Share job openings, internships, or referral opportunities from your company."
-                    : hasActiveFilters
-                    ? "Try adjusting your search terms or clearing some filters to see more results."
-                    : "Be the first to share an opening or alumni referral with the IUT network!"}
+                <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
+                  {hasActiveFilters
+                    ? "Try adjusting your search query, job type, or department filter to discover more roles."
+                    : activeTab === "MY_POSTS"
+                    ? "You haven't posted any job opportunities yet. Share one with the campus & alumni network!"
+                    : "No job postings recorded in the board yet. Check back soon!"}
                 </p>
               </div>
-
-              <div>
-                {hasActiveFilters && activeTab === "ALL" ? (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="px-4 py-2 rounded-xl text-sm font-bold bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-700 transition-all cursor-pointer"
-                  >
-                    Reset All Filters
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={handleOpenCreateModal}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-md shadow-blue-500/20 cursor-pointer"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Post an Opportunity</span>
-                  </button>
-                )}
-              </div>
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  onClick={clearAllFilters}
+                  className="mt-2 inline-flex items-center gap-1 px-4 py-2 rounded-xl text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Clear Filters</span>
+                </button>
+              )}
             </div>
           ) : (
-            <div className="space-y-4">
-              {jobs.map((job) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {displayedJobs.map((job) => (
                 <JobCard
                   key={job.id}
                   job={job}
-                  currentUser={dbUser || user}
-                  onEdit={handleOpenEditModal}
-                  onDelete={handleJobDeleted}
+                  currentUser={dbUser}
+                  onEdit={openEditModal}
+                  onDelete={handleDeleteJob}
+                  onViewDetails={openJobDetailsModal}
                 />
               ))}
+            </div>
+          )}
 
-              {/* Pagination Controls */}
-              {activeTab === "ALL" && meta.totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-800 text-sm">
-                  <p className="text-gray-500 dark:text-gray-400 text-xs">
-                    Showing page <span className="font-bold text-gray-900 dark:text-white">{meta.page}</span> of{" "}
-                    <span className="font-bold text-gray-900 dark:text-white">{meta.totalPages}</span> ({meta.total} total)
-                  </p>
+          {/* Pagination Controls */}
+          {paginationMeta.totalPages > 1 && (
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200/80 dark:border-gray-800">
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                Showing page{" "}
+                <span className="font-bold text-gray-900 dark:text-white">
+                  {currentPage}
+                </span>{" "}
+                of{" "}
+                <span className="font-bold text-gray-900 dark:text-white">
+                  {paginationMeta.totalPages}
+                </span>{" "}
+                ({paginationMeta.total} total opportunities)
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  disabled={currentPage <= 1 || loading}
+                  onClick={() => {
+                    setLoading(true);
+                    setCurrentPage((p) => Math.max(1, p - 1));
+                  }}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span>Previous</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={
+                    currentPage >= paginationMeta.totalPages || loading
+                  }
+                  onClick={() => {
+                    setLoading(true);
+                    setCurrentPage((p) =>
+                      Math.min(paginationMeta.totalPages, p + 1)
+                    );
+                  }}
+                  className="inline-flex items-center gap-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 text-xs font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-zinc-800 disabled:opacity-40 transition-all cursor-pointer"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      disabled={currentPage <= 1}
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
+        {/* Create / Edit Opportunity Modal */}
+        <CreateEditJobModal
+          isOpen={createModalOpen}
+          onClose={() => setCreateModalOpen(false)}
+          jobToEdit={jobToEdit}
+          onSuccess={() => {
+            setCreateModalOpen(false);
+            refetch();
+          }}
+        />
+
+        {/* Opportunity Details & Live Q&A Modal */}
+        <Modal
+          isOpen={Boolean(selectedJobForDetails)}
+          onClose={() => setSelectedJobForDetails(null)}
+          title="Opportunity Details & Discussion"
+          size="lg"
+        >
+          {selectedJobForDetails && (
+            <div className="space-y-6 pt-2">
+              {/* Header Box */}
+              <div className="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/90 border border-gray-200 dark:border-zinc-800">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div className="space-y-1">
+                    <span
+                      className={`inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${getJobTypeBadgeStyle(
+                        selectedJobForDetails.jobType
+                      )}`}
                     >
-                      Previous
-                    </button>
-                    <button
-                      type="button"
-                      disabled={currentPage >= meta.totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(meta.totalPages, p + 1))}
-                      className="px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-100 dark:hover:bg-gray-800 transition-all cursor-pointer"
+                      {formatJobTypeLabel(selectedJobForDetails.jobType)}
+                    </span>
+                    <h2 className="text-lg sm:text-xl font-extrabold text-gray-900 dark:text-white leading-snug">
+                      {selectedJobForDetails.title}
+                    </h2>
+                    <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                      <Building2 className="w-4 h-4 text-gray-400" />
+                      <span>{selectedJobForDetails.company}</span>
+                      {selectedJobForDetails.department && (
+                        <>
+                          <span className="text-gray-400">•</span>
+                          <span className="text-gray-500 dark:text-gray-400">
+                            {selectedJobForDetails.department}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+
+                  {selectedJobForDetails.applicationUrl && (
+                    <a
+                      href={appHref}
+                      target={isEmailApp ? "_self" : "_blank"}
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-all shrink-0 cursor-pointer"
                     >
-                      Next
-                    </button>
+                      {isEmailApp ? (
+                        <Mail className="w-3.5 h-3.5" />
+                      ) : (
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      )}
+                      <span>Apply Now</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Metadata Pills */}
+                <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap pt-2 border-t border-gray-200/80 dark:border-zinc-800">
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-gray-400" />
+                    <span>
+                      {selectedJobForDetails.location || "Location TBA"} (
+                      {formatWorkModeLabel(selectedJobForDetails.workMode)})
+                    </span>
+                  </span>
+
+                  {selectedJobForDetails.salaryRange && (
+                    <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                      <Banknote className="w-3.5 h-3.5" />
+                      <span>{selectedJobForDetails.salaryRange}</span>
+                    </span>
+                  )}
+
+                  {selectedJobForDetails.deadline && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                      <span
+                        className={
+                          isDeadlinePassed(selectedJobForDetails.deadline)
+                            ? "text-rose-500 font-semibold"
+                            : ""
+                        }
+                      >
+                        {isDeadlinePassed(selectedJobForDetails.deadline)
+                          ? "Deadline closed"
+                          : `Deadline: ${formatDeadline(
+                              selectedJobForDetails.deadline
+                            )}`}
+                      </span>
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Poster info banner */}
+              {selectedJobForDetails.poster && (
+                <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
+                  <Link
+                    href={`/profile/${selectedJobForDetails.poster.uid || ""}`}
+                    className="flex items-center gap-2.5 min-w-0 group"
+                  >
+                    <div className="w-8 h-8 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-zinc-700">
+                      <Image
+                        src={
+                          selectedJobForDetails.poster.profileImage ||
+                          user_placeholder
+                        }
+                        alt={selectedJobForDetails.poster.name || "Poster"}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 text-xs">
+                      <p className="font-bold text-gray-900 dark:text-white group-hover:underline truncate">
+                        {selectedJobForDetails.poster.name}
+                      </p>
+                      <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                        {selectedJobForDetails.poster.role}
+                        {selectedJobForDetails.poster.alumniProfile?.batch &&
+                          ` • Batch ${selectedJobForDetails.poster.alumniProfile.batch}`}
+                        {selectedJobForDetails.poster.studentProfile?.batch &&
+                          ` • Batch ${selectedJobForDetails.poster.studentProfile.batch}`}
+                      </p>
+                    </div>
+                  </Link>
+
+                  <span className="text-[11px] text-gray-400">
+                    Posted on{" "}
+                    {new Date(
+                      selectedJobForDetails.createdAt
+                    ).toLocaleDateString("en-US", {
+                      month: "short",
+                      day: "numeric",
+                    })}
+                  </span>
+                </div>
+              )}
+
+              {/* Description */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                  Role Overview & Description
+                </h3>
+                <p className="text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">
+                  {selectedJobForDetails.description}
+                </p>
+              </div>
+
+              {/* Requirements */}
+              {selectedJobForDetails.requirements && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                    Key Requirements & Qualifications
+                  </h3>
+                  <div className="p-3.5 rounded-xl bg-gray-50 dark:bg-zinc-900/60 border border-gray-100 dark:border-zinc-800 text-xs sm:text-sm text-gray-800 dark:text-gray-200 whitespace-pre-line leading-relaxed">
+                    {selectedJobForDetails.requirements}
                   </div>
                 </div>
               )}
+
+              {/* Skills Tags */}
+              {Array.isArray(selectedJobForDetails.skills) &&
+                selectedJobForDetails.skills.length > 0 && (
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                      Required Skills & Keywords
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {selectedJobForDetails.skills.map((skill) => (
+                        <span
+                          key={skill}
+                          className="px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 text-xs font-medium"
+                        >
+                          #{skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Live Q&A Section */}
+              <div className="pt-2">
+                {loadingDetailsComments ? (
+                  <div className="py-6 text-center text-gray-400 space-y-2">
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto text-gray-400" />
+                    <p className="text-xs">Loading discussion thread...</p>
+                  </div>
+                ) : (
+                  <JobCommentsSection
+                    jobId={selectedJobForDetails.id}
+                    comments={detailsComments}
+                    currentUser={dbUser}
+                    onCommentAdded={handleModalCommentAdded}
+                    onCommentDeleted={handleModalCommentDeleted}
+                  />
+                )}
+              </div>
             </div>
           )}
-        </main>
-
-        {/* Create / Edit Job Modal */}
-        <CreateEditJobModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          jobToEdit={jobToEdit}
-          onSuccess={handleJobCreatedOrUpdated}
-        />
+        </Modal>
       </div>
     </ProtectedRoute>
   );
