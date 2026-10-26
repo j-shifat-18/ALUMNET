@@ -18,6 +18,7 @@ enum RequestStatus {
   PENDING
   ACCEPTED
   REJECTED
+  ENDED
 }
 
 enum UserStatus {
@@ -315,7 +316,6 @@ model MentorshipRequest {
   @@index([studentId])
   @@index([alumniId])
   @@index([status])
-  @@unique([studentId, alumniId])
 }
 
 model MentorshipSession {

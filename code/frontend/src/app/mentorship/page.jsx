@@ -29,6 +29,7 @@ import {
   ShieldCheck,
   Briefcase,
   ListTodo,
+  History,
 } from "lucide-react";
 import user_placeholder from "../../../public/placeholder-user.jpg";
 
@@ -53,6 +54,9 @@ export default function MentorshipPage() {
   const [loadingSent, setLoadingSent] = useState(true);
   const [loadingMentors, setLoadingMentors] = useState(true);
 
+  const [history, setHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(true);
+
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
 
@@ -65,9 +69,9 @@ export default function MentorshipPage() {
       setActiveTab(tabParam.toUpperCase());
       return;
     }
-    if (isAlumni && activeTab !== "REQUESTS" && activeTab !== "MENTEES") {
+    if (isAlumni && activeTab !== "REQUESTS" && activeTab !== "MENTEES" && activeTab !== "HISTORY") {
       setActiveTab("REQUESTS");
-    } else if (isStudent && activeTab !== "MENTORS" && activeTab !== "SENT_REQUESTS") {
+    } else if (isStudent && activeTab !== "MENTORS" && activeTab !== "SENT_REQUESTS" && activeTab !== "HISTORY") {
       setActiveTab("MENTORS");
     }
   }, [isAlumni, isStudent, activeTab, tabParam]);
@@ -120,14 +124,28 @@ export default function MentorshipPage() {
     }
   };
 
+  const fetchHistory = async () => {
+    try {
+      setLoadingHistory(true);
+      const res = await axiosInstance.get("/api/v1/mentorship/history");
+      setHistory(res.data?.data || []);
+    } catch (err) {
+      console.error("Error fetching mentorship history:", err);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   useEffect(() => {
     if (!user) return;
     if (isAlumni) {
       fetchReceivedRequests();
       fetchMentees();
+      fetchHistory();
     } else if (isStudent) {
       fetchSentRequests();
       fetchMentors();
+      fetchHistory();
     }
   }, [user, isAlumni, isStudent]);
 
@@ -236,6 +254,7 @@ export default function MentorshipPage() {
 
       fetchMentees();
       fetchReceivedRequests();
+      fetchHistory();
 
       Swal.fire({
         title: "Mentorship Concluded",
@@ -382,6 +401,24 @@ export default function MentorshipPage() {
                       {mentees.length}
                     </span>
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("HISTORY")}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === "HISTORY"
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900"
+                    }`}
+                  >
+                    <History className="w-4 h-4" />
+                    <span>History</span>
+                    {history.length > 0 && (
+                      <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300">
+                        {history.length}
+                      </span>
+                    )}
+                  </button>
                 </>
               ) : (
                 <>
@@ -415,6 +452,24 @@ export default function MentorshipPage() {
                     <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300">
                       {sentRequests.length}
                     </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab("HISTORY")}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all cursor-pointer whitespace-nowrap ${
+                      activeTab === "HISTORY"
+                        ? "bg-zinc-900 text-white dark:bg-white dark:text-zinc-900 shadow-sm"
+                        : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-zinc-900"
+                    }`}
+                  >
+                    <History className="w-4 h-4" />
+                    <span>History</span>
+                    {history.length > 0 && (
+                      <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-200 dark:bg-zinc-800 text-gray-700 dark:text-gray-300">
+                        {history.length}
+                      </span>
+                    )}
                   </button>
                 </>
               )}
@@ -975,6 +1030,166 @@ export default function MentorshipPage() {
                               <td className="py-4 px-4 sm:px-6 align-middle text-right whitespace-nowrap">
                                 <Link
                                   href={`/profile/${req.alumni?.uid}`}
+                                  className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+                                >
+                                  <span>View Profile</span>
+                                  <ArrowUpRight className="w-3.5 h-3.5" />
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        {/* ── Mentorship History tab (both alumni and student) ─────────────── */}
+          {activeTab === "HISTORY" && (
+            <div className="space-y-5">
+              <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
+                {loadingHistory ? (
+                  <div className="p-12 text-center text-gray-500 dark:text-gray-400 space-y-3">
+                    <div className="w-8 h-8 border-3 border-zinc-900 dark:border-zinc-100 border-t-transparent rounded-full animate-spin mx-auto" />
+                    <p className="text-sm font-medium">Loading mentorship history...</p>
+                  </div>
+                ) : history.length === 0 ? (
+                  <div className="p-12 text-center space-y-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gray-100 dark:bg-zinc-800 flex items-center justify-center mx-auto text-gray-400">
+                      <History className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                        No mentorship history yet
+                      </h3>
+                      <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto">
+                        Concluded or declined mentorships will appear here for your reference.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-gray-200 dark:border-gray-800 bg-gray-50/75 dark:bg-zinc-950/40 text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                          <th className="py-3.5 px-4 sm:px-6">{isAlumni ? "Student" : "Alumni Mentor"}</th>
+                          <th className="py-3.5 px-4">Note</th>
+                          <th className="py-3.5 px-4">Started</th>
+                          <th className="py-3.5 px-4">Concluded</th>
+                          <th className="py-3.5 px-4 text-center">Outcome</th>
+                          <th className="py-3.5 px-4 sm:px-6 text-center">Sessions</th>
+                          <th className="py-3.5 px-4 sm:px-6 text-right">Profile</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-zinc-800/80 text-sm">
+                        {history.map((req) => {
+                          const other = isAlumni ? req.student : req.alumni;
+                          const formattedStart = req.createdAt
+                            ? new Date(req.createdAt).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric",
+                              })
+                            : "—";
+                          const formattedEnd = req.updatedAt
+                            ? new Date(req.updatedAt).toLocaleDateString("en-US", {
+                                month: "short", day: "numeric", year: "numeric",
+                              })
+                            : "—";
+
+                          const totalTasks = req.sessions?.reduce(
+                            (sum, s) => sum + (s.tasks?.length ?? 0), 0
+                          ) ?? 0;
+                          const completedTasks = req.sessions?.reduce(
+                            (sum, s) => sum + (s.tasks?.filter((t) => t.isCompleted).length ?? 0), 0
+                          ) ?? 0;
+
+                          return (
+                            <tr
+                              key={req.id}
+                              className="hover:bg-gray-50/80 dark:hover:bg-zinc-800/40 transition-colors"
+                            >
+                              {/* Person */}
+                              <td className="py-4 px-4 sm:px-6 align-middle">
+                                <div className="flex items-center gap-3">
+                                  <Link
+                                    href={`/profile/${other?.uid}`}
+                                    className="w-10 h-10 rounded-full overflow-hidden relative shrink-0 border border-gray-200 dark:border-zinc-700 hover:opacity-90 transition-opacity"
+                                  >
+                                    <Image
+                                      src={other?.profileImage || user_placeholder}
+                                      alt={other?.name || "User"}
+                                      fill
+                                      className="object-cover"
+                                    />
+                                  </Link>
+                                  <Link
+                                    href={`/profile/${other?.uid}`}
+                                    className="font-bold text-gray-900 dark:text-white hover:underline truncate block leading-snug"
+                                  >
+                                    {other?.name || "User"}
+                                  </Link>
+                                </div>
+                              </td>
+
+                              {/* Note */}
+                              <td className="py-4 px-4 align-middle max-w-xs">
+                                {req.message ? (
+                                  <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 italic">
+                                    "{req.message}"
+                                  </p>
+                                ) : (
+                                  <span className="text-xs text-gray-400 italic">No note</span>
+                                )}
+                              </td>
+
+                              {/* Started */}
+                              <td className="py-4 px-4 align-middle text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {formattedStart}
+                              </td>
+
+                              {/* Concluded */}
+                              <td className="py-4 px-4 align-middle text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                                {formattedEnd}
+                              </td>
+
+                              {/* Outcome badge */}
+                              <td className="py-4 px-4 align-middle text-center whitespace-nowrap">
+                                {req.status === "ENDED" ? (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
+                                    <CheckCircle2 className="w-3 h-3" />
+                                    Concluded
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                    <X className="w-3 h-3" />
+                                    Declined
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Sessions + task completion */}
+                              <td className="py-4 px-4 align-middle text-center">
+                                {req.sessions?.length > 0 ? (
+                                  <div className="flex flex-col items-center gap-0.5">
+                                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                                      {req.sessions.length} session{req.sessions.length !== 1 ? "s" : ""}
+                                    </span>
+                                    {totalTasks > 0 && (
+                                      <span className="text-[11px] text-gray-500 dark:text-gray-400">
+                                        {completedTasks}/{totalTasks} tasks done
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-gray-400 dark:text-gray-500">—</span>
+                                )}
+                              </td>
+
+                              {/* Profile link */}
+                              <td className="py-4 px-4 sm:px-6 align-middle text-right">
+                                <Link
+                                  href={`/profile/${other?.uid}`}
                                   className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
                                 >
                                   <span>View Profile</span>
