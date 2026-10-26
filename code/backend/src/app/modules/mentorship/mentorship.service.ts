@@ -44,14 +44,19 @@ const sendRequest = async (
     throw new AppError(400, "This alumnus is currently not available for mentorship");
   }
 
-  const existing = await prisma.mentorshipRequest.findUnique({
+  // Block duplicate only for active requests (PENDING or ACCEPTED).
+  // ENDED or REJECTED records allow the student to re-apply.
+  const existing = await prisma.mentorshipRequest.findFirst({
     where: {
-      studentId_alumniId: { studentId: student.id, alumniId: alumni.id },
+      studentId: student.id,
+      alumniId: alumni.id,
+      status: { in: ["PENDING", "ACCEPTED"] },
     },
   });
 
   if (existing) {
-    throw new AppError(409, "A mentorship request already exists with this alumni");
+    const statusLabel = existing.status === "PENDING" ? "a pending" : "an active";
+    throw new AppError(409, `You already have ${statusLabel} mentorship request with this alumni`);
   }
 
   const result = await prisma.mentorshipRequest.create({
@@ -87,7 +92,10 @@ const getSentRequests = async (uid: string) => {
   if (!user) throw new AppError(404, "User not found");
 
   const requests = await prisma.mentorshipRequest.findMany({
-    where: { studentId: user.id },
+    where: {
+      studentId: user.id,
+      status: { notIn: ["ENDED", "REJECTED"] },
+    },
     include: { alumni: { select: userSelect } },
     orderBy: { createdAt: "desc" },
   });
@@ -104,7 +112,10 @@ const getReceivedRequests = async (uid: string) => {
   if (!user) throw new AppError(404, "User not found");
 
   const requests = await prisma.mentorshipRequest.findMany({
-    where: { alumniId: user.id },
+    where: {
+      alumniId: user.id,
+      status: { notIn: ["ENDED", "REJECTED"] },
+    },
     include: { student: { select: userSelect } },
     orderBy: { createdAt: "desc" },
   });
@@ -296,6 +307,95 @@ const getAvailability = async (uid: string) => {
   };
 };
 
+const getMentorshipHistory = async (uid: string) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true },
+  });
+
+  if (!user) throw new AppError(404, "User not found");
+
+  // Return all ENDED or REJECTED requests where the user was either party
+  const requests = await prisma.mentorshipRequest.findMany({
+    where: {
+      status: { in: ["ENDED", "REJECTED"] },
+      OR: [
+        { studentId: user.id },
+        { alumniId: user.id },
+      ],
+    },
+    include: {
+      student: { select: userSelect },
+      alumni: { select: userSelect },
+      sessions: {
+        include: {
+          tasks: {
+            select: {
+              id: true,
+              title: true,
+              isCompleted: true,
+              dueDate: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+
+  return requests;
+};
+// The alumni's totalMentees count is decremented when the relationship ends.
+
+const endMentorship = async (id: number, uid: string) => {
+  const user = await prisma.user.findUnique({
+    where: { uid },
+    select: { id: true, role: true },
+  });
+
+  if (!user) throw new AppError(404, "User not found");
+
+  const request = await prisma.mentorshipRequest.findUnique({
+    where: { id },
+    include: {
+      student: { select: userSelect },
+      alumni: { select: userSelect },
+    },
+  });
+
+  if (!request) throw new AppError(404, "Mentorship request not found");
+
+  // Only the student or the alumni involved can end it
+  if (request.alumniId !== user.id) {
+    throw new AppError(403, "Only the alumni involved can end this mentorship");
+  }
+
+  if (request.status !== "ACCEPTED") {
+    throw new AppError(
+      400,
+      `Cannot end a mentorship that is currently ${request.status.toLowerCase()}`,
+    );
+  }
+
+  // Mark as ENDED and decrement alumni's totalMentees atomically
+  const [updated] = await prisma.$transaction([
+    prisma.mentorshipRequest.update({
+      where: { id },
+      data: { status: "ENDED" },
+      include: {
+        student: { select: userSelect },
+        alumni: { select: userSelect },
+      },
+    }),
+    prisma.alumniProfile.updateMany({
+      where: { userId: request.alumniId },
+      data: { totalMentees: { decrement: 1 } },
+    }),
+  ]);
+
+  return updated;
+};
+
 export const MentorshipService = {
   sendRequest,
   getSentRequests,
@@ -306,4 +406,6 @@ export const MentorshipService = {
   getMentees,
   updateAvailability,
   getAvailability,
+  endMentorship,
+  getMentorshipHistory,
 };
