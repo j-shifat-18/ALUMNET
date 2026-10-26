@@ -578,7 +578,7 @@ model JobPost {
   workMode     WorkMode  @default(IN_PERSON)
   jobType      JobType   @default(FULL_TIME)
 
-  department   String[]
+  department   String?
   skills       String[]
   description  String
   requirements String?
