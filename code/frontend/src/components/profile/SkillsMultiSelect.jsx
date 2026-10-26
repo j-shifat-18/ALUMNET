@@ -172,7 +172,7 @@ const CheckIcon = () => (
   </svg>
 );
 
-const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
+const MultiSelect = ({ selectedOptions = [], setSelectedOptions, placeholder = "Your skills" }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -189,19 +189,43 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const isSelected = (option) => {
+    return selectedOptions.some(selected => {
+      if (typeof selected === 'string') {
+        return selected.toLowerCase() === option.name.toLowerCase();
+      }
+      return selected?.id === option.id || (selected?.name || '').toLowerCase() === option.name.toLowerCase();
+    });
+  };
+
   const filteredOptions = ALL_OPTIONS.filter(option => 
-    !selectedOptions.some(selected => selected.id === option.id) && 
+    !isSelected(option) && 
     option.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const toggleOption = option => {
-    setSelectedOptions(prev => prev.some(o => o.id === option.id) ? prev.filter(o => o.id !== option.id) : [...prev, option]);
+    setSelectedOptions(prev => {
+      const exists = prev.some(o => {
+        if (typeof o === 'string') return o.toLowerCase() === option.name.toLowerCase();
+        return o?.id === option.id || (o?.name || '').toLowerCase() === option.name.toLowerCase();
+      });
+      if (exists) {
+        return prev.filter(o => {
+          if (typeof o === 'string') return o.toLowerCase() !== option.name.toLowerCase();
+          return o?.id !== option.id && (o?.name || '').toLowerCase() !== option.name.toLowerCase();
+        });
+      }
+      return [...prev, option];
+    });
     setSearchTerm('');
     inputRef.current?.focus();
   };
 
   const removeOption = option => {
-    setSelectedOptions(selectedOptions.filter(o => o.id !== option.id));
+    setSelectedOptions(selectedOptions.filter(o => {
+      if (typeof o === 'string') return o.toLowerCase() !== (option?.name || option).toLowerCase();
+      return o.id !== option.id;
+    }));
   };
 
   const handleKeyDown = e => {
@@ -230,6 +254,16 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
         e.preventDefault();
         if (filteredOptions[highlightedIndex]) {
           toggleOption(filteredOptions[highlightedIndex]);
+        } else if (searchTerm.trim()) {
+          const custom = {
+            id: `custom-${searchTerm.trim().toLowerCase()}`,
+            name: searchTerm.trim(),
+            value: searchTerm.trim().toLowerCase(),
+          };
+          if (!isSelected(custom)) {
+            setSelectedOptions(prev => [...prev, custom]);
+            setSearchTerm('');
+          }
         }
         break;
       case 'Escape':
@@ -242,28 +276,33 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
     <div className="w-full" ref={wrapperRef}>
       <div className="relative">
         <div 
-          className="flex flex-wrap items-center gap-2 p-2 min-h-10 text-sm border border-slate-300 dark:border-slate-600 bg-white dark:bg-black rounded-md shadow-sm cursor-text transition-colors focus-within:ring-2 focus-within:ring-slate-900 dark:focus-within:ring-slate-100 focus-within:ring-offset-2" 
+          className="flex flex-wrap items-center gap-2 p-2.5 min-h-11 text-sm border border-gray-200 dark:border-gray-800 bg-white dark:bg-black rounded-xl shadow-xs cursor-text transition-all focus-within:ring-2 focus-within:ring-blue-500" 
           onClick={() => {
             setIsOpen(true);
             setHighlightedIndex(0);
             inputRef.current?.focus();
           }}
         >
-          {selectedOptions.map(option => (
-            <div key={option.id} className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-medium px-2 py-1 rounded-md">
-              {option.name}
-              <button 
-                type="button" 
-                className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 p-0.5 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-500 focus:ring-offset-1" 
-                onClick={e => {
-                  e.stopPropagation();
-                  removeOption(option);
-                }}
-              >
-                <XIcon />
-              </button>
-            </div>
-          ))}
+          {selectedOptions.map(option => {
+            const displayName = typeof option === 'string' ? option : option.name || option.value;
+            const optionKey = typeof option === 'string' ? option : option.id || option.name;
+            return (
+              <div key={optionKey} className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold px-2.5 py-1 rounded-lg text-xs border border-blue-200 dark:border-blue-900/50">
+                #{displayName}
+                <button 
+                  type="button" 
+                  className="text-blue-400 hover:text-red-500 rounded-md p-0.5 transition-colors cursor-pointer" 
+                  onClick={e => {
+                    e.stopPropagation();
+                    removeOption(option);
+                  }}
+                  title="Remove skill"
+                >
+                  <XIcon />
+                </button>
+              </div>
+            );
+          })}
           <input 
             ref={inputRef} 
             type="text" 
@@ -271,28 +310,45 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
             onChange={e => { setSearchTerm(e.target.value); setHighlightedIndex(0); }} 
             onFocus={() => { setIsOpen(true); setHighlightedIndex(0); }} 
             onKeyDown={handleKeyDown} 
-            placeholder={selectedOptions.length === 0 ? "Your skills" : ""} 
-            className="grow bg-transparent border-none outline-none text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 text-sm p-0" 
+            placeholder={selectedOptions.length === 0 ? placeholder : ""} 
+            className="grow bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 text-sm p-1 min-w-[140px]" 
           />
         </div>
 
         {isOpen && (
-          <div className="absolute z-50 w-full mt-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-zinc-900 rounded-md shadow-2xl max-h-60 overflow-y-auto animate-popover-in">
-            <ul className="p-1">
+          <div className="absolute z-50 w-full mt-1.5 border border-gray-200 dark:border-gray-800 bg-white dark:bg-zinc-900 rounded-xl shadow-2xl max-h-60 overflow-y-auto animate-popover-in">
+            <ul className="p-1.5 space-y-0.5">
               {filteredOptions.length > 0 ? (
                 filteredOptions.map((option, index) => (
                   <li 
                     key={option.id} 
-                    className={`flex items-center justify-between p-2 cursor-pointer rounded-md transition-colors duration-150 ${highlightedIndex === index ? 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'}`} 
+                    className={`flex items-center justify-between px-3 py-2 cursor-pointer rounded-lg text-xs font-semibold transition-colors duration-150 ${highlightedIndex === index ? 'bg-gray-100 dark:bg-zinc-800 text-gray-900 dark:text-gray-100' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-zinc-800/60'}`} 
                     onClick={() => toggleOption(option)} 
                     onMouseEnter={() => setHighlightedIndex(index)}
                   >
-                    {option.name}
-                    {selectedOptions.some(o => o.id === option.id) && <CheckIcon />}
+                    <span>{option.name}</span>
+                    {isSelected(option) && <CheckIcon />}
                   </li>
                 ))
+              ) : searchTerm.trim() ? (
+                <li
+                  className="px-3 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 cursor-pointer rounded-lg flex items-center justify-between"
+                  onClick={() => {
+                    const custom = {
+                      id: `custom-${searchTerm.trim().toLowerCase()}`,
+                      name: searchTerm.trim(),
+                      value: searchTerm.trim().toLowerCase(),
+                    };
+                    if (!isSelected(custom)) {
+                      setSelectedOptions(prev => [...prev, custom]);
+                    }
+                    setSearchTerm('');
+                  }}
+                >
+                  <span>+ Add custom tech: &ldquo;{searchTerm.trim()}&rdquo;</span>
+                </li>
               ) : (
-                <li className="p-2 text-center text-slate-500 dark:text-slate-400">No options found.</li>
+                <li className="px-3 py-2 text-center text-gray-400 text-xs">No matching technologies.</li>
               )}
             </ul>
           </div>
@@ -302,21 +358,21 @@ const MultiSelect = ({ selectedOptions, setSelectedOptions }) => {
   );
 };
 
-export default function SkillsMultiSelect({ selectedOptions = [], setSelectedOptions }) {
+export default function SkillsMultiSelect({ selectedOptions = [], setSelectedOptions, placeholder = "Your skills" }) {
   return (
     <div className="font-sans">
       <style>{`
         @keyframes popover-in {
-          from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+          from { opacity: 0; transform: scale(0.95) translateY(-6px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
         .animate-popover-in {
           transform-origin: top;
-          animation: popover-in 0.1s ease-out forwards;
+          animation: popover-in 0.12s ease-out forwards;
         }
       `}</style>
       <div className="w-full">
-        <MultiSelect selectedOptions={selectedOptions} setSelectedOptions={setSelectedOptions} />
+        <MultiSelect selectedOptions={selectedOptions} setSelectedOptions={setSelectedOptions} placeholder={placeholder} />
       </div>
     </div>
   );

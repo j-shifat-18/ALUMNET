@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import DatePicker from "@/components/ui/DatePicker";
+import SkillsMultiSelect from "@/components/profile/SkillsMultiSelect";
 import axiosInstance from "@/lib/axios";
 import Swal from "sweetalert2";
 import { Loader2, X, Briefcase, Building2, MapPin, Banknote, Calendar, GraduationCap, Link as LinkIcon, Check } from "lucide-react";
@@ -42,8 +43,14 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
   const [workMode, setWorkMode] = useState(() => jobToEdit?.workMode || "IN_PERSON");
   const [jobType, setJobType] = useState(() => jobToEdit?.jobType || "FULL_TIME");
   const [department, setDepartment] = useState(() => jobToEdit?.department || "");
-  const [skills, setSkills] = useState(() => (Array.isArray(jobToEdit?.skills) ? jobToEdit.skills : []));
-  const [skillInput, setSkillInput] = useState("");
+  const [skills, setSkills] = useState(() => {
+    if (!Array.isArray(jobToEdit?.skills)) return [];
+    return jobToEdit.skills.map((s) =>
+      typeof s === "object" && s !== null
+        ? s
+        : { id: s, name: s, value: String(s).toLowerCase() }
+    );
+  });
   const [description, setDescription] = useState(() => jobToEdit?.description || "");
   const [requirements, setRequirements] = useState(() => jobToEdit?.requirements || "");
   const [salaryRange, setSalaryRange] = useState(() => jobToEdit?.salaryRange || "");
@@ -53,21 +60,6 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [formError, setFormError] = useState("");
-
-  const handleAddSkill = (e) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault();
-      const trimmed = skillInput.trim().replace(/^,+|,+$/g, "");
-      if (trimmed && !skills.includes(trimmed)) {
-        setSkills([...skills, trimmed]);
-        setSkillInput("");
-      }
-    }
-  };
-
-  const handleRemoveSkill = (skillToRemove) => {
-    setSkills(skills.filter((s) => s !== skillToRemove));
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -88,6 +80,10 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
 
     try {
       setIsSaving(true);
+      const mappedSkills = Array.isArray(skills)
+        ? skills.map((s) => (typeof s === "string" ? s : s.name || s.value || String(s)))
+        : [];
+
       const payload = {
         title: title.trim(),
         company: company.trim(),
@@ -95,7 +91,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
         workMode,
         jobType,
         department: department === "All Departments" ? null : department.trim() || null,
-        skills,
+        skills: mappedSkills,
         description: description.trim(),
         requirements: requirements.trim() || null,
         salaryRange: salaryRange.trim() || null,
@@ -310,38 +306,16 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
         </div>
       </div>
 
-      {/* Skills Tag Input */}
+      {/* Skills & Technologies Dropdown with Typing Suggestions */}
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-          Key Skills & Technologies <span className="text-gray-400 normal-case">(Press Enter to add tag)</span>
+          Key Skills & Technologies <span className="text-gray-400 normal-case">(Select from list or type to search)</span>
         </label>
-        <div className="p-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl focus-within:ring-2 focus-within:ring-blue-500 transition-all">
-          <div className="flex flex-wrap gap-1.5 mb-1.5">
-            {skills.map((skill) => (
-              <span
-                key={skill}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"
-              >
-                #{skill}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveSkill(skill)}
-                  className="hover:text-red-500 transition-colors"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <input
-            type="text"
-            value={skillInput}
-            onChange={(e) => setSkillInput(e.target.value)}
-            onKeyDown={handleAddSkill}
-            placeholder="Type skill tag (e.g. React, Next.js, Python, Figma) and press Enter..."
-            className="w-full px-2 py-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none"
-          />
-        </div>
+        <SkillsMultiSelect
+          selectedOptions={skills}
+          setSelectedOptions={setSkills}
+          placeholder="Search and select technologies (e.g. React.js, Python, Docker, AWS)..."
+        />
       </div>
 
       {/* Description */}
