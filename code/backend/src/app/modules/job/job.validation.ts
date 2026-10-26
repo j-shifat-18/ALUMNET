@@ -16,7 +16,9 @@ export const createJobSchema = z.object({
   location: z.string().trim().optional().nullable(),
   workMode: workModeEnum.default("IN_PERSON"),
   jobType: jobTypeEnum.default("FULL_TIME"),
-  department: z.string().trim().optional().nullable(),
+  departments: z
+    .array(z.string().trim().min(1))
+    .default([]),
   skills: z.array(z.string().trim()).default([]),
   description: z.string().trim().min(1, "Job description is required"),
   requirements: z.string().trim().optional().nullable(),
@@ -38,7 +40,9 @@ export const updateJobSchema = z.object({
   location: z.string().trim().optional().nullable(),
   workMode: workModeEnum.optional(),
   jobType: jobTypeEnum.optional(),
-  department: z.string().trim().optional().nullable(),
+  departments: z
+    .array(z.string().trim().min(1))
+    .optional(),
   skills: z.array(z.string().trim()).optional(),
   description: z.string().trim().min(1).optional(),
   requirements: z.string().trim().optional().nullable(),

@@ -6,7 +6,7 @@ export interface CreateJobInput {
   location?: string | null;
   workMode?: WorkMode;
   jobType?: JobType;
-  department?: string | null;
+  departments?: string[];
   skills?: string[];
   description: string;
   requirements?: string | null;
@@ -21,7 +21,7 @@ export interface UpdateJobInput {
   location?: string | null;
   workMode?: WorkMode;
   jobType?: JobType;
-  department?: string | null;
+  departments?: string[];
   skills?: string[];
   description?: string;
   requirements?: string | null;
