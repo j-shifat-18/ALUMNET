@@ -133,9 +133,6 @@ code/frontend/
     │   │   ├── register/           # /register - 3-step registration wizard
     │   │   └── verify-email/       # /verify-email - Institutional email verification
     │   │
-    │   ├── (admin)/                # Administration route group
-    │   │   └── dashboard/          # /dashboard - Member administration & moderation
-    │   │
     │   ├── events/                 # Events & Campus Activities module
     │   │   ├── page.jsx            # /events - Discovery, category filters, search & pagination
     │   │   └── [id]/page.jsx       # /events/:id - Event details, registration, attendees & agenda
@@ -187,11 +184,8 @@ code/frontend/
     │   │   ├── SkillsMultiSelect.jsx      # 130+ distinct technical skills selector
     │   │   └── PreferencesMultiSelect.jsx # 42 distinct career domains selector
     │   │
-    │   ├── mentorship/             # Mentorship components
-    │   │   └── RequestMentorshipModal.jsx # Mentorship proposal request dialog
-    │   │
-    │   └── admin/                  # Admin dashboard components
-    │       └── AdminDashboard.jsx         # Member moderation and analytics
+    │   └── mentorship/             # Mentorship components
+    │       └── RequestMentorshipModal.jsx # Mentorship proposal request dialog
     │
     ├── context/
     │   └── AuthProvider.js         # React Context for Firebase auth state & session
