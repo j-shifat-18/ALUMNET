@@ -41,10 +41,28 @@ export default function MessageList({
   const bottomRef = useRef(null);
   const scrollContainerRef = useRef(null);
   const prevScrollHeightRef = useRef(0);
+  // Track whether this is the very first render after loading completes
+  const initialScrollDoneRef = useRef(false);
 
-  // Auto-scroll to bottom when new messages arrive (only if user is near bottom)
+  // On first load: instantly jump to the bottom (no animation, no near-bottom check)
   useEffect(() => {
-    if (loading) return;
+    if (loading) {
+      // Reset the flag whenever a new conversation loads
+      initialScrollDoneRef.current = false;
+      return;
+    }
+    if (!initialScrollDoneRef.current && messages.length > 0) {
+      initialScrollDoneRef.current = true;
+      // Use instant scroll so the user lands at the bottom immediately
+      bottomRef.current?.scrollIntoView({ behavior: "instant" });
+    }
+  }, [loading, messages.length]);
+
+  // After the initial scroll: auto-scroll to bottom only when a NEW message
+  // arrives and the user is already near the bottom (so we don't hijack the
+  // scroll position while they are reading older messages).
+  useEffect(() => {
+    if (loading || !initialScrollDoneRef.current) return;
     const container = scrollContainerRef.current;
     if (!container) return;
 
