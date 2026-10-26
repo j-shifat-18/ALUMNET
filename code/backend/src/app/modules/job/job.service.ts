@@ -61,7 +61,7 @@ const createJob = async (uid: string, payload: CreateJobInput) => {
       location: payload.location,
       workMode: payload.workMode ?? "IN_PERSON",
       jobType: payload.jobType ?? "FULL_TIME",
-      department: payload.department,
+      departments: payload.departments ?? [],
       skills: payload.skills ?? [],
       description: payload.description,
       requirements: payload.requirements,
@@ -102,12 +102,15 @@ const getAllJobs = async (query: JobFilterQuery) => {
     });
   }
 
-  // Department filter with acronym expansion (CSE, SWE, EEE, etc.)
+  // Department filter — matches if ANY of the job's departments array
+  // contains the search term (case-insensitive via has/hasSome isn't available
+  // for partial match in Postgres arrays, so we use a raw OR over array elements).
+  // getDepartmentTerms expands acronyms (CSE, SWE, etc.) to full names.
   if (query.department && query.department.trim() !== "") {
     const deptTerms = getDepartmentTerms(query.department);
     whereConditions.push({
       OR: deptTerms.map((dept) => ({
-        department: { contains: dept, mode: "insensitive" },
+        departments: { has: dept },
       })),
     });
   }
@@ -236,7 +239,7 @@ const updateJob = async (uid: string, id: number, payload: UpdateJobInput) => {
       location: payload.location,
       workMode: payload.workMode,
       jobType: payload.jobType,
-      department: payload.department,
+      departments: payload.departments,
       skills: payload.skills,
       description: payload.description,
       requirements: payload.requirements,

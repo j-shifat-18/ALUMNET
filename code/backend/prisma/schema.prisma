@@ -578,7 +578,7 @@ model JobPost {
   workMode     WorkMode  @default(IN_PERSON)
   jobType      JobType   @default(FULL_TIME)
 
-  department   String?
+  departments  String[]
   skills       String[]
   description  String
   requirements String?
@@ -593,7 +593,6 @@ model JobPost {
   comments     JobComment[]
 
   @@index([posterId])
-  @@index([department])
   @@index([jobType])
   @@index([createdAt])
 }
