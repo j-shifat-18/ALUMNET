@@ -20,7 +20,7 @@ export default function VerifyEmailPage() {
   useEffect(() => {
     if (!user) {
       router.push('/login');
-    } else if (user.emailVerified) {
+    } else {
       router.push('/profile-setup');
     }
   }, [user, router]);

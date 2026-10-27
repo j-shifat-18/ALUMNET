@@ -123,13 +123,17 @@ const RegistrationForm = () => {
       setNotification({
         type: "success",
         title: "Registration Successful!",
-        message: "Verification email sent! Check your email and verify your account",
-        duration: 3000
+        // message: "Verification email sent! Check your email and verify your account",
+        // duration: 3000
+        message: "Account created successfully! Setting up your profile...",
+        duration: 2000
       });
       
       setTimeout(() => {
-        router.push("/verify-email");
-      }, 3000);
+      //   router.push("/verify-email");
+      // }, 3000);
+        router.push("/profile-setup");
+      }, 1500);
     } catch (err) {
       setNotification({
         type: "error",
