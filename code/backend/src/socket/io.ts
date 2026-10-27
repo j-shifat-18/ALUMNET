@@ -1,14 +1,14 @@
 import { Server } from "socket.io";
 import type { Server as HttpServer } from "http";
 
-// ─── Allowed CORS origins (mirrors app.ts) ───────────────────────────────────
+// ─── Allowed CORS origins (mirrors app.ts) 
 const CORS_ORIGINS = [
   "http://localhost:3000",
   "https://alumnet-frontend.vercel.app",
   "https://alumnet-production.up.railway.app",
 ];
 
-// ─── Module-level singleton ───────────────────────────────────────────────────
+// ─── Module-level singleton 
 let _io: Server | null = null;
 
 /**

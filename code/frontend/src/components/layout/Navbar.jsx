@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, House, Users, MessageSquare, Calendar, Bell, Briefcase } from 'lucide-react';
+import { Menu, X, House, Users, MessageSquare, Calendar, Bell, Briefcase, Sparkles } from 'lucide-react';
 import logo from "../../../public/logo.png";
 import Image from 'next/image';
 import { useAuth } from '@/context/AuthProvider';
@@ -53,6 +53,11 @@ const Navbar = () => {
         href: "/network",
         label: "My Network",
         icon: <Users />
+    },
+    {
+        href: "/matching",
+        label: "Mentor Match",
+        icon: <Sparkles />
     },
     {
         href: "/jobs",
