@@ -17,7 +17,6 @@ import Swal from 'sweetalert2';
 import { Camera, Construction, FileUser, Globe, ImagePlus, ListChevronsDownUp, ListChevronsUpDown, PencilLine, Plus, UserRoundCheck, UserRoundPlus, X, Loader2, Briefcase, Trash2, Check, Clock, GraduationCap, MessageSquare, Award, Trophy, Calendar, ExternalLink, UploadCloud, Building2, ChevronDown, MapPin } from 'lucide-react';
 import { EditDrawer, DrawerOverlay, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, Button } from '@/components/ui/Drawer';
 import Modal from '@/components/ui/Modal';
-import GenderDropdown from '@/components/profile/GenderDropdown';
 import ProfilePhotoEditModal from '@/components/profile/ProfilePhotoEditModal';
 import CoverPhotoEditModal from '@/components/profile/CoverPhotoEditModal';
 import CreatePostModal from '@/components/posts/CreatePostModal';
@@ -37,10 +36,9 @@ export default function Profile() {
   const { id } = useParams();
   const router = useRouter();
   const { createOrGetConversation } = useChat();
-  
+
   const [dbUser, setDbUser] = useState(() => (id ? profileCache.get(id) || null : null));
   const [isMessaging, setIsMessaging] = useState(false);
-  const [basicInfoDrawerOpen, setBasicInfoDrawerOpen] = useState(false);
   const [contactInfoDrawerOpen, setContactInfoDrawerOpen] = useState(false);
   const [additionalInfoDrawerOpen, setAdditionalInfoDrawerOpen] = useState(false);
   const [editInfoDrawerOpen, setEditInfoDrawerOpen] = useState(false);
@@ -84,7 +82,7 @@ export default function Profile() {
   const [requestMentorshipModalOpen, setRequestMentorshipModalOpen] = useState(false);
   const [mentorshipRequestStatus, setMentorshipRequestStatus] = useState(null);
   const textareaRef = useRef(null);
-  
+
   const cachedUser = id ? profileCache.get(id) : null;
   const [bio, setBio] = useState(cachedUser?.bio || "");
   const [name, setName] = useState(cachedUser?.name || "");
@@ -99,7 +97,6 @@ export default function Profile() {
   const [isSaving, setIsSaving] = useState(false);
   const [showAllSkills, setShowAllSkills] = useState(false);
   const [showAllPosts, setShowAllPosts] = useState(false);
-  const [selectedGender, setSelectedGender] = useState(cachedUser?.gender || "");
   const [profileImageUrl, setProfileImageUrl] = useState(cachedUser?.profileImage || "");
   const [coverImageUrl, setCoverImageUrl] = useState(cachedUser?.coverImage || "");
 
@@ -175,7 +172,7 @@ export default function Profile() {
             }
           }
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [authDbUser?.role, dbUser?.role, dbUser?.id, dbUser?.uid]);
 
@@ -281,7 +278,7 @@ export default function Profile() {
       setIsUpdatingAvailability(false);
     }
   };
-  
+
   const [posts, setPosts] = useState(() => (id ? postsCache.get(id) || [] : []));
   const [loadingPosts, setLoadingPosts] = useState(() => (id ? !postsCache.has(id) : true));
 
@@ -298,7 +295,6 @@ export default function Profile() {
         setBio(data?.bio || "");
         setContactNo(data?.contactNo || "");
         setLocation(data?.location || "");
-        setSelectedGender(data?.gender || "");
         setProfileImageUrl(data?.profileImage || "");
         setCoverImageUrl(data?.coverImage || "");
 
@@ -382,23 +378,6 @@ export default function Profile() {
     }
   };
 
-  const handleEditBasicInfo = async () => {
-    try {
-      setIsSaving(true);
-      await axiosInstance.patch(`/api/v1/profiles/${user.uid}`, {
-        gender: selectedGender,
-      });
-      updateUserProfileState(prev => ({ ...prev, gender: selectedGender }));
-      setBasicInfoDrawerOpen(false);
-    }
-    catch (err) {
-
-    }
-    finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleEditContactInfo = async () => {
     try {
       setIsSaving(true);
@@ -456,8 +435,8 @@ export default function Profile() {
         const gradYear = existing.graduationYear
           ? parseInt(existing.graduationYear)
           : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
+            ? parseInt(existing.batch)
+            : new Date().getFullYear();
 
         subProfile = {
           department: existing.department || "General",
@@ -793,8 +772,8 @@ export default function Profile() {
         const gradYear = existing.graduationYear
           ? parseInt(existing.graduationYear)
           : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
+            ? parseInt(existing.batch)
+            : new Date().getFullYear();
 
         subProfile = {
           department: existing.department || "General",
@@ -899,8 +878,8 @@ export default function Profile() {
         const gradYear = existing.graduationYear
           ? parseInt(existing.graduationYear)
           : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
+            ? parseInt(existing.batch)
+            : new Date().getFullYear();
 
         subProfile = {
           department: existing.department || "General",
@@ -1006,8 +985,8 @@ export default function Profile() {
         const gradYear = existing.graduationYear
           ? parseInt(existing.graduationYear)
           : existing.batch && !isNaN(parseInt(existing.batch))
-          ? parseInt(existing.batch)
-          : new Date().getFullYear();
+            ? parseInt(existing.batch)
+            : new Date().getFullYear();
 
         subProfile = {
           department: existing.department || "General",
@@ -1429,7 +1408,7 @@ export default function Profile() {
                     {dbUser?.role === "ALUMNI" && (
                       <div className="sm:self-start shrink-0">
                         {isOwner ? (
-                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border bg-gray-50/70 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700/80 shadow-xs">
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl shadow-xs">
                             <span className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 whitespace-nowrap">
                               Mentorship:
                             </span>
@@ -1438,19 +1417,17 @@ export default function Profile() {
                                 value={isMentorAvailable ? "AVAILABLE" : "UNAVAILABLE"}
                                 onChange={(e) => handleAvailabilityChange(e.target.value === "AVAILABLE")}
                                 disabled={isUpdatingAvailability}
-                                className={`text-xs font-semibold py-1 pl-6 pr-6 rounded-xl border appearance-none transition-colors cursor-pointer focus:outline-none focus:ring-1 ${
-                                  isMentorAvailable
+                                className={`text-xs font-semibold py-1 pl-6 pr-6 rounded-xl border appearance-none transition-colors cursor-pointer focus:outline-none focus:ring-1 ${isMentorAvailable
                                     ? "bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-800 focus:ring-emerald-500"
                                     : "bg-white text-gray-700 border-gray-300 dark:bg-gray-900 dark:text-gray-300 dark:border-gray-700 focus:ring-gray-500"
-                                }`}
+                                  }`}
                               >
                                 <option value="AVAILABLE">Available</option>
                                 <option value="UNAVAILABLE">Unavailable</option>
                               </select>
                               <span
-                                className={`w-2 h-2 rounded-full absolute left-2 pointer-events-none ${
-                                  isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
-                                }`}
+                                className={`w-2 h-2 rounded-full absolute left-2 pointer-events-none ${isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                                  }`}
                               />
                               <ChevronDown className="w-3.5 h-3.5 absolute right-1.5 pointer-events-none opacity-60 text-gray-600 dark:text-gray-300" />
                             </div>
@@ -1460,16 +1437,14 @@ export default function Profile() {
                           </div>
                         ) : (
                           <div
-                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs font-semibold shadow-xs ${
-                              isMentorAvailable
+                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-2xl border text-xs font-semibold shadow-xs ${isMentorAvailable
                                 ? "bg-emerald-50/80 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800"
                                 : "bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-800/80 dark:text-gray-400 dark:border-gray-700"
-                            }`}
+                              }`}
                           >
                             <span
-                              className={`w-2 h-2 rounded-full ${
-                                isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
-                              }`}
+                              className={`w-2 h-2 rounded-full ${isMentorAvailable ? "bg-emerald-500 animate-pulse" : "bg-gray-400"
+                                }`}
                             />
                             <span>{isMentorAvailable ? "Available for Mentorship" : "Currently Unavailable"}</span>
                           </div>
@@ -1526,13 +1501,12 @@ export default function Profile() {
                             type="button"
                             onClick={handleToggleFollowProfile}
                             disabled={togglingProfileFollow}
-                            className={`px-4 py-1.5 border rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 ${
-                              isFollowingProfile
+                            className={`px-4 py-1.5 border rounded-xl hover:cursor-pointer text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 ${isFollowingProfile
                                 ? "bg-white text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100 border-zinc-900 dark:border-zinc-100 hover:bg-gray-100 dark:hover:bg-gray-800"
                                 : isFollowerOfProfile
-                                ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
-                                : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200"
-                            }`}
+                                  ? "bg-blue-600 text-white border-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:border-blue-500 dark:hover:bg-blue-600"
+                                  : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200"
+                              }`}
                           >
                             {togglingProfileFollow ? (
                               <Loader2 className="w-4 h-4 animate-spin" />
@@ -1579,15 +1553,14 @@ export default function Profile() {
                                 mentorshipRequestStatus === "PENDING" ||
                                 mentorshipRequestStatus === "ACCEPTED"
                               }
-                              className={`px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors ${
-                                !isMentorAvailable
+                              className={`px-4 py-1.5 rounded-xl text-sm font-medium flex items-center gap-2 transition-colors ${!isMentorAvailable
                                   ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 border border-gray-200 dark:border-gray-700 cursor-not-allowed"
                                   : mentorshipRequestStatus === "ACCEPTED"
-                                  ? "bg-emerald-600 text-white cursor-default"
-                                  : mentorshipRequestStatus === "PENDING"
-                                  ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-default"
-                                  : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer"
-                              }`}
+                                    ? "bg-emerald-600 text-white cursor-default"
+                                    : mentorshipRequestStatus === "PENDING"
+                                      ? "bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 cursor-default"
+                                      : "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 border border-zinc-900 dark:border-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 cursor-pointer"
+                                }`}
                             >
                               {!isMentorAvailable ? (
                                 <>
@@ -1722,17 +1695,17 @@ export default function Profile() {
                 ? experienceList
                 : (profile?.currentCompany || profile?.currentPosition)
                   ? [{
-                      id: 'legacy',
-                      position: profile.currentPosition || 'Position',
-                      company: profile.currentCompany || 'Company',
-                      currentlyWorking: true,
-                      workMode: 'IN_PERSON',
-                      workplaceName: null,
-                      startDate: null,
-                      endDate: null,
-                      description: null,
-                      isLegacy: true,
-                    }]
+                    id: 'legacy',
+                    position: profile.currentPosition || 'Position',
+                    company: profile.currentCompany || 'Company',
+                    currentlyWorking: true,
+                    workMode: 'IN_PERSON',
+                    workplaceName: null,
+                    startDate: null,
+                    endDate: null,
+                    description: null,
+                    isLegacy: true,
+                  }]
                   : [];
 
               if (allExperiences.length === 0 && !isOwner) return null;
@@ -1790,7 +1763,7 @@ export default function Profile() {
 
                                     <div className="flex items-center gap-2 flex-wrap text-sm text-gray-700 dark:text-gray-300 font-medium">
                                       <span className="text-gray-900 dark:text-gray-100 font-semibold">{exp.company}</span>
-                                      
+
                                       {isRemote ? (
                                         <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                                           <Globe className="w-3 h-3" /> Remote
@@ -2054,21 +2027,21 @@ export default function Profile() {
                         const linkUrl = item.credentialUrl || item.achievementUrl;
                         const dateFormatted = item.issueDate
                           ? new Date(item.issueDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              year: "numeric",
-                            })
+                            month: "short",
+                            year: "numeric",
+                          })
                           : item.date
-                          ? new Date(item.date).toLocaleDateString("en-US", {
+                            ? new Date(item.date).toLocaleDateString("en-US", {
                               month: "short",
                               year: "numeric",
                             })
-                          : null;
+                            : null;
 
                         const expiryFormatted = item.expiryDate
                           ? new Date(item.expiryDate).toLocaleDateString("en-US", {
-                              month: "short",
-                              year: "numeric",
-                            })
+                            month: "short",
+                            year: "numeric",
+                          })
                           : null;
 
                         return (
@@ -2099,11 +2072,10 @@ export default function Profile() {
                                   </button>
                                 ) : (
                                   <div
-                                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                      isCert
+                                    className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isCert
                                         ? "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400"
                                         : "bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-400"
-                                    }`}
+                                      }`}
                                   >
                                     {isCert ? (
                                       <Award className="w-5 h-5" />
@@ -2119,11 +2091,10 @@ export default function Profile() {
                                       {item.title || item.name}
                                     </h5>
                                     <span
-                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                        isCert
+                                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${isCert
                                           ? "bg-blue-100 text-blue-700 dark:bg-blue-950/80 dark:text-blue-300"
                                           : "bg-amber-100 text-amber-700 dark:bg-amber-950/80 dark:text-amber-300"
-                                      }`}
+                                        }`}
                                     >
                                       {isCert ? "Certification" : "Achievement"}
                                     </span>
@@ -2226,14 +2197,11 @@ export default function Profile() {
 
           </div>
 
-          <aside className="flex flex-col gap-4 w-full lg:w-72 xl:w-80 shrink-0">
+          <aside className="flex flex-col gap-4 w-full lg:w-72 xl:w-80 shrink-0 lg:sticky lg:top-24 self-start">
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
                 <h4 className='text-xl font-bold text-gray-900 dark:text-white'>Basic Information</h4>
-                {isOwner ? <button type="button" className="btn btn-secondary" onClick={() => setBasicInfoDrawerOpen(true)} title="Edit">
-                  <PencilLine className='w-5 h-5 hover:cursor-pointer' />
-                </button> : <></>}
               </div>
               <Divider className='mt-2 mb-2' />
               <div className="flex flex-col gap-4">
@@ -2318,27 +2286,6 @@ export default function Profile() {
         </div>
       </main>
 
-      {/* This handles the edit functionality of BASIC INFO */}
-      <EditDrawer open={basicInfoDrawerOpen} onOpenChange={setBasicInfoDrawerOpen} side="bottom">
-        <DrawerOverlay />
-        <DrawerContent>
-          <DrawerHeader>
-            <DrawerTitle>Edit Basic Information</DrawerTitle>
-          </DrawerHeader>
-          <div className="p-6 flex-1 overflow-visible">
-            <label>Role</label>
-            <input value={dbUser?.role} disabled className='signin-input w-full px-3 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-md text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 dark:focus:ring-gray-100 focus:border-transparent transition-all duration-200 readOnly'></input>
-            <label>Gender</label>
-            <GenderDropdown selectedGender={selectedGender} onGenderChange={setSelectedGender}></GenderDropdown>
-          </div>
-          <DrawerFooter>
-            <Button variant="outline" onClick={() => setBasicInfoDrawerOpen(false)}>Cancel</Button>
-            <Button onClick={handleEditBasicInfo} disabled={isSaving}>{
-              isSaving ? "Saving changes..." : "Save"
-            }</Button>
-          </DrawerFooter>
-        </DrawerContent>
-      </EditDrawer>
 
       {/* This part handles the edit of CONTACT INFO */}
       <EditDrawer open={contactInfoDrawerOpen} onOpenChange={setContactInfoDrawerOpen} side="bottom">
@@ -2486,11 +2433,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setExpWorkMode("IN_PERSON")}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                  expWorkMode === "IN_PERSON"
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${expWorkMode === "IN_PERSON"
                     ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
                     : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
+                  }`}
               >
                 <Building2 className="w-4 h-4" />
                 <span>In-Person</span>
@@ -2498,11 +2444,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setExpWorkMode("REMOTE")}
-                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                  expWorkMode === "REMOTE"
+                className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${expWorkMode === "REMOTE"
                     ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500 shadow-xs"
                     : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
+                  }`}
               >
                 <Globe className="w-4 h-4" />
                 <span>Remote</span>
@@ -2629,22 +2574,20 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => setConnectionsModalTab("FOLLOWING")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
-                    connectionsModalTab === "FOLLOWING"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${connectionsModalTab === "FOLLOWING"
                       ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
-                  }`}
+                    }`}
                 >
                   Following ({profileFollowingList.length})
                 </button>
                 <button
                   type="button"
                   onClick={() => setConnectionsModalTab("FOLLOWERS")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${
-                    connectionsModalTab === "FOLLOWERS"
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-colors hover:cursor-pointer ${connectionsModalTab === "FOLLOWERS"
                       ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
                       : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
-                  }`}
+                    }`}
                 >
                   Followers ({profileFollowersList.length})
                 </button>
@@ -2821,11 +2764,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setNewCertCategory("CERTIFICATE")}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                  newCertCategory === "CERTIFICATE"
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${newCertCategory === "CERTIFICATE"
                     ? "border-blue-600 bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-500"
                     : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
+                  }`}
               >
                 <Award className="w-4 h-4" />
                 <span>Certification</span>
@@ -2833,11 +2775,10 @@ export default function Profile() {
               <button
                 type="button"
                 onClick={() => setNewCertCategory("ACHIEVEMENT")}
-                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${
-                  newCertCategory === "ACHIEVEMENT"
+                className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-sm font-semibold transition-all cursor-pointer ${newCertCategory === "ACHIEVEMENT"
                     ? "border-amber-600 bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-500"
                     : "border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800"
-                }`}
+                  }`}
               >
                 <Trophy className="w-4 h-4" />
                 <span>Achievement</span>
