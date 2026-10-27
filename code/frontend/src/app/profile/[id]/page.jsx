@@ -82,6 +82,7 @@ export default function Profile() {
   const [requestMentorshipModalOpen, setRequestMentorshipModalOpen] = useState(false);
   const [mentorshipRequestStatus, setMentorshipRequestStatus] = useState(null);
   const textareaRef = useRef(null);
+  const asideRef = useRef(null);
 
   const cachedUser = id ? profileCache.get(id) : null;
   const [bio, setBio] = useState(cachedUser?.bio || "");
@@ -353,6 +354,79 @@ export default function Profile() {
       isMounted = false;
     };
   }, [id, postsRefreshKey]);
+
+  useEffect(() => {
+    const aside = asideRef.current;
+    if (!aside) return;
+
+    let lastScrollY = window.scrollY;
+    let topPosition = 88;
+
+    const updateStickyAside = () => {
+      if (window.innerWidth < 1024) {
+        aside.style.position = '';
+        aside.style.top = '';
+        return;
+      }
+
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const asideHeight = aside.offsetHeight;
+      const topOffset = 88;
+      const bottomOffset = 48;
+
+      const minTop = windowHeight - asideHeight - bottomOffset;
+      const maxTop = topOffset;
+
+      if (asideHeight + topOffset + bottomOffset <= windowHeight) {
+        aside.style.position = 'sticky';
+        aside.style.top = `${maxTop}px`;
+        lastScrollY = scrollY;
+        return;
+      }
+
+      if (scrollY <= topOffset) {
+        topPosition = maxTop;
+        aside.style.position = 'sticky';
+        aside.style.top = `${topPosition}px`;
+        lastScrollY = scrollY;
+        return;
+      }
+
+      const deltaY = scrollY - lastScrollY;
+      lastScrollY = scrollY;
+
+      if (deltaY > 0) {
+        topPosition = Math.max(minTop, topPosition - deltaY);
+      } else if (deltaY < 0) {
+        topPosition = Math.min(maxTop, topPosition - deltaY);
+      }
+
+      aside.style.position = 'sticky';
+      aside.style.top = `${topPosition}px`;
+    };
+
+    window.addEventListener('scroll', updateStickyAside, { passive: true });
+    window.addEventListener('resize', updateStickyAside, { passive: true });
+
+    let resizeObserver = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      resizeObserver = new ResizeObserver(() => {
+        updateStickyAside();
+      });
+      resizeObserver.observe(aside);
+    }
+
+    updateStickyAside();
+
+    return () => {
+      window.removeEventListener('scroll', updateStickyAside);
+      window.removeEventListener('resize', updateStickyAside);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+    };
+  }, []);
 
   const profile = dbUser?.role === 'STUDENT' ? dbUser?.studentProfile : dbUser?.alumniProfile;
   const isOwner = user?.uid === id;
@@ -1341,7 +1415,7 @@ export default function Profile() {
   return (
     <ProtectedRoute>
       <Navbar />
-      <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-4 sm:mt-6">
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 mt-4 sm:mt-6 pb-16 sm:pb-24">
         <div className="flex flex-col lg:flex-row gap-5 items-start">
           <div className="flex flex-col gap-5 flex-1 min-w-0 w-full">
             <div className="">
@@ -2197,7 +2271,7 @@ export default function Profile() {
 
           </div>
 
-          <aside className="flex flex-col gap-4 w-full lg:w-72 xl:w-80 shrink-0 lg:sticky lg:top-24 self-start">
+          <aside ref={asideRef} className="flex flex-col gap-4 w-full lg:w-72 xl:w-80 shrink-0 lg:sticky self-start" style={{ top: '88px' }}>
             {/* Basic Information Section starts here */}
             <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-5">
               <div className='flex justify-between items-center'>
