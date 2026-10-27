@@ -19,7 +19,7 @@
    - [Task Messaging & Milestone Tracking](#5--task-messaging--milestone-tracking)
    - [Community Feed & Post Interactions](#6--community-feed--post-interactions)
    - [Network Directory & Member Discovery](#7--network-directory--member-discovery)
-   - [Administration & Moderation](#8--administration--moderation)
+   - [Career & Job Board Portal](#8--career--job-board-portal)
 8. [API Integration Reference](#-api-integration-reference)
 9. [Deployment](#-deployment)
 
@@ -137,6 +137,9 @@ code/frontend/
     │   │   ├── page.jsx            # /events - Discovery, category filters, search & pagination
     │   │   └── [id]/page.jsx       # /events/:id - Event details, registration, attendees & agenda
     │   │
+    │   ├── jobs/                   # /jobs - Career & Job Board Portal
+    │   │   └── page.jsx            # Job discovery feed, dual tabs, filtering & creation modal
+    │   │
     │   ├── network/                # /network - Alumni & Student discovery directory
     │   ├── profile-setup/          # /profile-setup - 6-step onboarding wizard
     │   ├── profile/
@@ -148,7 +151,7 @@ code/frontend/
     │
     ├── components/                 # Domain-driven, modular UI components
     │   ├── layout/                 # Layout and guard components
-    │   │   ├── Navbar.jsx              # Top navigation bar with theme toggle & notifications
+    │   │   ├── Navbar.jsx              # Active-route aware navbar with icon highlights & notifications
     │   │   ├── ProtectedRoute.jsx      # Client-side route authentication guard
     │   │   └── LoadingScreen.jsx       # Full-screen / component loading spinner
     │   │
@@ -167,6 +170,12 @@ code/frontend/
     │   │   ├── LoginForm.jsx              # Login form with email/password & reset modal
     │   │   ├── RegistrationForm.jsx       # 3-step registration wizard
     │   │   └── GoogleSignInButton.jsx     # Firebase Google OAuth button
+    │   │
+    │   ├── jobs/                   # Career & Job Board components
+    │   │   ├── JobCard.jsx                # Opportunity card with department badges, salary & tags
+    │   │   ├── CreateEditJobModal.jsx     # Job posting modal with multi-department and tech stack picker
+    │   │   ├── DepartmentMultiSelect.jsx  # Multi-select dropdown with 'All Departments' toggle
+    │   │   └── SkillsMultiSelect.jsx      # Categorized tech stack selector with real-time suggestion filter
     │   │
     │   ├── posts/                  # Community feed components
     │   │   ├── CreatePostModal.jsx        # Post creation modal with ImgBB upload
@@ -203,6 +212,7 @@ code/frontend/
 ### 1. 🔐 Authentication & Institutional Verification
 - **Firebase Auth** manages secure email/password authentication, Google OAuth sign-in, and password reset flows.
 - **Institutional Domain Constraint**: Validates `@iut-dhaka.edu` email domains for student/alumni registration.
+- **Streamlined Onboarding Flow**: New user registrations seamlessly forward directly to `/profile-setup` for immediate onboarding (with optional email verification toggle).
 - **`AuthProvider.js`**: Central context managing `user`, `dbUser`, authentication lifecycle, and synchronized PostgreSQL state.
 - **`ProtectedRoute.jsx`**: Guard protecting private routes; redirects unauthenticated visitors to `/login` and users with incomplete profiles to `/profile-setup`.
 
@@ -222,6 +232,10 @@ code/frontend/
 - **Social Connection & Networking**:
   - Follow / Unfollow system with live follower and following counters and list modals.
   - Direct editing for avatar and cover photos with Cloud image hosting.
+- **Sticky Desktop Navigation & Clean Layout**:
+  - Sticky right-hand column (`lg:sticky lg:top-24 self-start`) ensures essential institutional badges, contact details, profile completion score, and mentorship card remain pinned in view during vertical feed scrolling.
+  - Streamlined basic information presentation with simplified, clean read-only display.
+  - Modernized, minimal mentorship availability card with intuitive status badges.
 
 ---
 
@@ -281,9 +295,23 @@ code/frontend/
 
 ---
 
-### 8. 🛡️ Administration & Moderation
-- Admin dashboard (`/dashboard`) accessible to accounts with `ADMIN` role.
-- Member analytics, role filtering, verification status, and moderation capabilities.
+### 8. 💼 Career & Job Board Portal (`/jobs`)
+- **Opportunity Discovery & Dual Views**:
+  - **All Opportunities**: Campus-wide feed displaying full-time roles, internships, part-time positions, contracts, and alumni referrals.
+  - **My Posts**: Dedicated tab allowing students and alumni to manage, edit, and track opportunities they have personally published.
+- **Multi-Criteria Dynamic Filtering**:
+  - **Job Type Pills**: Filter by *All Types, Full-Time, Part-Time, Internship, Contract, Remote, Alumni Referral* with real-time spinner feedback during filter changes.
+  - **Work Mode Selector**: Quick filter by *All Modes, On-Site, Hybrid, Remote*.
+  - **Department Targeting**: Filter opportunities by academic department (e.g., CSE, EEE, MPE, CEE, BTM, TVE) or open-to-all positions.
+  - **Live Search**: Instant keyword search by job title, company name, or work location.
+- **Job Creation & Edit Dialog (`CreateEditJobModal.jsx`)**:
+  - **Multi-Department Selector (`DepartmentMultiSelect.jsx`)**: Select one or multiple target departments simultaneously or toggle *"All Departments (Open to All)"*.
+  - **Categorized Tech Stack Selector (`SkillsMultiSelect.jsx`)**: Integrated selector featuring 130+ technical skills grouped by category (Programming Languages, Frontend, Backend, Cloud/DevOps, Database, AI/ML), with real-time suggestion matching and custom skill entry.
+  - **Salary & Deadlines**: Structured salary range input, application deadline date picker, and external application URL or direct email application handling.
+  - **Clean, Modern UX**: Simplified placeholders and responsive validation dialogues.
+- **Interactive Job Cards (`JobCard.jsx`) & Modals**:
+  - Informative cards displaying company, role, multi-department badges, compensation, expiry countdown, and tech stack tags.
+  - Author-guarded actions: Post owners can edit or delete their listings with SweetAlert2 confirmation.
 
 ---
 
@@ -333,6 +361,12 @@ All API requests automatically include the Firebase JWT token via `axiosInstance
 | | `DELETE`| `/api/v1/users/:uid/follow` | Unfollow a user |
 | | `GET` | `/api/v1/connections/followers/:uid` | Get followers list |
 | | `GET` | `/api/v1/connections/following/:uid` | Get following list |
+| **Job Board** | `GET` | `/api/v1/jobs` | Fetch job opportunities with pagination, type, department, mode & search |
+| | `GET` | `/api/v1/jobs/my` | Fetch current user's posted job opportunities |
+| | `GET` | `/api/v1/jobs/:id` | Fetch single job opportunity details |
+| | `POST` | `/api/v1/jobs` | Create a new job opportunity or alumni referral |
+| | `PATCH` | `/api/v1/jobs/:id` | Update job opportunity (Author only) |
+| | `DELETE`| `/api/v1/jobs/:id` | Delete job opportunity (Author only) |
 
 ---
 

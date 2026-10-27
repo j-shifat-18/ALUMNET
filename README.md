@@ -25,8 +25,9 @@ Students discover relevant alumni based on shared skills and career goals, reque
 
 ## Features
 
-- **Authentication** — Firebase Auth with Google OAuth and email/password
-- **Role-based profiles** — Separate Student and Alumni profile types with tailored fields
+- **Authentication** — Firebase Auth with Google OAuth, email/password, and streamlined onboarding flow
+- **Role-based profiles** — Separate Student and Alumni profile types with academic records, skills management (130+ technical skills), and sticky desktop layout
+- **Career & Job Board Portal** — Post and discover full-time jobs, internships, and alumni referrals; filter by job type, work mode, and department; multi-department eligibility and categorized tech stack tags
 - **Social feed** — Create, edit, delete posts with image support; like and comment
 - **Follow system** — Follow/unfollow users with follower/following counts
 - **Smart connections** — Skill and domain-based people suggestions with a match score
@@ -36,7 +37,7 @@ Students discover relevant alumni based on shared skills and career goals, reque
 - **Events** — Create and browse platform events; RSVP/attendance tracking
 - **Alumni matching** — Algorithm-driven alumni recommendations based on career goals and interests
 - **Search** — Full-text search across users and alumni with multi-field filters
-- **Credentials** — Upload and showcase certifications and achievements
+- **Credentials** — Upload and showcase certifications and achievements with interactive image lightbox
 - **Admin panel** — User management, content moderation, and platform statistics
 - **Docker support** — One-command containerised deployment
 
@@ -115,15 +116,22 @@ ALUMNET/
     └── frontend/
         ├── src/
         │   ├── app/                # Next.js App Router pages
+        │   │   ├── (auth)/         # Login, register & verification
         │   │   ├── chat/
         │   │   │   └── [conversationId]/
-        │   │   ├── mentorship/
-        │   │   ├── network/
-        │   │   ├── profile/[id]/
-        │   │   └── ...
+        │   │   ├── events/         # Event discovery & details
+        │   │   ├── jobs/           # Career & Job Board portal
+        │   │   ├── mentorship/     # Discovery & roadmap tracking
+        │   │   ├── network/        # University member directory
+        │   │   ├── profile/[id]/   # Dynamic profile & credentials
+        │   │   └── profile-setup/  # Onboarding wizard
         │   ├── components/
+        │   │   ├── auth/           # Login & Registration wizards
         │   │   ├── chat/           # ConversationList, MessageList, etc.
-        │   │   ├── layout/         # Navbar, ProtectedRoute
+        │   │   ├── jobs/           # JobCard, CreateEditJobModal, Department & Skills Selects
+        │   │   ├── layout/         # Active-route aware Navbar, ProtectedRoute
+        │   │   ├── posts/          # Feed posts & interactions
+        │   │   ├── profile/        # Skills, credentials, photo modals
         │   │   └── ui/             # Shared UI primitives
         │   ├── context/
         │   │   ├── AuthProvider.js
