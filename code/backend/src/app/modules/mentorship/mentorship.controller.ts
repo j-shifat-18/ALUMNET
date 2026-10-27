@@ -120,6 +120,31 @@ const getAvailability = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+const endMentorship = asyncHandler(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const uid = req.user.uid;
+
+  const result = await MentorshipService.endMentorship(id, uid);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Mentorship ended successfully",
+    data: result,
+  });
+});
+
+const getMentorshipHistory = asyncHandler(async (req: Request, res: Response) => {
+  const uid = req.user.uid;
+
+  const result = await MentorshipService.getMentorshipHistory(uid);
+
+  sendResponse(res, {
+    statusCode: 200,
+    message: "Mentorship history retrieved successfully",
+    data: result,
+  });
+});
+
 export const MentorshipController = {
   sendRequest,
   getSentRequests,
@@ -130,5 +155,7 @@ export const MentorshipController = {
   getMentees,
   updateAvailability,
   getAvailability,
+  endMentorship,
+  getMentorshipHistory,
 };
 

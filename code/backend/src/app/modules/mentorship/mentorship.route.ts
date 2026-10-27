@@ -25,5 +25,7 @@ router.get("/mentors", auth, MentorshipController.getMentors);
 router.get("/mentees", auth, MentorshipController.getMentees);
 router.patch("/:id/accept", auth, MentorshipController.acceptRequest);
 router.patch("/:id/reject", auth, MentorshipController.rejectRequest);
+router.patch("/:id/end", auth, MentorshipController.endMentorship);
+router.get("/history", auth, MentorshipController.getMentorshipHistory);
 
 export const MentorshipRoutes = router;

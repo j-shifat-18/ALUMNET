@@ -45,8 +45,8 @@ const createEvent = async (uid: string, data: CreateEventInput) => {
 
   if (!user) throw new AppError(404, "User not found");
 
-  if (user.role !== "ALUMNI" && user.role !== "ADMIN") {
-    throw new AppError(403, "Only alumni or admins can create events");
+  if (user.role === "USER") {
+    throw new AppError(403, "Complete your profile as a student or alumni before creating events");
   }
 
   const event = await prisma.event.create({
