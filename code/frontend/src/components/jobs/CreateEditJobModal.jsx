@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Modal from "@/components/ui/Modal";
 import DatePicker from "@/components/ui/DatePicker";
 import SkillsMultiSelect from "@/components/profile/SkillsMultiSelect";
 import axiosInstance from "@/lib/axios";
 import Swal from "sweetalert2";
-import { Loader2, X, Briefcase, Building2, MapPin, Banknote, Calendar, GraduationCap, Link as LinkIcon, Check } from "lucide-react";
+import { Loader2, X, Briefcase, Building2, MapPin, Banknote, Calendar, GraduationCap, Link as LinkIcon, Check, ChevronDown } from "lucide-react";
 
 const JOB_TYPES = [
   { value: "FULL_TIME", label: "Full-Time" },
@@ -24,7 +24,6 @@ const WORK_MODES = [
 ];
 
 const DEPARTMENTS = [
-  "All Departments",
   "CSE (Computer Science & Engineering)",
   "SWE (Software Engineering)",
   "EEE (Electrical & Electronic Engineering)",
@@ -34,6 +33,125 @@ const DEPARTMENTS = [
   "BTM (BBA in Technology Management)",
 ];
 
+function DepartmentMultiSelect({ selected = [], onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const allSelected = DEPARTMENTS.length > 0 && selected.length === DEPARTMENTS.length;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      onChange([]);
+    } else {
+      onChange([...DEPARTMENTS]);
+    }
+  };
+
+  const toggleDept = (dept) => {
+    if (selected.includes(dept)) {
+      onChange(selected.filter((d) => d !== dept));
+    } else {
+      onChange([...selected, dept]);
+    }
+  };
+
+  const removeDept = (dept, e) => {
+    e.stopPropagation();
+    onChange(selected.filter((d) => d !== dept));
+  };
+
+  return (
+    <div className="relative" ref={containerRef}>
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="min-h-[44px] w-full pl-10 pr-9 py-2 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 cursor-pointer focus-within:ring-2 focus-within:ring-blue-500 transition-all flex flex-wrap items-center gap-1.5"
+      >
+        <GraduationCap className="absolute left-3.5 top-3 w-4 h-4 text-gray-400 pointer-events-none" />
+
+        {selected.length === 0 ? (
+          <span className="text-gray-400 text-sm py-0.5">Select departments (or All)</span>
+        ) : (
+          selected.map((dept) => {
+            const shortCode = dept.split(" ")[0];
+            return (
+              <span
+                key={dept}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-900/50"
+              >
+                {shortCode}
+                <button
+                  type="button"
+                  onClick={(e) => removeDept(dept, e)}
+                  className="hover:text-red-500 rounded p-0.5 transition-colors cursor-pointer"
+                  title={`Remove ${shortCode}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            );
+          })
+        )}
+
+        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-xl shadow-xl max-h-60 overflow-y-auto">
+          <div
+            onClick={toggleAll}
+            className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer text-xs font-bold border-b border-gray-100 dark:border-gray-800 mb-1 text-gray-900 dark:text-white"
+          >
+            <span>All Departments (Open to All)</span>
+            <div
+              className={`w-4 h-4 rounded border flex items-center justify-center ${
+                allSelected
+                  ? "bg-blue-600 border-blue-600 text-white"
+                  : "border-gray-300 dark:border-gray-600"
+              }`}
+            >
+              {allSelected && <Check className="w-3 h-3 stroke-[3]" />}
+            </div>
+          </div>
+
+          <div className="space-y-0.5">
+            {DEPARTMENTS.map((dept) => {
+              const isChecked = selected.includes(dept);
+              return (
+                <div
+                  key={dept}
+                  onClick={() => toggleDept(dept)}
+                  className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-zinc-800 cursor-pointer text-xs font-medium text-gray-800 dark:text-gray-200"
+                >
+                  <span>{dept}</span>
+                  <div
+                    className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                      isChecked
+                        ? "bg-blue-600 border-blue-600 text-white"
+                        : "border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function JobFormContent({ jobToEdit, onClose, onSuccess }) {
   const isEditing = Boolean(jobToEdit);
 
@@ -42,7 +160,18 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
   const [location, setLocation] = useState(() => jobToEdit?.location || "");
   const [workMode, setWorkMode] = useState(() => jobToEdit?.workMode || "IN_PERSON");
   const [jobType, setJobType] = useState(() => jobToEdit?.jobType || "FULL_TIME");
-  const [department, setDepartment] = useState(() => jobToEdit?.department || "");
+  const [departments, setDepartments] = useState(() => {
+    if (Array.isArray(jobToEdit?.departments) && jobToEdit.departments.length > 0) {
+      return jobToEdit.departments;
+    }
+    if (jobToEdit?.department) {
+      if (jobToEdit.department === "All Departments") {
+        return [...DEPARTMENTS];
+      }
+      return jobToEdit.department.split(",").map((d) => d.trim()).filter(Boolean);
+    }
+    return [];
+  });
   const [skills, setSkills] = useState(() => {
     if (!Array.isArray(jobToEdit?.skills)) return [];
     return jobToEdit.skills.map((s) =>
@@ -90,7 +219,8 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
         location: location.trim() || null,
         workMode,
         jobType,
-        department: department === "All Departments" ? null : department.trim() || null,
+        departments,
+        department: departments.length > 0 ? departments.join(", ") : null,
         skills: mappedSkills,
         description: description.trim(),
         requirements: requirements.trim() || null,
@@ -155,7 +285,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Software Engineer, Machine Learning Intern"
+              placeholder="e.g. Software Engineer"
               className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               required
             />
@@ -172,7 +302,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
               type="text"
               value={company}
               onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Google, Brain Station 23, IUT"
+              placeholder="e.g. Google or IUT"
               className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
               required
             />
@@ -221,7 +351,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-            Location / City
+            Location
           </label>
           <div className="relative">
             <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -229,7 +359,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
               type="text"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
-              placeholder="e.g. Dhaka, Bangladesh or Remote Worldwide"
+              placeholder="e.g. Dhaka, Bangladesh"
               className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
@@ -237,24 +367,9 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
 
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-            Target Department
+            Target Departments <span className="text-gray-400 normal-case">(Select one or more)</span>
           </label>
-          <div className="relative">
-            <GraduationCap className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              placeholder="e.g. CSE, SWE, EEE, or All"
-              list="department-suggestions"
-              className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            />
-            <datalist id="department-suggestions">
-              {DEPARTMENTS.map((dept) => (
-                <option key={dept} value={dept} />
-              ))}
-            </datalist>
-          </div>
+          <DepartmentMultiSelect selected={departments} onChange={setDepartments} />
         </div>
       </div>
 
@@ -262,7 +377,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-            Salary / Compensation <span className="text-gray-400 normal-case">(Optional)</span>
+            Salary <span className="text-gray-400 normal-case">(Optional)</span>
           </label>
           <div className="relative">
             <Banknote className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -270,7 +385,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
               type="text"
               value={salaryRange}
               onChange={(e) => setSalaryRange(e.target.value)}
-              placeholder="e.g. 50k - 70k BDT, $60k/yr, or Negotiable"
+              placeholder="e.g. 50k - 70k BDT or $60k/yr"
               className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
@@ -283,7 +398,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
           <DatePicker
             value={deadline}
             onChange={(val) => setDeadline(val)}
-            placeholder="Select deadline date"
+            placeholder="Select deadline"
             minDate={new Date().toISOString().split("T")[0]}
           />
         </div>
@@ -292,7 +407,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
       {/* Application Link or Email */}
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-          Application Link or Contact Email <span className="text-gray-400 normal-case">(Optional)</span>
+          Application Link / Contact Email <span className="text-gray-400 normal-case">(Optional)</span>
         </label>
         <div className="relative">
           <LinkIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -300,7 +415,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
             type="text"
             value={applicationUrl}
             onChange={(e) => setApplicationUrl(e.target.value)}
-            placeholder="e.g. https://careers.company.com/apply or jobs@company.com"
+            placeholder="https://... or jobs@company.com"
             className="w-full pl-10 pr-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
           />
         </div>
@@ -309,12 +424,12 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
       {/* Skills & Technologies Dropdown with Typing Suggestions */}
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
-          Key Skills & Technologies <span className="text-gray-400 normal-case">(Select from list or type to search)</span>
+          Key Skills & Technologies
         </label>
         <SkillsMultiSelect
           selectedOptions={skills}
           setSelectedOptions={setSkills}
-          placeholder="Search and select technologies (e.g. React.js, Python, Docker, AWS)..."
+          placeholder="Search technologies (e.g. React, Python)..."
         />
       </div>
 
@@ -327,7 +442,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
           rows={4}
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          placeholder="Describe the opportunity, core responsibilities, team environment, perks..."
+          placeholder="Describe responsibilities, perks, and team..."
           className="w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-y"
           required
         />
@@ -342,7 +457,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
           rows={3}
           value={requirements}
           onChange={(e) => setRequirements(e.target.value)}
-          placeholder="e.g. 1+ years experience, solid understanding of DS & Algorithms, familiarity with Docker..."
+          placeholder="Key qualifications and requirements..."
           className="w-full px-3.5 py-2.5 bg-white dark:bg-black border border-gray-200 dark:border-gray-800 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all resize-y"
         />
       </div>
@@ -381,7 +496,7 @@ export default function CreateEditJobModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={isEditing ? "Edit Job Opportunity" : "Post a New Opportunity / Referral"}
+      title={isEditing ? "Edit Job Opportunity" : "Post a New Opportunity"}
       size="lg"
     >
       {isOpen && (

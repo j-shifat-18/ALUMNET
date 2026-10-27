@@ -233,6 +233,10 @@ export default function JobsPage() {
           selectedWorkMode === "ALL" || job.workMode === selectedWorkMode;
         const matchesDept =
           selectedDept === "ALL" ||
+          (Array.isArray(job.departments) &&
+            job.departments.some((d) =>
+              d.toLowerCase().includes(selectedDept.toLowerCase())
+            )) ||
           (job.department &&
             job.department.toLowerCase().includes(selectedDept.toLowerCase()));
         const query = activeSearch.toLowerCase().trim();
@@ -714,11 +718,16 @@ export default function JobsPage() {
                     <p className="text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
                       <Building2 className="w-4 h-4 text-gray-400" />
                       <span>{selectedJobForDetails.company}</span>
-                      {selectedJobForDetails.department && (
+                      {(Array.isArray(selectedJobForDetails.departments)
+                        ? selectedJobForDetails.departments.length > 0
+                        : Boolean(selectedJobForDetails.department)) && (
                         <>
                           <span className="text-gray-400">•</span>
                           <span className="text-gray-500 dark:text-gray-400">
-                            {selectedJobForDetails.department}
+                            {Array.isArray(selectedJobForDetails.departments) &&
+                            selectedJobForDetails.departments.length > 0
+                              ? selectedJobForDetails.departments.join(", ")
+                              : selectedJobForDetails.department}
                           </span>
                         </>
                       )}

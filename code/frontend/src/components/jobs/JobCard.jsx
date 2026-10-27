@@ -189,11 +189,15 @@ export default function JobCard({
               <Building2 className="w-3.5 h-3.5 text-gray-400 shrink-0" />
               <span className="truncate">{job.company}</span>
             </span>
-            {job.department && (
+            {(Array.isArray(job.departments)
+              ? job.departments.length > 0
+              : Boolean(job.department)) && (
               <>
                 <span className="text-gray-300 dark:text-gray-700">•</span>
                 <span className="text-gray-500 dark:text-gray-400 truncate">
-                  {job.department}
+                  {Array.isArray(job.departments) && job.departments.length > 0
+                    ? job.departments.join(", ")
+                    : job.department}
                 </span>
               </>
             )}
