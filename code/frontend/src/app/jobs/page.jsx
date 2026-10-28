@@ -89,11 +89,9 @@ export default function JobsPage() {
     totalPages: 1,
   });
 
-  // Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [jobToEdit, setJobToEdit] = useState(null);
 
-  // Job Details / Discussion Modal
   const [selectedJobForDetails, setSelectedJobForDetails] = useState(null);
   const [detailsComments, setDetailsComments] = useState([]);
   const [loadingDetailsComments, setLoadingDetailsComments] = useState(false);
@@ -179,7 +177,6 @@ export default function JobsPage() {
     refreshKey,
   ]);
 
-  // Fetch count of current user's posts
   useEffect(() => {
     if (user?.uid) {
       axiosInstance
@@ -223,7 +220,6 @@ export default function JobsPage() {
     selectedWorkMode !== "ALL" ||
     selectedDept !== "ALL";
 
-  // Filtered in-memory list for tab or quick filter responsiveness
   const displayedJobs = useMemo(() => {
     if (activeTab === "MY_POSTS") {
       return jobs.filter((job) => {
@@ -300,7 +296,6 @@ export default function JobsPage() {
     }
   };
 
-  // Open Details Modal and fetch full comments
   const openJobDetailsModal = async (job) => {
     setSelectedJobForDetails(job);
     setDetailsComments(job.comments || []);
@@ -322,7 +317,6 @@ export default function JobsPage() {
 
   const handleModalCommentAdded = (newComment) => {
     setDetailsComments((prev) => [...prev, newComment]);
-    // update count in main jobs list
     setJobs((prev) =>
       prev.map((j) =>
         j.id === selectedJobForDetails?.id
@@ -340,7 +334,6 @@ export default function JobsPage() {
 
   const handleModalCommentDeleted = (commentId) => {
     setDetailsComments((prev) => prev.filter((c) => c.id !== commentId));
-    // update count in main jobs list
     setJobs((prev) =>
       prev.map((j) =>
         j.id === selectedJobForDetails?.id
@@ -375,7 +368,8 @@ export default function JobsPage() {
         <Navbar />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
-          {/* Header Banner */}
+
+          {/* Banner */}
           <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 p-6 sm:p-8 shadow-xs mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="space-y-2 max-w-2xl">
@@ -407,7 +401,7 @@ export default function JobsPage() {
               )}
             </div>
 
-            {/* Navigation Tabs */}
+            {/* Navigation */}
             <div className="flex items-center gap-2 pt-6 mt-6 border-t border-gray-100 dark:border-zinc-800/80">
               <button
                 type="button"
@@ -457,7 +451,7 @@ export default function JobsPage() {
             </div>
           </div>
 
-          {/* Search & Filter Toolbar */}
+          {/* Search & Filter */}
           <div className="space-y-4 mb-8">
             <div className="flex flex-col md:flex-row items-center justify-between gap-4">
               <form
@@ -492,7 +486,7 @@ export default function JobsPage() {
                 </button>
               </form>
 
-              {/* Job Type Pills */}
+              {/* Job Types */}
               <div className="flex items-center gap-1.5 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 scrollbar-none">
                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 mr-1 flex items-center gap-1 shrink-0">
                   <Filter className="w-3.5 h-3.5" /> Type:
@@ -527,7 +521,7 @@ export default function JobsPage() {
               </div>
             </div>
 
-            {/* Secondary Filters: Work Mode & Department */}
+            {/* Work Mode & Department */}
             <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="relative inline-flex items-center">
@@ -582,7 +576,7 @@ export default function JobsPage() {
             </div>
           </div>
 
-          {/* Opportunities Feed / Grid */}
+          {/* Opportunities */}
           {loading ? (
             <div className="p-16 text-center text-gray-500 dark:text-gray-400 space-y-3 bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xs">
               <Loader2 className="w-8 h-8 animate-spin mx-auto text-gray-400" />
@@ -633,7 +627,7 @@ export default function JobsPage() {
             </div>
           )}
 
-          {/* Pagination Controls */}
+          {/* Pagination */}
           {paginationMeta.totalPages > 1 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200/80 dark:border-gray-800">
               <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -681,7 +675,6 @@ export default function JobsPage() {
           )}
         </div>
 
-        {/* Create / Edit Opportunity Modal */}
         <CreateEditJobModal
           isOpen={createModalOpen}
           onClose={() => setCreateModalOpen(false)}
@@ -692,7 +685,7 @@ export default function JobsPage() {
           }}
         />
 
-        {/* Opportunity Details & Live Q&A Modal */}
+        {/* Details Modal */}
         <Modal
           isOpen={Boolean(selectedJobForDetails)}
           onClose={() => setSelectedJobForDetails(null)}
@@ -701,7 +694,7 @@ export default function JobsPage() {
         >
           {selectedJobForDetails && (
             <div className="space-y-6 pt-2">
-              {/* Header Box */}
+              {/* Header */}
               <div className="space-y-3 p-4 rounded-2xl bg-gray-50 dark:bg-zinc-900/90 border border-gray-200 dark:border-zinc-800">
                 <div className="flex items-start justify-between gap-3 flex-wrap">
                   <div className="space-y-1">
@@ -751,7 +744,6 @@ export default function JobsPage() {
                   )}
                 </div>
 
-                {/* Metadata Pills */}
                 <div className="flex items-center gap-3 text-xs text-gray-600 dark:text-gray-400 flex-wrap pt-2 border-t border-gray-200/80 dark:border-zinc-800">
                   <span className="flex items-center gap-1">
                     <MapPin className="w-3.5 h-3.5 text-gray-400" />
@@ -789,7 +781,6 @@ export default function JobsPage() {
                 </div>
               </div>
 
-              {/* Poster info banner */}
               {selectedJobForDetails.poster && (
                 <div className="flex items-center justify-between p-3 rounded-xl bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800">
                   <Link

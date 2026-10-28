@@ -2,7 +2,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 
-// Information Icon SVG
 const InfoIcon = ({ className }) => (
   <svg
     className={className}
@@ -18,7 +17,6 @@ const InfoIcon = ({ className }) => (
   </svg>
 );
 
-// Success Icon SVG
 const SuccessIcon = ({ className }) => (
   <svg
     className={className}
@@ -34,7 +32,6 @@ const SuccessIcon = ({ className }) => (
   </svg>
 );
 
-// Warning Icon SVG
 const WarningIcon = ({ className }) => (
   <svg
     className={className}
@@ -50,7 +47,6 @@ const WarningIcon = ({ className }) => (
   </svg>
 );
 
-// Error Icon SVG
 const ErrorIcon = ({ className }) => (
   <svg
     className={className}
@@ -66,7 +62,6 @@ const ErrorIcon = ({ className }) => (
   </svg>
 );
 
-// Close Icon SVG
 const CloseIcon = ({ className }) => (
   <svg
     className={className}
@@ -82,7 +77,6 @@ const CloseIcon = ({ className }) => (
   </svg>
 );
 
-// Loading Spinner SVG
 const LoadingSpinner = ({ className }) => (
   <svg
     className={`animate-spin ${className}`}

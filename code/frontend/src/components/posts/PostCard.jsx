@@ -76,7 +76,7 @@ export default function PostCard({
     }
   };
 
-  // Synchronize state when post prop is updated (e.g. on feed refetch)
+  // post update
   useEffect(() => {
     if (!post) return;
     setLikesCount(post?.likesCount ?? post?._count?.likes ?? post?.likes?.length ?? 0);
@@ -92,12 +92,12 @@ export default function PostCard({
     }
   }, [post]);
 
-  // Fetch likes status on mount or user changes
+  // likes status or user changes
   useEffect(() => {
     fetchLikesStatus();
   }, [currentUser, post?.id]);
 
-  // When post is targeted or comments are auto-opened via notification link
+  // post is targeted or comments are auto opened via notification link
   useEffect(() => {
     if (!post?.id) return;
     if (isTargetPost || autoOpenComments) {
@@ -109,7 +109,7 @@ export default function PostCard({
     }
   }, [isTargetPost, autoOpenComments, post?.id]);
 
-  // Re-fetch comments whenever comments view is opened
+  // Re-fetch comments
   useEffect(() => {
     if (showComments && post?.id) {
       fetchComments();

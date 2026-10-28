@@ -38,7 +38,7 @@ export default function DatePicker({
   const containerRef = useRef(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Parse current value (expected format: "YYYY-MM-DD")
+  // Parse current value
   const parsedValue = useMemo(() => {
     if (!value || typeof value !== "string") return null;
     const parts = value.split("-");
@@ -62,7 +62,7 @@ export default function DatePicker({
   const viewYear = navYear ?? (parsedValue?.year || todayYear);
   const viewMonth = navMonth ?? (parsedValue?.month ?? todayMonth);
 
-  // Click outside listener
+  // Click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
@@ -145,9 +145,9 @@ export default function DatePicker({
     setNavMonth(null);
   };
 
-  // Calendar Days Grid Construction
+  // Calendar Days Grid
   const calendarDays = useMemo(() => {
-    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay(); // 0 for Sunday
+    const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
     const daysInCurrentMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
     const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
 
@@ -182,7 +182,7 @@ export default function DatePicker({
       });
     }
 
-    // Next month padding days to complete 35 or 42 grid cells
+    // Next month padding days
     const remaining = (7 - (days.length % 7)) % 7;
     const nextMonth = viewMonth === 11 ? 0 : viewMonth + 1;
     const nextYear = viewMonth === 11 ? viewYear + 1 : viewYear;
@@ -254,7 +254,7 @@ export default function DatePicker({
       {/* Calendar Popover */}
       {isOpen && (
         <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-1.5 z-50 w-72 sm:w-80 p-3.5 bg-white dark:bg-zinc-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl animate-in fade-in-0 zoom-in-95 duration-150">
-          {/* Header Month / Year Navigation */}
+          {/* Month / Year Navigation */}
           <div className="flex items-center justify-between pb-3 mb-2 border-b border-gray-100 dark:border-zinc-800">
             <button
               type="button"
@@ -279,7 +279,7 @@ export default function DatePicker({
             </button>
           </div>
 
-          {/* Weekday Names */}
+          {/* Weekdays */}
           <div className="grid grid-cols-7 gap-1 text-center mb-1">
             {WEEKDAY_NAMES.map((w) => (
               <span
@@ -291,7 +291,7 @@ export default function DatePicker({
             ))}
           </div>
 
-          {/* Days Grid */}
+          {/* Days */}
           <div className="grid grid-cols-7 gap-1">
             {calendarDays.map((cell) => {
               const isSelected = value === cell.dateStr;
@@ -328,7 +328,7 @@ export default function DatePicker({
             })}
           </div>
 
-          {/* Quick Presets for Job Deadlines */}
+          {/* Quick set Job Deadlines */}
           <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-1.5 flex-wrap">
             <span className="text-[10px] uppercase font-bold text-gray-400 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-500" /> Quick Set:

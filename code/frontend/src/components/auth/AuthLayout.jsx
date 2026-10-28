@@ -20,8 +20,6 @@ export default function AuthLayout({
           priority
           className="object-cover object-center"
         />
-
-        {/* Balanced ambient overlay for optimal contrast & clarity */}
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent" />
 

@@ -176,7 +176,7 @@ export default function NetworkPage() {
       if (!q) {
         requests = [axiosInstance.get("/api/v1/search/users", { params })];
       } else {
-        // Multi-category search: search across all backend-supported fields
+        // Search
         requests = [
           axiosInstance.get("/api/v1/search/users", { params: { ...params, name: q } }),
           axiosInstance.get("/api/v1/search/users", { params: { ...params, department: q } }),
@@ -186,7 +186,7 @@ export default function NetworkPage() {
           axiosInstance.get("/api/v1/search/users", { params: { ...params, skill: q } }),
         ];
 
-        // Also test common skill casing variations (e.g. "react" -> "React", "python" -> "Python")
+        // common skills
         const capitalizedQ = q.charAt(0).toUpperCase() + q.slice(1);
         if (capitalizedQ !== q) {
           requests.push(
@@ -200,7 +200,7 @@ export default function NetworkPage() {
           );
         }
 
-        // Search alumni-specific fields if searching all or alumni
+        // Search alumni-specific fields
         if (roleFilter === "ALL" || roleFilter === "ALUMNI") {
           requests.push(
             axiosInstance.get("/api/v1/search/alumni", { params: { limit: 100, batch: q } }),

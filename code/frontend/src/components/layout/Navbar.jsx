@@ -114,7 +114,7 @@ const Navbar = () => {
                                     <span className="pointer-events-none absolute top-10 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-gray-900 dark:bg-gray-100 px-2.5 py-1 text-xs font-medium text-white dark:text-gray-900 opacity-0 group-hover:opacity-100 transition-opacity duration-200 shadow-md z-50">
                                         {link.label}
                                     </span>
-                                    {/* Active Bottom Indicator Bar */}
+                                    {/* Active status */}
                                     <span
                                         className={`absolute -bottom-1.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300 ${
                                             isActive

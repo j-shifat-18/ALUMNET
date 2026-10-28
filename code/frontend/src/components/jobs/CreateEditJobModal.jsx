@@ -421,7 +421,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
         </div>
       </div>
 
-      {/* Skills & Technologies Dropdown with Typing Suggestions */}
+      {/* Skills & Technologies */}
       <div>
         <label className="block text-xs font-semibold uppercase tracking-wider text-gray-700 dark:text-gray-300 mb-1.5">
           Key Skills & Technologies
@@ -462,7 +462,7 @@ function JobFormContent({ jobToEdit, onClose, onSuccess }) {
         />
       </div>
 
-      {/* Footer Actions */}
+      {/* Footer */}
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100 dark:border-gray-800">
         <button
           type="button"

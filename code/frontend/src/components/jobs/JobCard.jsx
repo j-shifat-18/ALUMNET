@@ -129,7 +129,7 @@ export default function JobCard({
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 p-6 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group">
       <div>
-        {/* Top Header: Badge & Actions */}
+        {/* Badge & Actions */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-13 h-13 rounded-2xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 flex flex-col items-center justify-center shrink-0 shadow-xs">
@@ -172,7 +172,7 @@ export default function JobCard({
           )}
         </div>
 
-        {/* Title, Company & Snippet */}
+        {/* Title, Company */}
         <div className="space-y-1.5 mt-4">
           <button
             type="button"
@@ -243,7 +243,7 @@ export default function JobCard({
             </div>
           )}
 
-          {/* Discussion count pill */}
+          {/* Discussion count */}
           <button
             type="button"
             onClick={() => onViewDetails?.(job)}
@@ -257,7 +257,7 @@ export default function JobCard({
         </div>
       </div>
 
-      {/* Card Footer: Poster & CTA */}
+      {/* Card Footer */}
       <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800/80 flex items-center justify-between gap-3">
         {poster?.uid ? (
           <Link

@@ -240,7 +240,7 @@ export default function MonthYearPicker({
             </button>
           </div>
 
-          {/* Month Selection Grid */}
+          {/* Month Selection */}
           {viewMode === "months" ? (
             <div className="grid grid-cols-3 gap-2">
               {MONTHS.map((m) => {
@@ -272,7 +272,7 @@ export default function MonthYearPicker({
               })}
             </div>
           ) : (
-            /* Year Selection Grid */
+            /* Year Selection */
             <div className="grid grid-cols-3 gap-2 max-h-56 overflow-y-auto">
               {yearsInDecade.map((yr) => {
                 const isSelected = selectedYear === yr;
@@ -302,7 +302,7 @@ export default function MonthYearPicker({
             </div>
           )}
 
-          {/* Quick Action Footer: Today */}
+          {/* Today */}
           <div className="pt-3 mt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px]">
             <button
               type="button"

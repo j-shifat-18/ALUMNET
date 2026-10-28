@@ -86,10 +86,12 @@ const RegistrationForm = () => {
   const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [notification, setNotification] = useState(null);
 
+  // IUT email validation
   const hasInvalidEmailChars = /\s|[A-Z]/.test(email);
   const hasValidEmailDomain = email.endsWith('@iut-dhaka.edu') && email.length > '@iut-dhaka.edu'.length;
   const isEmailValid = email.length > 0 && !hasInvalidEmailChars && hasValidEmailDomain;
 
+  // Password validation
   const hasPasswordLength = password.length >= 8;
   const hasPasswordUpper = /[A-Z]/.test(password);
   const hasPasswordLower = /[a-z]/.test(password);

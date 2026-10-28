@@ -952,7 +952,7 @@ export default function MentorshipRoadmapPage() {
                                         </div>
                                       )}
 
-                                      {/* Task Messages / Submission Thread Toggle */}
+                                      {/* Task Messages */}
                                       <div className="pt-2">
                                         <button
                                           type="button"
@@ -997,7 +997,7 @@ export default function MentorshipRoadmapPage() {
                                   )}
                                 </div>
 
-                                {/* Expanded Message Discussion & Submission Area */}
+                                {/* Message Discussion & Submission */}
                                 {expandedTaskMessages[task.id] && (
                                   <div className="border-t border-gray-100 dark:border-zinc-800 bg-gray-50/70 dark:bg-zinc-950/60 p-4 sm:p-5 space-y-3.5">
                                     <div className="flex items-center justify-between">

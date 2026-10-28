@@ -1478,7 +1478,7 @@ export default function Profile() {
                       )}
                     </div>
 
-                    {/* RIGHT SIDE: Availability Status */}
+                    {/* Availability Status */}
                     {dbUser?.role === "ALUMNI" && (
                       <div className="sm:self-start shrink-0">
                         {isOwner ? (
@@ -2051,7 +2051,7 @@ export default function Profile() {
                     category: "ACHIEVEMENT",
                   }));
 
-                  // If database credentials exist, prefer them; otherwise fallback to legacy
+                  // If database credentials exist, prefer them
                   const allItems = [
                     ...formattedCerts,
                     ...legacyCerts.filter(

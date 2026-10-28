@@ -1046,7 +1046,8 @@ export default function MentorshipPage() {
               </div>
             </div>
           )}
-        {/* ── Mentorship History tab (both alumni and student) ─────────────── */}
+
+        {/* Mentorship History */}
           {activeTab === "HISTORY" && (
             <div className="space-y-5">
               <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
@@ -1153,7 +1154,7 @@ export default function MentorshipPage() {
                                 {formattedEnd}
                               </td>
 
-                              {/* Outcome badge */}
+                              {/* Outcome */}
                               <td className="py-4 px-4 align-middle text-center whitespace-nowrap">
                                 {req.status === "ENDED" ? (
                                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-200 dark:border-zinc-700">
@@ -1168,7 +1169,7 @@ export default function MentorshipPage() {
                                 )}
                               </td>
 
-                              {/* Sessions + task completion */}
+                              {/* task completion */}
                               <td className="py-4 px-4 align-middle text-center">
                                 {req.sessions?.length > 0 ? (
                                   <div className="flex flex-col items-center gap-0.5">
@@ -1208,7 +1209,7 @@ export default function MentorshipPage() {
           )}
         </main>
 
-        {/* Message View Modal */}
+        {/* Message View */}
         {selectedMessage && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
             <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-gray-200 dark:border-gray-800 w-full max-w-lg overflow-hidden shadow-2xl p-6 space-y-4">

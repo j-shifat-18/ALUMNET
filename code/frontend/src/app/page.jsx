@@ -217,7 +217,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Left Sidebar - Profile & Upcoming Events */}
+              {/* Profile & Upcoming Events */}
               <div className="hidden lg:block lg:col-span-3 space-y-4 sticky top-24 self-start">
                 <Link
                   href={`/profile/${user?.uid}`}
@@ -363,7 +363,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Main Feed Column */}
+              {/* Main Feed */}
               <div className="lg:col-span-6 space-y-6">
                 <div className="bg-white dark:bg-gray-900 rounded-xl p-5 border border-gray-200 dark:border-gray-800 shadow-sm">
                   <button
@@ -422,10 +422,10 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Right Sidebar - Recently Followed & Recent Followers */}
+              {/* Recently Followed & Recent Followers */}
               <div className="hidden lg:block lg:col-span-3">
                 <div className="sticky top-24 space-y-4">
-                  {/* Section 1: Recently Followed */}
+                  
                   <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 space-y-3">
                     <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
                       <h3 className="font-bold text-base text-gray-900 dark:text-white">
@@ -498,7 +498,6 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* Section 2: Recent Followers */}
                   <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm p-4 space-y-3">
                     <div className="flex items-center justify-between pb-2 border-b border-gray-100 dark:border-gray-800">
                       <h3 className="font-bold text-base text-gray-900 dark:text-white">

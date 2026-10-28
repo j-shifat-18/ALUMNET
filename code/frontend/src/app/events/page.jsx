@@ -330,6 +330,7 @@ export default function EventsPage() {
         <Navbar />
 
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
+          
           {/* Header Banner */}
           <div className="bg-white dark:bg-zinc-900 rounded-3xl border border-gray-200/80 dark:border-gray-800 p-6 sm:p-8 shadow-xs mb-8">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
