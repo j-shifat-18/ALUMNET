@@ -9,7 +9,6 @@ import {
 } from "./presence.service.js";
 import { NotificationService } from "../app/modules/notification/notification.service.js";
 
-// ─── Rate limiter (sliding-window, in-memory) ─────────────────────────────────
 // Allows at most MAX_MESSAGES per WINDOW_MS per socket.
 
 const MAX_MESSAGES = 20;
@@ -55,7 +54,6 @@ export function registerChatHandlers(io: Server): void {
     // Send the full list of currently online users to THIS socket so it can
     // seed its local presence state immediately, without waiting for future
     // user_online events. This fixes the "user shows offline even though
-    // they're already connected" problem.
     socket.emit("online_users_list", { userIds: getOnlineUserIds() });
 
     if (justCameOnline) {
@@ -233,12 +231,7 @@ export function registerChatHandlers(io: Server): void {
               continue;
             }
 
-            // ── Rule 2: upsert — one unread notification per conversation
-            //    per sender. If an unread MESSAGE notification from this
-            //    sender in this conversation already exists, update its
-            //    message text and timestamp instead of creating a new one.
-            //    This way the bell shows "1 new message from Ahmed" even if
-            //    Ahmed sent 10 messages while the user was away. ────────────
+
             const preview =
               message.content.length > 60
                 ? message.content.slice(0, 60) + "…"

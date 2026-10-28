@@ -144,7 +144,7 @@ export default function MatchingPage() {
             </div>
 
             {/* Scoring legend */}
-            <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-500 dark:text-gray-400">
+            {/* <div className="mt-5 pt-4 border-t border-gray-100 dark:border-zinc-800 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs text-gray-500 dark:text-gray-400">
               <div className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-blue-500" />
                 Skill match → +3 pts each
@@ -161,7 +161,7 @@ export default function MatchingPage() {
                 <span className="w-2 h-2 rounded-full bg-amber-500" />
                 Verified / Experienced → +1 each
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* ── Loading ───────────────────────────────────────────────────── */}
